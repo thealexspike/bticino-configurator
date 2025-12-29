@@ -3484,44 +3484,43 @@ useEffect(() => {
       })
     );
 
-const loadLibraryFromSupabase = async () => {
-  const { data, error } = await supabase
-    .from('user_library')
-    .select('library_data')
-    .eq('user_id', session.user.id)
-    .single();
-
-  if (error) {
-    // Nu există încă, folosește default + localStorage
-    console.log('No library in Supabase, using default/local');
-    const localLib = loadLibrary();
-    setLibrary(localLib);
-  } else if (data?.library_data) {
-    setLibrary(data.library_data);
-  }
-  setLibraryLoaded(true);
-};
-
-const saveLibraryToSupabase = async (libraryData) => {
-  const { error } = await supabase
-    .from('user_library')
-    .upsert({
-      user_id: session.user.id,
-      library_data: libraryData,
-      updated_at: new Date().toISOString(),
-    }, {
-      onConflict: 'user_id'
-    });
-
-  if (error) {
-    console.error('Error saving library:', error);
-  }
-};
-
     setData({ projects: projectsWithAssemblies });
   };
 
- const saveProject = async (project) => {
+  const loadLibraryFromSupabase = async () => {
+    const { data, error } = await supabase
+      .from('user_library')
+      .select('library_data')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (error) {
+      console.log('No library in Supabase, using default/local');
+      const localLib = loadLibrary();
+      setLibrary(localLib);
+    } else if (data?.library_data) {
+      setLibrary(data.library_data);
+    }
+    setLibraryLoaded(true);
+  };
+
+  const saveLibraryToSupabase = async (libraryData) => {
+    const { error } = await supabase
+      .from('user_library')
+      .upsert({
+        user_id: session.user.id,
+        library_data: libraryData,
+        updated_at: new Date().toISOString(),
+      }, {
+        onConflict: 'user_id'
+      });
+
+    if (error) {
+      console.error('Error saving library:', error);
+    }
+  };
+
+  const saveProject = async (project) => {
   const { error } = await supabase
     .from('projects')
     .update({
