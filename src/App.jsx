@@ -3409,7 +3409,8 @@ export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ projects: [] });
-  const [library, setLibrary] = useState(() => loadLibrary());
+const [library, setLibrary] = useState(DEFAULT_LIBRARY);
+const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [lang, setLang] = useState(() => {
@@ -3437,11 +3438,12 @@ export default function App() {
   }, []);
 
   // Încarcă proiectele din Supabase când user-ul e logat
-  useEffect(() => {
-    if (session?.user) {
-      loadProjects();
-    }
-  }, [session]);
+useEffect(() => {
+  if (session?.user) {
+    loadProjects();
+    loadLibraryFromSupabase();
+  }
+}, [session]);
 
   const loadProjects = async () => {
     const { data: projects, error } = await supabase
@@ -3481,6 +3483,40 @@ export default function App() {
         };
       })
     );
+
+const loadLibraryFromSupabase = async () => {
+  const { data, error } = await supabase
+    .from('user_library')
+    .select('library_data')
+    .eq('user_id', session.user.id)
+    .single();
+
+  if (error) {
+    // Nu există încă, folosește default + localStorage
+    console.log('No library in Supabase, using default/local');
+    const localLib = loadLibrary();
+    setLibrary(localLib);
+  } else if (data?.library_data) {
+    setLibrary(data.library_data);
+  }
+  setLibraryLoaded(true);
+};
+
+const saveLibraryToSupabase = async (libraryData) => {
+  const { error } = await supabase
+    .from('user_library')
+    .upsert({
+      user_id: session.user.id,
+      library_data: libraryData,
+      updated_at: new Date().toISOString(),
+    }, {
+      onConflict: 'user_id'
+    });
+
+  if (error) {
+    console.error('Error saving library:', error);
+  }
+};
 
     setData({ projects: projectsWithAssemblies });
   };
@@ -3540,9 +3576,12 @@ export default function App() {
   }
 };
 
-  useEffect(() => {
-    saveLibrary(library);
-  }, [library]);
+useEffect(() => {
+  if (session?.user && libraryLoaded) {
+    saveLibrary(library); // păstrează și local ca backup
+    saveLibraryToSupabase(library);
+  }
+}, [library, session, libraryLoaded]);
 
   useEffect(() => {
     try {
