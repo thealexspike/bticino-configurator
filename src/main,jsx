@@ -1,0 +1,9 @@
+echo import React from 'react' > src\main.jsx
+echo import ReactDOM from 'react-dom/client' >> src\main.jsx
+echo import App from './App' >> src\main.jsx
+echo import './index.css' >> src\main.jsx
+echo ReactDOM.createRoot(document.getElementById('root')).render( >> src\main.jsx
+echo   ^<React.StrictMode^> >> src\main.jsx
+echo     ^<App /^> >> src\main.jsx
+echo   ^</React.StrictMode^> >> src\main.jsx
+echo ) >> src\main.jsx
