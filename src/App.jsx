@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe } from 'lucide-react';
+import { supabase } from './supabase';
+import Auth from './Auth';
 
 // ============================================================================
 // TRANSLATIONS
@@ -3404,7 +3406,9 @@ function LibraryPage({ library, onUpdate, onBack }) {
 // ============================================================================
 
 export default function App() {
-  const [data, setData] = useState(() => loadData());
+  const [session, setSession] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({ projects: [] });
   const [library, setLibrary] = useState(() => loadLibrary());
   const [selectedProject, setSelectedProject] = useState(null);
   const [showLibrary, setShowLibrary] = useState(false);
@@ -3418,9 +3422,123 @@ export default function App() {
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
 
+  // Verifică sesiunea la start
   useEffect(() => {
-    saveData(data);
-  }, [data]);
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setLoading(false);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  // Încarcă proiectele din Supabase când user-ul e logat
+  useEffect(() => {
+    if (session?.user) {
+      loadProjects();
+    }
+  }, [session]);
+
+  const loadProjects = async () => {
+    const { data: projects, error } = await supabase
+      .from('projects')
+      .select('*')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error loading projects:', error);
+      return;
+    }
+
+    // Încarcă ansamblurile pentru fiecare proiect
+    const projectsWithAssemblies = await Promise.all(
+      projects.map(async (project) => {
+        const { data: assemblies } = await supabase
+          .from('assemblies')
+          .select('*')
+          .eq('project_id', project.id);
+
+        return {
+          ...project,
+          id: project.id,
+          name: project.name,
+          clientName: project.client_name,
+          clientContact: project.client_contact,
+          createdAt: project.created_at,
+          assemblies: (assemblies || []).map(a => ({
+            id: a.id,
+            type: a.type,
+            code: a.code,
+            room: a.room,
+            size: a.size,
+            color: a.color,
+            modules: a.modules || [],
+          })),
+        };
+      })
+    );
+
+    setData({ projects: projectsWithAssemblies });
+  };
+
+ const saveProject = async (project) => {
+  const { error } = await supabase
+    .from('projects')
+    .update({
+      name: project.name,
+      client_name: project.clientName,
+      client_contact: project.clientContact,
+    })
+    .eq('id', project.id);
+
+  if (error) {
+    console.error('Error saving project:', error);
+    return;
+  }
+
+  // Salvează ansamblurile
+  for (const assembly of project.assemblies) {
+    // Verifică dacă assembly.id e UUID valid sau nu
+    const assemblyData = {
+      project_id: project.id,
+      type: assembly.type,
+      code: assembly.code,
+      room: assembly.room,
+      size: assembly.size,
+      color: assembly.color,
+      modules: assembly.modules,
+    };
+
+    // Încearcă update, dacă nu există face insert
+    const { data: existing } = await supabase
+      .from('assemblies')
+      .select('id')
+      .eq('id', assembly.id)
+      .single();
+
+    if (existing) {
+      await supabase
+        .from('assemblies')
+        .update(assemblyData)
+        .eq('id', assembly.id);
+    } else {
+      const { data: newAssembly } = await supabase
+        .from('assemblies')
+        .insert(assemblyData)
+        .select()
+        .single();
+      
+      // Actualizează ID-ul local
+      if (newAssembly) {
+        assembly.id = newAssembly.id;
+      }
+    }
+  }
+};
 
   useEffect(() => {
     saveLibrary(library);
@@ -3432,7 +3550,7 @@ export default function App() {
     } catch {}
   }, [lang]);
 
-  const updateProject = (updated) => {
+  const updateProject = async (updated) => {
     setData({
       ...data,
       projects: data.projects.map(p => p.id === updated.id ? updated : p),
@@ -3440,25 +3558,90 @@ export default function App() {
     if (selectedProject?.id === updated.id) {
       setSelectedProject(updated);
     }
+    await saveProject(updated);
   };
 
-  const deleteProject = (id) => {
-    setData({
-      ...data,
-      projects: data.projects.filter(p => p.id !== id),
-    });
+  const createProject = async (name, client) => {
+  // Inserăm în Supabase și lăsăm să genereze ID-ul
+  const { data: savedProject, error } = await supabase
+    .from('projects')
+    .insert({
+      user_id: session.user.id,
+      name: name,
+      client_name: client,
+      client_contact: '',
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error('Error creating project:', error);
+    return;
+  }
+
+  const newProject = {
+    id: savedProject.id,
+    name: savedProject.name,
+    clientName: savedProject.client_name,
+    clientContact: savedProject.client_contact,
+    createdAt: savedProject.created_at,
+    assemblies: [],
+  };
+
+  setData({ ...data, projects: [...data.projects, newProject] });
+};
+
+const deleteProject = async (id) => {
+  // Șterge ansamblurile asociate
+  await supabase.from('assemblies').delete().eq('project_id', id);
+  // Șterge proiectul
+  await supabase.from('projects').delete().eq('id', id);
+  
+  setData({
+    ...data,
+    projects: data.projects.filter(p => p.id !== id),
+  });
+};
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setData({ projects: [] });
+    setSelectedProject(null);
   };
 
   const languageContextValue = { lang, t, setLang };
 
-  // Global header component with language switcher
+  // Loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center">
+        <p className="text-gray-600">Se încarcă...</p>
+      </div>
+    );
+  }
+
+  // Not logged in
+  if (!session) {
+    return <Auth />;
+  }
+
+  // Global header component with language switcher and logout
   const GlobalHeader = () => (
     <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b px-4 py-2 flex justify-between items-center">
       <div className="text-lg font-semibold text-gray-700 flex items-center gap-2">
         <Package className="w-5 h-5" />
         BTicino Living Now
       </div>
-      <LanguageSwitcher />
+      <div className="flex items-center gap-2">
+        <span className="text-sm text-gray-500">{session.user.email}</span>
+        <LanguageSwitcher />
+        <button
+          onClick={handleLogout}
+          className="text-sm text-red-600 hover:text-red-800 px-2 py-1"
+        >
+          Logout
+        </button>
+      </div>
     </div>
   );
 
@@ -3513,17 +3696,7 @@ export default function App() {
             <ProjectList
               projects={data.projects}
               onSelect={setSelectedProject}
-              onCreate={(name, client) => {
-                const project = {
-                  id: generateId(),
-                  name,
-                  clientName: client,
-                  clientContact: '',
-                  createdAt: new Date().toISOString(),
-                  assemblies: [],
-                };
-                setData({ ...data, projects: [...data.projects, project] });
-              }}
+              onCreate={createProject}
               onDelete={deleteProject}
               onOpenLibrary={() => setShowLibrary(true)}
             />
