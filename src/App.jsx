@@ -3935,31 +3935,191 @@ function LibraryPage({ library, onUpdate, onBack }) {
                     </div>
                     
                     {/* SKU & Price Table - dynamic based on hasColorVariants */}
-                    <table className="w-full text-sm mb-4 border rounded">
-                      <thead>
-                        <tr className="bg-gray-50 text-left text-gray-600">
-                          <th className="p-2 border-b">{t.item}</th>
-                          <th className="p-2 border-b">{t.sku}</th>
-                          <th className="p-2 border-b">{t.priceInclVat}</th>
-                          <th className="p-2 border-b text-gray-400">{t.priceExclVat}</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {mod.hasColorVariants ? (
-                          <>
-                            {/* Module White Row */}
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-sm mb-4 border rounded">
+                        <thead>
+                          <tr className="bg-gray-50 text-left text-gray-600">
+                            <th className="p-2 border-b">{t.item}</th>
+                            <th className="p-2 border-b">{t.sku}</th>
+                            <th className="p-2 border-b">{t.purchasePrice}</th>
+                            <th className="p-2 border-b">{t.markup}</th>
+                            <th className="p-2 border-b">{t.sellingPrice}</th>
+                            <th className="p-2 border-b">{t.sellingPriceVat}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {mod.hasColorVariants ? (
+                            <>
+                              {/* Module White Row */}
+                              <tr className="border-b">
+                                <td className="p-2">
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded border bg-white"></span>
+                                    {t.modules} ({t.white})
+                                  </span>
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={typeof mod.moduleSku === 'object' ? mod.moduleSku?.white || '' : ''}
+                                    onChange={(e) => updateModule(mod.id, { moduleSku: { ...(typeof mod.moduleSku === 'object' ? mod.moduleSku : {}), white: e.target.value.toUpperCase() } })}
+                                    placeholder={t.enterSku}
+                                    className="w-full border rounded px-2 py-1 text-sm font-mono"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.white || 0 : 0}
+                                    onChange={(e) => {
+                                      const newPurchase = parseFloat(e.target.value) || 0;
+                                      const currentMarkup = typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup?.white || 0 : 0;
+                                      const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                                      updateModule(mod.id, { 
+                                        modulePurchasePrice: { ...(typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice : {}), white: newPurchase },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), white: newPrice }
+                                      });
+                                    }}
+                                    className="w-20 border rounded px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <PriceInput
+                                    value={typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup?.white || 0 : 0}
+                                    onChange={(newMarkup) => {
+                                      const currentPurchase = typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.white || 0 : 0;
+                                      const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                                      updateModule(mod.id, { 
+                                        moduleMarkup: { ...(typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup : {}), white: newMarkup },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), white: newPrice }
+                                      });
+                                    }}
+                                    step="1"
+                                    decimals={0}
+                                    className="w-16 border rounded px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <PriceInput
+                                    value={(typeof mod.modulePrice === 'object' ? mod.modulePrice?.white || 0 : 0) / (1 + VAT_RATE)}
+                                    onChange={(newSellingWithoutVat) => {
+                                      const currentPurchase = typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.white || 0 : 0;
+                                      const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                                      const newMarkup = calcMarkupFromPriceWithoutVat(currentPurchase, newSellingWithoutVat);
+                                      updateModule(mod.id, { 
+                                        moduleMarkup: { ...(typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup : {}), white: newMarkup },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), white: newPrice }
+                                      });
+                                    }}
+                                    className="w-20 border rounded px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <PriceInput
+                                    value={typeof mod.modulePrice === 'object' ? mod.modulePrice?.white || 0 : 0}
+                                    onChange={(newPrice) => {
+                                      const currentPurchase = typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.white || 0 : 0;
+                                      const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                                      updateModule(mod.id, { 
+                                        moduleMarkup: { ...(typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup : {}), white: newMarkup },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), white: newPrice }
+                                      });
+                                    }}
+                                    className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                                  />
+                                </td>
+                              </tr>
+                              {/* Module Black Row */}
+                              <tr className="border-b bg-gray-50">
+                                <td className="p-2">
+                                  <span className="flex items-center gap-2">
+                                    <span className="w-3 h-3 rounded border bg-gray-800"></span>
+                                    {t.modules} ({t.black})
+                                  </span>
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="text"
+                                    value={typeof mod.moduleSku === 'object' ? mod.moduleSku?.black || '' : ''}
+                                    onChange={(e) => updateModule(mod.id, { moduleSku: { ...(typeof mod.moduleSku === 'object' ? mod.moduleSku : {}), black: e.target.value.toUpperCase() } })}
+                                    placeholder={t.enterSku}
+                                    className="w-full border rounded px-2 py-1 text-sm font-mono"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <input
+                                    type="number"
+                                    step="0.01"
+                                    value={typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.black || 0 : 0}
+                                    onChange={(e) => {
+                                      const newPurchase = parseFloat(e.target.value) || 0;
+                                      const currentMarkup = typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup?.black || 0 : 0;
+                                      const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                                      updateModule(mod.id, { 
+                                        modulePurchasePrice: { ...(typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice : {}), black: newPurchase },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), black: newPrice }
+                                      });
+                                    }}
+                                    className="w-20 border rounded px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <PriceInput
+                                    value={typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup?.black || 0 : 0}
+                                    onChange={(newMarkup) => {
+                                      const currentPurchase = typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.black || 0 : 0;
+                                      const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                                      updateModule(mod.id, { 
+                                        moduleMarkup: { ...(typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup : {}), black: newMarkup },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), black: newPrice }
+                                      });
+                                    }}
+                                    step="1"
+                                    decimals={0}
+                                    className="w-16 border rounded px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <PriceInput
+                                    value={(typeof mod.modulePrice === 'object' ? mod.modulePrice?.black || 0 : 0) / (1 + VAT_RATE)}
+                                    onChange={(newSellingWithoutVat) => {
+                                      const currentPurchase = typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.black || 0 : 0;
+                                      const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                                      const newMarkup = calcMarkupFromPriceWithoutVat(currentPurchase, newSellingWithoutVat);
+                                      updateModule(mod.id, { 
+                                        moduleMarkup: { ...(typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup : {}), black: newMarkup },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), black: newPrice }
+                                      });
+                                    }}
+                                    className="w-20 border rounded px-2 py-1 text-sm"
+                                  />
+                                </td>
+                                <td className="p-2">
+                                  <PriceInput
+                                    value={typeof mod.modulePrice === 'object' ? mod.modulePrice?.black || 0 : 0}
+                                    onChange={(newPrice) => {
+                                      const currentPurchase = typeof mod.modulePurchasePrice === 'object' ? mod.modulePurchasePrice?.black || 0 : 0;
+                                      const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                                      updateModule(mod.id, { 
+                                        moduleMarkup: { ...(typeof mod.moduleMarkup === 'object' ? mod.moduleMarkup : {}), black: newMarkup },
+                                        modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), black: newPrice }
+                                      });
+                                    }}
+                                    className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                                  />
+                                </td>
+                              </tr>
+                            </>
+                          ) : (
+                            /* Single Module Row */
                             <tr className="border-b">
-                              <td className="p-2">
-                                <span className="flex items-center gap-2">
-                                  <span className="w-3 h-3 rounded border bg-white"></span>
-                                  {t.modules} ({t.white})
-                                </span>
-                              </td>
+                              <td className="p-2 font-medium">{t.modules}</td>
                               <td className="p-2">
                                 <input
                                   type="text"
-                                  value={typeof mod.moduleSku === 'object' ? mod.moduleSku?.white || '' : ''}
-                                  onChange={(e) => updateModule(mod.id, { moduleSku: { ...(typeof mod.moduleSku === 'object' ? mod.moduleSku : {}), white: e.target.value.toUpperCase() } })}
+                                  value={typeof mod.moduleSku === 'string' ? mod.moduleSku : ''}
+                                  onChange={(e) => updateModule(mod.id, { moduleSku: e.target.value.toUpperCase() })}
                                   placeholder={t.enterSku}
                                   className="w-full border rounded px-2 py-1 text-sm font-mono"
                                 />
@@ -3968,55 +4128,67 @@ function LibraryPage({ library, onUpdate, onBack }) {
                                 <input
                                   type="number"
                                   step="0.01"
-                                  value={typeof mod.modulePrice === 'object' ? mod.modulePrice?.white || 0 : 0}
-                                  onChange={(e) => updateModule(mod.id, { modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), white: parseFloat(e.target.value) || 0 } })}
-                                  className="w-24 border rounded px-2 py-1 text-sm"
+                                  value={typeof mod.modulePurchasePrice === 'number' ? mod.modulePurchasePrice : 0}
+                                  onChange={(e) => {
+                                    const newPurchase = parseFloat(e.target.value) || 0;
+                                    const currentMarkup = typeof mod.moduleMarkup === 'number' ? mod.moduleMarkup : 0;
+                                    const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                                    updateModule(mod.id, { modulePurchasePrice: newPurchase, modulePrice: newPrice });
+                                  }}
+                                  className="w-20 border rounded px-2 py-1 text-sm"
                                 />
                               </td>
-                              <td className="p-2 text-gray-400 font-mono">
-                                {((typeof mod.modulePrice === 'object' ? mod.modulePrice?.white || 0 : 0) / 1.21).toFixed(2)}
+                              <td className="p-2">
+                                <PriceInput
+                                  value={typeof mod.moduleMarkup === 'number' ? mod.moduleMarkup : 0}
+                                  onChange={(newMarkup) => {
+                                    const currentPurchase = typeof mod.modulePurchasePrice === 'number' ? mod.modulePurchasePrice : 0;
+                                    const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                                    updateModule(mod.id, { moduleMarkup: newMarkup, modulePrice: newPrice });
+                                  }}
+                                  step="1"
+                                  decimals={0}
+                                  className="w-16 border rounded px-2 py-1 text-sm"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <PriceInput
+                                  value={(typeof mod.modulePrice === 'number' ? mod.modulePrice : 0) / (1 + VAT_RATE)}
+                                  onChange={(newSellingWithoutVat) => {
+                                    const currentPurchase = typeof mod.modulePurchasePrice === 'number' ? mod.modulePurchasePrice : 0;
+                                    const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                                    const newMarkup = calcMarkupFromPriceWithoutVat(currentPurchase, newSellingWithoutVat);
+                                    updateModule(mod.id, { moduleMarkup: newMarkup, modulePrice: newPrice });
+                                  }}
+                                  className="w-20 border rounded px-2 py-1 text-sm"
+                                />
+                              </td>
+                              <td className="p-2">
+                                <PriceInput
+                                  value={typeof mod.modulePrice === 'number' ? mod.modulePrice : 0}
+                                  onChange={(newPrice) => {
+                                    const currentPurchase = typeof mod.modulePurchasePrice === 'number' ? mod.modulePurchasePrice : 0;
+                                    const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                                    updateModule(mod.id, { moduleMarkup: newMarkup, modulePrice: newPrice });
+                                  }}
+                                  className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                                />
                               </td>
                             </tr>
-                            {/* Module Black Row */}
-                            <tr className="border-b bg-gray-50">
-                              <td className="p-2">
-                                <span className="flex items-center gap-2">
-                                  <span className="w-3 h-3 rounded border bg-gray-800"></span>
-                                  {t.modules} ({t.black})
-                                </span>
-                              </td>
-                              <td className="p-2">
-                                <input
-                                  type="text"
-                                  value={typeof mod.moduleSku === 'object' ? mod.moduleSku?.black || '' : ''}
-                                  onChange={(e) => updateModule(mod.id, { moduleSku: { ...(typeof mod.moduleSku === 'object' ? mod.moduleSku : {}), black: e.target.value.toUpperCase() } })}
-                                  placeholder={t.enterSku}
-                                  className="w-full border rounded px-2 py-1 text-sm font-mono"
-                                />
-                              </td>
-                              <td className="p-2">
-                                <input
-                                  type="number"
-                                  step="0.01"
-                                  value={typeof mod.modulePrice === 'object' ? mod.modulePrice?.black || 0 : 0}
-                                  onChange={(e) => updateModule(mod.id, { modulePrice: { ...(typeof mod.modulePrice === 'object' ? mod.modulePrice : {}), black: parseFloat(e.target.value) || 0 } })}
-                                  className="w-24 border rounded px-2 py-1 text-sm"
-                                />
-                              </td>
-                              <td className="p-2 text-gray-400 font-mono">
-                                {((typeof mod.modulePrice === 'object' ? mod.modulePrice?.black || 0 : 0) / 1.21).toFixed(2)}
-                              </td>
-                            </tr>
-                          </>
-                        ) : (
-                          /* Single Module Row */
+                          )}
+                          {/* Face White Row */}
                           <tr className="border-b">
-                            <td className="p-2 font-medium">{t.modules}</td>
+                            <td className="p-2">
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded border bg-white"></span>
+                                {t.face} ({t.white})
+                              </span>
+                            </td>
                             <td className="p-2">
                               <input
                                 type="text"
-                                value={typeof mod.moduleSku === 'string' ? mod.moduleSku : ''}
-                                onChange={(e) => updateModule(mod.id, { moduleSku: e.target.value.toUpperCase() })}
+                                value={mod.faceSku?.white || ''}
+                                onChange={(e) => updateModule(mod.id, { faceSku: { ...mod.faceSku, white: e.target.value.toUpperCase() } })}
                                 placeholder={t.enterSku}
                                 className="w-full border rounded px-2 py-1 text-sm font-mono"
                               />
@@ -4025,78 +4197,148 @@ function LibraryPage({ library, onUpdate, onBack }) {
                               <input
                                 type="number"
                                 step="0.01"
-                                value={typeof mod.modulePrice === 'number' ? mod.modulePrice : 0}
-                                onChange={(e) => updateModule(mod.id, { modulePrice: parseFloat(e.target.value) || 0 })}
-                                className="w-24 border rounded px-2 py-1 text-sm"
+                                value={mod.facePurchasePrice?.white || 0}
+                                onChange={(e) => {
+                                  const newPurchase = parseFloat(e.target.value) || 0;
+                                  const currentMarkup = mod.faceMarkup?.white || 0;
+                                  const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                                  updateModule(mod.id, { 
+                                    facePurchasePrice: { ...mod.facePurchasePrice, white: newPurchase },
+                                    facePrice: { ...mod.facePrice, white: newPrice }
+                                  });
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-sm"
                               />
                             </td>
-                            <td className="p-2 text-gray-400 font-mono">
-                              {((typeof mod.modulePrice === 'number' ? mod.modulePrice : 0) / 1.21).toFixed(2)}
+                            <td className="p-2">
+                              <PriceInput
+                                value={mod.faceMarkup?.white || 0}
+                                onChange={(newMarkup) => {
+                                  const currentPurchase = mod.facePurchasePrice?.white || 0;
+                                  const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                                  updateModule(mod.id, { 
+                                    faceMarkup: { ...mod.faceMarkup, white: newMarkup },
+                                    facePrice: { ...mod.facePrice, white: newPrice }
+                                  });
+                                }}
+                                step="1"
+                                decimals={0}
+                                className="w-16 border rounded px-2 py-1 text-sm"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <PriceInput
+                                value={(mod.facePrice?.white || 0) / (1 + VAT_RATE)}
+                                onChange={(newSellingWithoutVat) => {
+                                  const currentPurchase = mod.facePurchasePrice?.white || 0;
+                                  const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                                  const newMarkup = calcMarkupFromPriceWithoutVat(currentPurchase, newSellingWithoutVat);
+                                  updateModule(mod.id, { 
+                                    faceMarkup: { ...mod.faceMarkup, white: newMarkup },
+                                    facePrice: { ...mod.facePrice, white: newPrice }
+                                  });
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-sm"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <PriceInput
+                                value={mod.facePrice?.white || 0}
+                                onChange={(newPrice) => {
+                                  const currentPurchase = mod.facePurchasePrice?.white || 0;
+                                  const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                                  updateModule(mod.id, { 
+                                    faceMarkup: { ...mod.faceMarkup, white: newMarkup },
+                                    facePrice: { ...mod.facePrice, white: newPrice }
+                                  });
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                              />
                             </td>
                           </tr>
-                        )}
-                        {/* Face White Row */}
-                        <tr className="border-b">
-                          <td className="p-2">
-                            <span className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded border bg-white"></span>
-                              {t.face} ({t.white})
-                            </span>
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="text"
-                              value={mod.faceSku?.white || ''}
-                              onChange={(e) => updateModule(mod.id, { faceSku: { ...mod.faceSku, white: e.target.value.toUpperCase() } })}
-                              placeholder={t.enterSku}
-                              className="w-full border rounded px-2 py-1 text-sm font-mono"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={mod.facePrice?.white || 0}
-                              onChange={(e) => updateModule(mod.id, { facePrice: { ...mod.facePrice, white: parseFloat(e.target.value) || 0 } })}
-                              className="w-24 border rounded px-2 py-1 text-sm"
-                            />
-                          </td>
-                          <td className="p-2 text-gray-400 font-mono">
-                            {((mod.facePrice?.white || 0) / 1.21).toFixed(2)}
-                          </td>
-                        </tr>
-                        {/* Face Black Row */}
-                        <tr className="bg-gray-50">
-                          <td className="p-2">
-                            <span className="flex items-center gap-2">
-                              <span className="w-3 h-3 rounded border bg-gray-800"></span>
-                              {t.face} ({t.black})
-                            </span>
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="text"
-                              value={mod.faceSku?.black || ''}
-                              onChange={(e) => updateModule(mod.id, { faceSku: { ...mod.faceSku, black: e.target.value.toUpperCase() } })}
-                              placeholder={t.enterSku}
-                              className="w-full border rounded px-2 py-1 text-sm font-mono"
-                            />
-                          </td>
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={mod.facePrice?.black || 0}
-                              onChange={(e) => updateModule(mod.id, { facePrice: { ...mod.facePrice, black: parseFloat(e.target.value) || 0 } })}
-                              className="w-24 border rounded px-2 py-1 text-sm"
-                            />
-                          </td>
-                          <td className="p-2 text-gray-400 font-mono">
-                            {((mod.facePrice?.black || 0) / 1.21).toFixed(2)}
-                          </td>
-                        </tr>
-                      </tbody>
-                    </table>
+                          {/* Face Black Row */}
+                          <tr className="bg-gray-50">
+                            <td className="p-2">
+                              <span className="flex items-center gap-2">
+                                <span className="w-3 h-3 rounded border bg-gray-800"></span>
+                                {t.face} ({t.black})
+                              </span>
+                            </td>
+                            <td className="p-2">
+                              <input
+                                type="text"
+                                value={mod.faceSku?.black || ''}
+                                onChange={(e) => updateModule(mod.id, { faceSku: { ...mod.faceSku, black: e.target.value.toUpperCase() } })}
+                                placeholder={t.enterSku}
+                                className="w-full border rounded px-2 py-1 text-sm font-mono"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <input
+                                type="number"
+                                step="0.01"
+                                value={mod.facePurchasePrice?.black || 0}
+                                onChange={(e) => {
+                                  const newPurchase = parseFloat(e.target.value) || 0;
+                                  const currentMarkup = mod.faceMarkup?.black || 0;
+                                  const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                                  updateModule(mod.id, { 
+                                    facePurchasePrice: { ...mod.facePurchasePrice, black: newPurchase },
+                                    facePrice: { ...mod.facePrice, black: newPrice }
+                                  });
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-sm"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <PriceInput
+                                value={mod.faceMarkup?.black || 0}
+                                onChange={(newMarkup) => {
+                                  const currentPurchase = mod.facePurchasePrice?.black || 0;
+                                  const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                                  updateModule(mod.id, { 
+                                    faceMarkup: { ...mod.faceMarkup, black: newMarkup },
+                                    facePrice: { ...mod.facePrice, black: newPrice }
+                                  });
+                                }}
+                                step="1"
+                                decimals={0}
+                                className="w-16 border rounded px-2 py-1 text-sm"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <PriceInput
+                                value={(mod.facePrice?.black || 0) / (1 + VAT_RATE)}
+                                onChange={(newSellingWithoutVat) => {
+                                  const currentPurchase = mod.facePurchasePrice?.black || 0;
+                                  const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                                  const newMarkup = calcMarkupFromPriceWithoutVat(currentPurchase, newSellingWithoutVat);
+                                  updateModule(mod.id, { 
+                                    faceMarkup: { ...mod.faceMarkup, black: newMarkup },
+                                    facePrice: { ...mod.facePrice, black: newPrice }
+                                  });
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-sm"
+                              />
+                            </td>
+                            <td className="p-2">
+                              <PriceInput
+                                value={mod.facePrice?.black || 0}
+                                onChange={(newPrice) => {
+                                  const currentPurchase = mod.facePurchasePrice?.black || 0;
+                                  const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                                  updateModule(mod.id, { 
+                                    faceMarkup: { ...mod.faceMarkup, black: newMarkup },
+                                    facePrice: { ...mod.facePrice, black: newPrice }
+                                  });
+                                }}
+                                className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                              />
+                            </td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
                     
                     <button
                       onClick={() => setEditingModule(null)}
