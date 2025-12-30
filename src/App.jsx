@@ -645,6 +645,7 @@ const ModuleThumbnail = ({ moduleId, size = 32 }) => {
 // ============================================================================
 
 const SIZES = [1, 2, 3, 4, 6];
+const FRAME_SIZES = [2, 3, 4, 6]; // For wall boxes, install faces, decor faces (min 2M)
 
 const COLORS = [
   { id: 'white', name: 'White', hex: '#FFFFFF' },
@@ -654,29 +655,24 @@ const COLORS = [
 // Default library data - will be overridden by localStorage
 const DEFAULT_LIBRARY = {
   wallBoxesMasonry: {
-    1: { sku: '503E', purchasePrice: 8, markup: 25, price: 12.1 },
     2: { sku: '504E', purchasePrice: 10, markup: 25, price: 15.13 },
     3: { sku: '506E', purchasePrice: 12, markup: 25, price: 18.15 },
     4: { sku: '508E', purchasePrice: 15, markup: 25, price: 22.69 },
     6: { sku: '510E', purchasePrice: 19, markup: 25, price: 28.74 },
   },
   wallBoxesDrywall: {
-    1: { sku: 'PB503', purchasePrice: 10, markup: 25, price: 15.13 },
     2: { sku: 'PB504', purchasePrice: 12, markup: 25, price: 18.15 },
     3: { sku: 'PB506', purchasePrice: 14, markup: 25, price: 21.18 },
     4: { sku: 'PB508', purchasePrice: 17, markup: 25, price: 25.71 },
     6: { sku: 'PB510', purchasePrice: 22, markup: 25, price: 33.28 },
   },
   installFaces: {
-    1: { sku: 'KG2201', purchasePrice: 5, markup: 25, price: 7.56 },
     2: { sku: 'KG2202', purchasePrice: 7, markup: 25, price: 10.59 },
     3: { sku: 'KG2203', purchasePrice: 8, markup: 25, price: 12.1 },
     4: { sku: 'KG2204', purchasePrice: 10, markup: 25, price: 15.13 },
     6: { sku: 'KG2206', purchasePrice: 14, markup: 25, price: 21.18 },
   },
   decorFaces: {
-    '1-white': { sku: 'KA4802M1', purchasePrice: 8, markup: 25, price: 12.1 }, 
-    '1-black': { sku: 'KG4802M1', purchasePrice: 10, markup: 25, price: 15.13 },
     '2-white': { sku: 'KA4802M2', purchasePrice: 10, markup: 25, price: 15.13 }, 
     '2-black': { sku: 'KG4802M2', purchasePrice: 12, markup: 25, price: 18.15 },
     '3-white': { sku: 'KA4802M3', purchasePrice: 12, markup: 25, price: 18.15 }, 
@@ -1595,7 +1591,7 @@ function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, on
                       className="text-sm bg-gray-100 px-2 py-0.5 rounded border-0 cursor-pointer hover:bg-gray-200"
                       title="Change size"
                     >
-                      {SIZES.map(s => (
+                      {FRAME_SIZES.map(s => (
                         <option key={s} value={s}>{s}M</option>
                       ))}
                     </select>
@@ -2004,7 +2000,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               onChange={(e) => updateField('size', parseInt(e.target.value))}
               className="w-full border rounded px-3 py-2"
             >
-              {SIZES.map(s => (
+              {FRAME_SIZES.map(s => (
                 <option key={s} value={s}>{s}M</option>
               ))}
             </select>
@@ -3413,12 +3409,13 @@ function LibraryPage({ library, onUpdate, onBack }) {
   });
 
   const updateWallBoxMasonry = (size, field, value) => {
+    const currentItem = library.wallBoxesMasonry?.[size] || {};
     onUpdate({
       ...library,
       wallBoxesMasonry: {
         ...library.wallBoxesMasonry,
         [size]: {
-          ...library.wallBoxesMasonry[size],
+          ...currentItem,
           [field]: field === 'price' ? parseFloat(value) || 0 : value,
         },
       },
@@ -3426,12 +3423,13 @@ function LibraryPage({ library, onUpdate, onBack }) {
   };
 
   const updateWallBoxDrywall = (size, field, value) => {
+    const currentItem = library.wallBoxesDrywall?.[size] || {};
     onUpdate({
       ...library,
       wallBoxesDrywall: {
         ...library.wallBoxesDrywall,
         [size]: {
-          ...library.wallBoxesDrywall[size],
+          ...currentItem,
           [field]: field === 'price' ? parseFloat(value) || 0 : value,
         },
       },
@@ -4430,7 +4428,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {SIZES.map((size) => {
+                  {FRAME_SIZES.map((size) => {
                     const item = library.wallBoxesMasonry?.[size] || {};
                     const purchasePrice = item.purchasePrice || 0;
                     const markup = item.markup || 0;
@@ -4546,7 +4544,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {SIZES.map((size) => {
+                  {FRAME_SIZES.map((size) => {
                     const item = library.wallBoxesDrywall?.[size] || {};
                     const purchasePrice = item.purchasePrice || 0;
                     const markup = item.markup || 0;
@@ -4665,7 +4663,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                 </tr>
               </thead>
               <tbody>
-                {SIZES.map((size) => {
+                {FRAME_SIZES.map((size) => {
                   const item = library.installFaces[size] || {};
                   const purchasePrice = item.purchasePrice || 0;
                   const markup = item.markup || 0;
@@ -4784,7 +4782,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                 </tr>
               </thead>
               <tbody>
-                {SIZES.map((size) => (
+                {FRAME_SIZES.map((size) => (
                   COLORS.map((color, colorIdx) => {
                     const key = `${size}-${color.id}`;
                     const item = library.decorFaces[key] || {};
