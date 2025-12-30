@@ -2,6 +2,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe } from 'lucide-react';
 import { supabase } from './supabase';
 import Auth from './Auth';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 // ============================================================================
 // TRANSLATIONS
@@ -87,6 +89,7 @@ const TRANSLATIONS = {
     // BOQ & Quote
     boq: 'BOQ (Supplier)',
     clientQuote: 'Client Quote',
+    profitAnalysis: 'Profit Analysis',
     billOfQuantities: 'Bill of Quantities',
     forSupplier: 'For Supplier',
     quoteFor: 'Quote for',
@@ -117,6 +120,18 @@ const TRANSLATIONS = {
     unitPriceExclVat: 'Unit (excl. VAT)',
     unitPriceInclVat: 'Unit (incl. VAT)',
     
+    // Profit
+    purchaseTotalExclVat: 'Purchase Total (excl. VAT)',
+    sellingTotalExclVat: 'Selling Total (excl. VAT)',
+    grossProfit: 'Gross Profit',
+    profitMargin: 'Profit Margin',
+    vatCollected: 'VAT Collected (from sales)',
+    vatDeductible: 'VAT Deductible (from purchases)',
+    vatPayable: 'VAT Payable',
+    unitPurchase: 'Purchase',
+    unitSelling: 'Selling',
+    unitProfit: 'Profit',
+    
     // Library
     componentLibrary: 'Component Library',
     manageSKUs: 'Manage SKUs, prices, and module definitions',
@@ -140,6 +155,10 @@ const TRANSLATIONS = {
     price: 'Price',
     priceExclVat: 'Price (excl. VAT)',
     priceInclVat: 'Price (incl. VAT)',
+    purchasePrice: 'Purchase (excl. VAT)',
+    markup: 'Markup %',
+    sellingPrice: 'Selling (excl. VAT)',
+    sellingPriceVat: 'Selling (incl. VAT)',
     other: 'Other',
     supports: 'Supports',
     coverPlates: 'Cover Plates',
@@ -152,6 +171,13 @@ const TRANSLATIONS = {
     
     // Module names
     face: 'Face',
+    
+    // Wall Box Types
+    wallBoxType: 'Wall Box Type',
+    masonry: 'Masonry',
+    drywall: 'Drywall (Gypsum)',
+    wallBoxesMasonry: 'Wall Boxes (Masonry)',
+    wallBoxesDrywall: 'Wall Boxes (Drywall)',
   },
   ro: {
     // General
@@ -232,6 +258,7 @@ const TRANSLATIONS = {
     // BOQ & Quote
     boq: 'BOQ (Furnizor)',
     clientQuote: 'Ofertă Client',
+    profitAnalysis: 'Analiză Profit',
     billOfQuantities: 'Lista de Cantități',
     forSupplier: 'Pentru Furnizor',
     quoteFor: 'Ofertă pentru',
@@ -262,6 +289,18 @@ const TRANSLATIONS = {
     unitPriceExclVat: 'Unitar (fără TVA)',
     unitPriceInclVat: 'Unitar (cu TVA)',
     
+    // Profit
+    purchaseTotalExclVat: 'Total Achiziție (fără TVA)',
+    sellingTotalExclVat: 'Total Vânzare (fără TVA)',
+    grossProfit: 'Profit Brut',
+    profitMargin: 'Marjă Profit',
+    vatCollected: 'TVA Colectat (din vânzări)',
+    vatDeductible: 'TVA Deductibil (din achiziții)',
+    vatPayable: 'TVA de Plată',
+    unitPurchase: 'Achiziție',
+    unitSelling: 'Vânzare',
+    unitProfit: 'Profit',
+    
     // Library
     componentLibrary: 'Bibliotecă Componente',
     manageSKUs: 'Gestionează coduri, prețuri și definiții module',
@@ -285,6 +324,10 @@ const TRANSLATIONS = {
     price: 'Preț',
     priceExclVat: 'Preț (fără TVA)',
     priceInclVat: 'Preț (cu TVA)',
+    purchasePrice: 'Achiziție (fără TVA)',
+    markup: 'Adaos %',
+    sellingPrice: 'Vânzare (fără TVA)',
+    sellingPriceVat: 'Vânzare (cu TVA)',
     other: 'Altele',
     supports: 'Suporturi',
     coverPlates: 'Rame Decorative',
@@ -297,6 +340,13 @@ const TRANSLATIONS = {
     
     // Module names
     face: 'Față',
+    
+    // Wall Box Types
+    wallBoxType: 'Tip Doză',
+    masonry: 'Zidărie',
+    drywall: 'Gips-carton',
+    wallBoxesMasonry: 'Doze (Zidărie)',
+    wallBoxesDrywall: 'Doze (Gips-carton)',
   },
 };
 
@@ -603,26 +653,38 @@ const COLORS = [
 
 // Default library data - will be overridden by localStorage
 const DEFAULT_LIBRARY = {
-  wallBoxes: {
-    1: { sku: '503E', price: 12 },
-    2: { sku: '504E', price: 15 },
-    3: { sku: '506E', price: 18 },
-    4: { sku: '508E', price: 22 },
-    6: { sku: '510E', price: 28 },
+  wallBoxesMasonry: {
+    1: { sku: '503E', purchasePrice: 8, markup: 25, price: 12.1 },
+    2: { sku: '504E', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: '506E', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: '508E', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: '510E', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  wallBoxesDrywall: {
+    1: { sku: 'PB503', purchasePrice: 10, markup: 25, price: 15.13 },
+    2: { sku: 'PB504', purchasePrice: 12, markup: 25, price: 18.15 },
+    3: { sku: 'PB506', purchasePrice: 14, markup: 25, price: 21.18 },
+    4: { sku: 'PB508', purchasePrice: 17, markup: 25, price: 25.71 },
+    6: { sku: 'PB510', purchasePrice: 22, markup: 25, price: 33.28 },
   },
   installFaces: {
-    1: { sku: 'KG2201', price: 8 },
-    2: { sku: 'KG2202', price: 10 },
-    3: { sku: 'KG2203', price: 12 },
-    4: { sku: 'KG2204', price: 15 },
-    6: { sku: 'KG2206', price: 20 },
+    1: { sku: 'KG2201', purchasePrice: 5, markup: 25, price: 7.56 },
+    2: { sku: 'KG2202', purchasePrice: 7, markup: 25, price: 10.59 },
+    3: { sku: 'KG2203', purchasePrice: 8, markup: 25, price: 12.1 },
+    4: { sku: 'KG2204', purchasePrice: 10, markup: 25, price: 15.13 },
+    6: { sku: 'KG2206', purchasePrice: 14, markup: 25, price: 21.18 },
   },
   decorFaces: {
-    '1-white': { sku: 'KA4802M1', price: 12 }, '1-black': { sku: 'KG4802M1', price: 14 },
-    '2-white': { sku: 'KA4802M2', price: 15 }, '2-black': { sku: 'KG4802M2', price: 18 },
-    '3-white': { sku: 'KA4802M3', price: 18 }, '3-black': { sku: 'KG4802M3', price: 22 },
-    '4-white': { sku: 'KA4802M4', price: 22 }, '4-black': { sku: 'KG4802M4', price: 26 },
-    '6-white': { sku: 'KA4802M6', price: 28 }, '6-black': { sku: 'KG4802M6', price: 32 },
+    '1-white': { sku: 'KA4802M1', purchasePrice: 8, markup: 25, price: 12.1 }, 
+    '1-black': { sku: 'KG4802M1', purchasePrice: 10, markup: 25, price: 15.13 },
+    '2-white': { sku: 'KA4802M2', purchasePrice: 10, markup: 25, price: 15.13 }, 
+    '2-black': { sku: 'KG4802M2', purchasePrice: 12, markup: 25, price: 18.15 },
+    '3-white': { sku: 'KA4802M3', purchasePrice: 12, markup: 25, price: 18.15 }, 
+    '3-black': { sku: 'KG4802M3', purchasePrice: 15, markup: 25, price: 22.69 },
+    '4-white': { sku: 'KA4802M4', purchasePrice: 15, markup: 25, price: 22.69 }, 
+    '4-black': { sku: 'KG4802M4', purchasePrice: 18, markup: 25, price: 27.23 },
+    '6-white': { sku: 'KA4802M6', purchasePrice: 19, markup: 25, price: 28.74 }, 
+    '6-black': { sku: 'KG4802M6', purchasePrice: 22, markup: 25, price: 33.28 },
   },
   modules: [
     { 
@@ -634,8 +696,12 @@ const DEFAULT_LIBRARY = {
       size: 2, 
       category: 'outlet',
       faceSku: { white: 'KW4702', black: 'KG4702' },
-      modulePrice: { white: 45, black: 48 },
-      facePrice: { white: 8, black: 10 },
+      modulePurchasePrice: { white: 30, black: 32 },
+      moduleMarkup: { white: 25, black: 25 },
+      modulePrice: { white: 45.38, black: 48.4 },
+      facePurchasePrice: { white: 5, black: 7 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 7.56, black: 10.59 },
     },
     { 
       id: 'italian',
@@ -646,8 +712,12 @@ const DEFAULT_LIBRARY = {
       size: 1, 
       category: 'outlet',
       faceSku: { white: 'KW4701', black: 'KG4701' },
-      modulePrice: 35,
-      facePrice: { white: 6, black: 8 },
+      modulePurchasePrice: 24,
+      moduleMarkup: 25,
+      modulePrice: 36.3,
+      facePurchasePrice: { white: 4, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 6.05, black: 7.56 },
     },
     { 
       id: 'usb',
@@ -658,8 +728,12 @@ const DEFAULT_LIBRARY = {
       size: 1, 
       category: 'outlet',
       faceSku: { white: 'KW4285', black: 'KG4285' },
-      modulePrice: 65,
-      facePrice: { white: 6, black: 8 },
+      modulePurchasePrice: 44,
+      moduleMarkup: 25,
+      modulePrice: 66.55,
+      facePurchasePrice: { white: 4, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 6.05, black: 7.56 },
     },
     { 
       id: 'switch_simple',
@@ -670,8 +744,12 @@ const DEFAULT_LIBRARY = {
       size: 1, 
       category: 'switch',
       faceSku: { white: 'KW01', black: 'KG01' },
-      modulePrice: 28,
-      facePrice: { white: 5, black: 7 },
+      modulePurchasePrice: 19,
+      moduleMarkup: 25,
+      modulePrice: 28.74,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
     },
     { 
       id: 'switch_stair',
@@ -682,8 +760,12 @@ const DEFAULT_LIBRARY = {
       size: 1, 
       category: 'switch',
       faceSku: { white: 'KW01', black: 'KG01' },
-      modulePrice: 32,
-      facePrice: { white: 5, black: 7 },
+      modulePurchasePrice: 22,
+      moduleMarkup: 25,
+      modulePrice: 33.28,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
     },
     { 
       id: 'switch_cross',
@@ -694,8 +776,12 @@ const DEFAULT_LIBRARY = {
       size: 1, 
       category: 'switch',
       faceSku: { white: 'KW01', black: 'KG01' },
-      modulePrice: 38,
-      facePrice: { white: 5, black: 7 },
+      modulePurchasePrice: 26,
+      moduleMarkup: 25,
+      modulePrice: 39.33,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
     },
     { 
       id: 'dimmer',
@@ -706,8 +792,12 @@ const DEFAULT_LIBRARY = {
       size: 2, 
       category: 'switch',
       faceSku: { white: 'KW4401', black: 'KG4401' },
-      modulePrice: 85,
-      facePrice: { white: 10, black: 12 },
+      modulePurchasePrice: 58,
+      moduleMarkup: 25,
+      modulePrice: 87.73,
+      facePurchasePrice: { white: 7, black: 8 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 10.59, black: 12.1 },
     },
     { 
       id: 'blank',
@@ -718,8 +808,12 @@ const DEFAULT_LIBRARY = {
       size: 1, 
       category: 'other',
       faceSku: { white: 'KW01', black: 'KG01' },
-      modulePrice: 5,
-      facePrice: { white: 5, black: 7 },
+      modulePurchasePrice: 3,
+      moduleMarkup: 25,
+      modulePrice: 4.54,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
     },
   ],
 };
@@ -732,9 +826,19 @@ const loadLibrary = () => {
     const stored = localStorage.getItem(LIBRARY_KEY);
     if (stored) {
       const parsed = JSON.parse(stored);
-      // Merge with defaults to ensure all fields exist
+      // Migrate old wallBoxes to new structure if needed
+      let wallBoxesMasonry = parsed.wallBoxesMasonry;
+      let wallBoxesDrywall = parsed.wallBoxesDrywall;
+      
+      // If old format exists, migrate it
+      if (parsed.wallBoxes && !parsed.wallBoxesMasonry) {
+        wallBoxesMasonry = parsed.wallBoxes;
+        wallBoxesDrywall = DEFAULT_LIBRARY.wallBoxesDrywall;
+      }
+      
       return {
-        wallBoxes: { ...DEFAULT_LIBRARY.wallBoxes, ...parsed.wallBoxes },
+        wallBoxesMasonry: { ...DEFAULT_LIBRARY.wallBoxesMasonry, ...wallBoxesMasonry },
+        wallBoxesDrywall: { ...DEFAULT_LIBRARY.wallBoxesDrywall, ...wallBoxesDrywall },
         installFaces: { ...DEFAULT_LIBRARY.installFaces, ...parsed.installFaces },
         decorFaces: { ...DEFAULT_LIBRARY.decorFaces, ...parsed.decorFaces },
         modules: parsed.modules || DEFAULT_LIBRARY.modules,
@@ -754,6 +858,71 @@ const saveLibrary = (library) => {
   }
 };
 
+// Price calculation helpers
+const VAT_RATE = 0.21;
+
+// Calculate selling price with VAT from purchase price and markup
+const calcPriceWithVat = (purchasePrice, markup) => {
+  const sellingWithoutVat = purchasePrice * (1 + (markup / 100));
+  return sellingWithoutVat * (1 + VAT_RATE);
+};
+
+// Calculate markup from purchase price and selling price with VAT
+const calcMarkupFromPriceWithVat = (purchasePrice, priceWithVat) => {
+  if (!purchasePrice || purchasePrice === 0) return 0;
+  const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
+  return ((sellingWithoutVat / purchasePrice) - 1) * 100;
+};
+
+// Calculate markup from purchase price and selling price without VAT
+const calcMarkupFromPriceWithoutVat = (purchasePrice, priceWithoutVat) => {
+  if (!purchasePrice || purchasePrice === 0) return 0;
+  return ((priceWithoutVat / purchasePrice) - 1) * 100;
+};
+
+// Calculate selling price without VAT from price with VAT
+const calcPriceWithoutVat = (priceWithVat) => priceWithVat / (1 + VAT_RATE);
+
+// Calculate selling price with VAT from price without VAT
+const calcPriceWithVatFromWithout = (priceWithoutVat) => priceWithoutVat * (1 + VAT_RATE);
+
+// Reusable price input component that doesn't format while typing
+const PriceInput = ({ value, onChange, step = "0.01", className = "", decimals = 2 }) => {
+  const [localValue, setLocalValue] = useState(value.toFixed(decimals));
+  const [isFocused, setIsFocused] = useState(false);
+  
+  // Update local value when external value changes (but not while focused)
+  React.useEffect(() => {
+    if (!isFocused) {
+      setLocalValue(value.toFixed(decimals));
+    }
+  }, [value, isFocused, decimals]);
+  
+  return (
+    <input
+      type="number"
+      step={step}
+      value={localValue}
+      onChange={(e) => {
+        setLocalValue(e.target.value);
+        const parsed = parseFloat(e.target.value);
+        if (!isNaN(parsed)) {
+          onChange(parsed);
+        }
+      }}
+      onFocus={() => setIsFocused(true)}
+      onBlur={() => {
+        setIsFocused(false);
+        const parsed = parseFloat(localValue);
+        if (!isNaN(parsed)) {
+          setLocalValue(parsed.toFixed(decimals));
+        }
+      }}
+      className={className}
+    />
+  );
+};
+
 // Create a context for library data
 const LibraryContext = React.createContext(null);
 
@@ -761,7 +930,12 @@ const LibraryContext = React.createContext(null);
 // SKU LOOKUP FUNCTIONS (now use library context)
 // ============================================================================
 
-const getWallBoxSku = (size, library) => library?.wallBoxes?.[size]?.sku || '';
+const getWallBoxSku = (size, wallBoxType, library) => {
+  if (wallBoxType === 'drywall') {
+    return library?.wallBoxesDrywall?.[size]?.sku || '';
+  }
+  return library?.wallBoxesMasonry?.[size]?.sku || '';
+};
 const getInstallFaceSku = (size, library) => library?.installFaces?.[size]?.sku || '';
 const getDecorFaceSku = (size, color, library) => library?.decorFaces?.[`${size}-${color}`]?.sku || '';
 
@@ -786,7 +960,12 @@ const getModuleFaceSku = (moduleId, color, library) => {
 };
 
 // Price lookup functions
-const getWallBoxPrice = (size, library) => library?.wallBoxes?.[size]?.price || 0;
+const getWallBoxPrice = (size, wallBoxType, library) => {
+  if (wallBoxType === 'drywall') {
+    return library?.wallBoxesDrywall?.[size]?.price || 0;
+  }
+  return library?.wallBoxesMasonry?.[size]?.price || 0;
+};
 const getInstallFacePrice = (size, library) => library?.installFaces?.[size]?.price || 0;
 const getDecorFacePrice = (size, color, library) => library?.decorFaces?.[`${size}-${color}`]?.price || 0;
 
@@ -883,6 +1062,7 @@ const createAssembly = (type, code, room = '') => ({
   room,
   size: 2,
   color: 'white',
+  wallBoxType: 'masonry',
   modules: [],
 });
 
@@ -1141,6 +1321,14 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         >
           <FileText className="w-4 h-4" /> {t.clientQuote}
         </button>
+        <button
+          onClick={() => setActiveTab('profit')}
+          className={`flex items-center gap-2 px-4 py-2 rounded ${
+            activeTab === 'profit' ? 'bg-green-600 text-white' : 'bg-gray-200'
+          }`}
+        >
+          <FileText className="w-4 h-4" /> {t.profitAnalysis}
+        </button>
       </div>
 
       {/* Content */}
@@ -1170,6 +1358,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       )}
       {activeTab === 'boq' && <BOQView project={project} />}
       {activeTab === 'quote' && <QuoteView project={project} />}
+      {activeTab === 'profit' && <ProfitView project={project} />}
     </div>
   );
 }
@@ -1764,9 +1953,10 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   };
 
   // Get derived SKUs
-  const wallBoxSku = getWallBoxSku(assembly.size, library);
+  const wallBoxSku = getWallBoxSku(assembly.size, assembly.wallBoxType || 'masonry', library);
   const installFaceSku = getInstallFaceSku(assembly.size, library);
   const decorFaceSku = getDecorFaceSku(assembly.size, assembly.color, library);
+  const wallBoxTypeLabel = (assembly.wallBoxType || 'masonry') === 'drywall' ? t.drywall : t.masonry;
 
   // Visual dimensions
   const slotWidth = 60;
@@ -1798,7 +1988,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
         </div>
 
         {/* Basic Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.room}</label>
             <RoomSelector
@@ -1831,6 +2021,17 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               ))}
             </select>
           </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.wallBoxType}</label>
+            <select
+              value={assembly.wallBoxType || 'masonry'}
+              onChange={(e) => updateField('wallBoxType', e.target.value)}
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value="masonry">{t.masonry}</option>
+              <option value="drywall">{t.drywall}</option>
+            </select>
+          </div>
         </div>
 
         {/* Auto-derived SKUs */}
@@ -1840,7 +2041,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
             <div className="flex justify-between p-2 bg-white rounded border">
-              <span className="text-gray-600">{t.wallBox} {assembly.size}M</span>
+              <span className="text-gray-600">{t.wallBox} {assembly.size}M ({wallBoxTypeLabel})</span>
               <span className="font-mono text-gray-400">{wallBoxSku || '—'}</span>
             </div>
             <div className="flex justify-between p-2 bg-white rounded border">
@@ -2092,6 +2293,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   );
 }
 
+
 // --- BOQ View ---
 function BOQView({ project }) {
   const library = React.useContext(LibraryContext);
@@ -2101,7 +2303,8 @@ function BOQView({ project }) {
 
   const boqData = useMemo(() => {
     const items = {
-      wallBoxes: {},
+      wallBoxesMasonry: {},
+      wallBoxesDrywall: {},
       installFaces: {},
       decorFaces: {},
       modules: {},
@@ -2110,34 +2313,46 @@ function BOQView({ project }) {
 
     project.assemblies.forEach((assembly) => {
       const colorName = COLORS.find(c => c.id === assembly.color)?.name || assembly.color;
+      const wallBoxType = assembly.wallBoxType || 'masonry';
 
-      // Wall Box
+      // Wall Box / Doza - separate by type
       const wbKey = `${assembly.size}M`;
-      const wbSku = getWallBoxSku(assembly.size, library);
-      items.wallBoxes[wbKey] = items.wallBoxes[wbKey] || { 
-        name: `Wall Box ${assembly.size}M`, 
-        sku: wbSku,
-        color: '—',
-        qty: 0 
-      };
-      items.wallBoxes[wbKey].qty++;
+      const wbSku = getWallBoxSku(assembly.size, wallBoxType, library);
+      
+      if (wallBoxType === 'drywall') {
+        items.wallBoxesDrywall[wbKey] = items.wallBoxesDrywall[wbKey] || { 
+          name: `Doza Gips-carton / Wall Box Drywall ${assembly.size}M`, 
+          sku: wbSku,
+          color: '—',
+          qty: 0 
+        };
+        items.wallBoxesDrywall[wbKey].qty++;
+      } else {
+        items.wallBoxesMasonry[wbKey] = items.wallBoxesMasonry[wbKey] || { 
+          name: `Doza Zidarie / Wall Box Masonry ${assembly.size}M`, 
+          sku: wbSku,
+          color: '—',
+          qty: 0 
+        };
+        items.wallBoxesMasonry[wbKey].qty++;
+      }
 
-      // Install Face
+      // Install Face / Rama Montaj
       const ifKey = `${assembly.size}M`;
       const ifSku = getInstallFaceSku(assembly.size, library);
       items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `Install Face ${assembly.size}M`, 
+        name: `Rama Montaj / Support ${assembly.size}M`, 
         sku: ifSku,
         color: '—',
         qty: 0 
       };
       items.installFaces[ifKey].qty++;
 
-      // Decor Face
+      // Decor Face / Rama Decor
       const dfKey = `${assembly.size}M-${assembly.color}`;
       const dfSku = getDecorFaceSku(assembly.size, assembly.color, library);
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `Decor Face ${assembly.size}M`, 
+        name: `Rama Decor / Cover Plate ${assembly.size}M`, 
         sku: dfSku,
         color: colorName,
         qty: 0 
@@ -2148,7 +2363,6 @@ function BOQView({ project }) {
       assembly.modules.forEach((mod) => {
         const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
         if (catalogItem) {
-          // Module - use color-specific SKU
           const modSku = getModuleSku(mod.moduleId, assembly.color, library);
           const modKey = `${mod.moduleId}-${assembly.color}`;
           const translatedName = getModuleName(catalogItem, lang);
@@ -2160,11 +2374,10 @@ function BOQView({ project }) {
           };
           items.modules[modKey].qty++;
 
-          // Module Face
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
           const mfSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
-            name: `${translatedName} ${t.face}`, 
+            name: `${translatedName} - Fata / Face`, 
             sku: mfSku,
             color: colorName,
             qty: 0 
@@ -2178,7 +2391,8 @@ function BOQView({ project }) {
   }, [project, library, MODULE_CATALOG, t, lang]);
 
   const sections = [
-    { key: 'wallBoxes', title: t.wallBoxes },
+    { key: 'wallBoxesMasonry', title: t.wallBoxesMasonry || 'Wall Boxes (Masonry)' },
+    { key: 'wallBoxesDrywall', title: t.wallBoxesDrywall || 'Wall Boxes (Drywall)' },
     { key: 'installFaces', title: t.installFaces },
     { key: 'decorFaces', title: t.decorFaces },
     { key: 'modules', title: t.modules },
@@ -2190,13 +2404,191 @@ function BOQView({ project }) {
     0
   );
 
+  // Export PDF function
+  const exportPDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Function to remove diacritics - defined first
+    const removeDiacritics = (str) => {
+      if (!str) return str;
+      return str
+        .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+        .replace(/â/g, 'a').replace(/Â/g, 'A')
+        .replace(/î/g, 'i').replace(/Î/g, 'I')
+        .replace(/ș/g, 's').replace(/Ș/g, 'S')
+        .replace(/ț/g, 't').replace(/Ț/g, 'T');
+    };
+    
+    doc.setFont('helvetica');
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Bill of Quantities / Lista de Cantitati', pageWidth / 2, 20, { align: 'center' });
+    
+    // Subtitle
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'normal');
+    doc.text('For Supplier / Pentru Furnizor', pageWidth / 2, 28, { align: 'center' });
+    
+    // Line separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, 33, pageWidth - 14, 33);
+    
+    // Project info box
+    doc.setFillColor(248, 249, 250);
+    doc.rect(14, 38, pageWidth - 28, 28, 'F');
+    doc.setDrawColor(220, 220, 220);
+    doc.rect(14, 38, pageWidth - 28, 28, 'S');
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Project / Proiect:', 18, 47);
+    doc.setFont('helvetica', 'normal');
+    doc.text(removeDiacritics(project.name) || '—', 60, 47);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Client:', 18, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(removeDiacritics(project.clientName) || '—', 60, 55);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date / Data:', 120, 47);
+    doc.setFont('helvetica', 'normal');
+    doc.text(new Date().toLocaleDateString('ro-RO'), 155, 47);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Total items / Articole:', 120, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(totalItems.toString(), 170, 55);
+    
+    let yPos = 78;
+    
+    const sectionTitles = {
+      wallBoxesMasonry: 'Wall Boxes Masonry / Doze Zidarie',
+      wallBoxesDrywall: 'Wall Boxes Drywall / Doze Gips-carton',
+      installFaces: 'Supports / Rame Montaj', 
+      decorFaces: 'Cover Plates / Rame Decor',
+      modules: 'Modules / Module',
+      moduleFaces: 'Module Faces / Fete Module',
+    };
+    
+    sections.forEach(({ key, title }) => {
+      const items = Object.values(boqData[key]);
+      if (items.length === 0) return;
+      
+      // Estimate space needed: header (12) + table header (10) + rows (8 each) + padding (15)
+      const estimatedHeight = 12 + 10 + (items.length * 8) + 15;
+      
+      if (yPos + estimatedHeight > 280) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Fixed column widths for consistent alignment
+      const col1Width = 75;  // Item / Articol
+      const col2Width = 40;  // Color / Culoare
+      const col3Width = 40;  // SKU / Cod
+      const col4Width = 27;  // Qty / Cant.
+      const totalTableWidth = col1Width + col2Width + col3Width + col4Width;
+      
+      // Section header with gray background - same width as table
+      doc.setFillColor(80, 80, 80);
+      doc.rect(14, yPos, totalTableWidth, 8, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(sectionTitles[key] || title, 18, yPos + 6);
+      doc.setTextColor(0, 0, 0);
+      
+      // Move position AFTER the header
+      yPos += 8;
+      
+      // Table with fixed column widths
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Item / Articol', 'Color / Culoare', 'SKU / Cod', 'Qty / Cant.']],
+        body: items.map(item => [
+          removeDiacritics(item.name) || '—', 
+          removeDiacritics(item.color) || '—', 
+          item.sku || '—', 
+          item.qty.toString()
+        ]),
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+        },
+        headStyles: { 
+          fillColor: [240, 240, 240],
+          textColor: [50, 50, 50],
+          fontStyle: 'bold',
+        },
+        columnStyles: {
+          0: { cellWidth: col1Width, halign: 'left' },
+          1: { cellWidth: col2Width, halign: 'left' },
+          2: { cellWidth: col3Width, halign: 'left', fontStyle: 'italic', textColor: [100, 100, 100] },
+          3: { cellWidth: col4Width, halign: 'center', fontStyle: 'bold' },
+        },
+        margin: { left: 14, right: 14 },
+      });
+      
+      // Update position for next section
+      if (doc.previousAutoTable) {
+        yPos = doc.previousAutoTable.finalY + 12;
+      } else {
+        yPos += 30;
+      }
+    });
+    
+    // Add padding after last table
+    yPos += 20;
+    
+    if (yPos > 270) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`TOTAL: ${totalItems} items / articole`, pageWidth - 14, yPos, { align: 'right' });
+    
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `BTicino Living Now Configurator - Page ${i} of ${pageCount}`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+    
+    doc.setTextColor(0, 0, 0);
+    doc.save(`BOQ_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
-      <div className="p-4 border-b">
-        <h2 className="font-semibold">{t.billOfQuantities} ({t.forSupplier})</h2>
-        <p className="text-sm text-gray-500">
-          {project.name} · {project.assemblies.length} {t.assemblies} · {totalItems} {t.totalItems}
-        </p>
+      <div className="p-4 border-b flex justify-between items-center">
+        <div>
+          <h2 className="font-semibold">{t.billOfQuantities} ({t.forSupplier})</h2>
+          <p className="text-sm text-gray-500">
+            {project.name} · {project.assemblies.length} {t.assemblies} · {totalItems} {t.totalItems}
+          </p>
+        </div>
+        {project.assemblies.length > 0 && (
+          <button
+            onClick={exportPDF}
+            className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-blue-700"
+          >
+            <FileText className="w-4 h-4" />
+            Export PDF
+          </button>
+        )}
       </div>
 
       {project.assemblies.length === 0 ? (
@@ -2208,23 +2600,23 @@ function BOQView({ project }) {
             if (items.length === 0) return null;
             return (
               <div key={key} className="p-4">
-                <h3 className="font-medium text-gray-700 mb-2">{title}</h3>
-                <table className="w-full text-sm">
+                <h3 className="font-medium text-white bg-gray-600 px-3 py-2 rounded-t">{title}</h3>
+                <table className="w-full text-sm border border-gray-200">
                   <thead>
-                    <tr className="text-left text-gray-500">
-                      <th className="pb-2">{t.item}</th>
-                      <th className="pb-2">{t.color}</th>
-                      <th className="pb-2">{t.sku}</th>
-                      <th className="pb-2 text-right">{t.qty}</th>
+                    <tr className="bg-gray-100 text-left text-gray-600">
+                      <th className="p-2 border-b w-[40%]">{t.item}</th>
+                      <th className="p-2 border-b w-[20%]">{t.color}</th>
+                      <th className="p-2 border-b w-[25%]">{t.sku}</th>
+                      <th className="p-2 border-b text-center w-[15%]">{t.qty}</th>
                     </tr>
                   </thead>
                   <tbody>
                     {items.map((item, idx) => (
-                      <tr key={idx} className="border-t">
-                        <td className="py-2">{item.name}</td>
-                        <td className="py-2 text-gray-600">{item.color}</td>
-                        <td className="py-2 font-mono text-gray-400">{item.sku || '—'}</td>
-                        <td className="py-2 text-right font-mono font-medium">{item.qty}</td>
+                      <tr key={idx} className="border-b hover:bg-gray-50">
+                        <td className="p-2">{item.name}</td>
+                        <td className="p-2 text-gray-600">{item.color}</td>
+                        <td className="p-2 font-mono text-gray-400 italic">{item.sku || '—'}</td>
+                        <td className="p-2 text-center font-mono font-bold">{item.qty}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -2237,8 +2629,6 @@ function BOQView({ project }) {
     </div>
   );
 }
-
-// --- Quote View (Client) ---
 function QuoteView({ project }) {
   const library = React.useContext(LibraryContext);
   const t = useTranslation();
@@ -2247,7 +2637,8 @@ function QuoteView({ project }) {
 
   const quoteData = useMemo(() => {
     const items = {
-      wallBoxes: {},
+      wallBoxesMasonry: {},
+      wallBoxesDrywall: {},
       installFaces: {},
       decorFaces: {},
       modules: {},
@@ -2256,23 +2647,35 @@ function QuoteView({ project }) {
 
     project.assemblies.forEach((assembly) => {
       const colorName = assembly.color === 'white' ? t.white : t.black;
+      const wallBoxType = assembly.wallBoxType || 'masonry';
 
-      // Wall Box
+      // Wall Box - separate by type
       const wbKey = `${assembly.size}M`;
-      const wbPrice = getWallBoxPrice(assembly.size, library);
-      items.wallBoxes[wbKey] = items.wallBoxes[wbKey] || { 
-        name: `${t.wallBox} ${assembly.size}M`, 
-        color: '—',
-        unitPrice: wbPrice,
-        qty: 0 
-      };
-      items.wallBoxes[wbKey].qty++;
+      const wbPrice = getWallBoxPrice(assembly.size, wallBoxType, library);
+      
+      if (wallBoxType === 'drywall') {
+        items.wallBoxesDrywall[wbKey] = items.wallBoxesDrywall[wbKey] || { 
+          name: `Doza Gips-carton / Wall Box Drywall ${assembly.size}M`, 
+          color: '—',
+          unitPrice: wbPrice,
+          qty: 0 
+        };
+        items.wallBoxesDrywall[wbKey].qty++;
+      } else {
+        items.wallBoxesMasonry[wbKey] = items.wallBoxesMasonry[wbKey] || { 
+          name: `Doza Zidarie / Wall Box Masonry ${assembly.size}M`, 
+          color: '—',
+          unitPrice: wbPrice,
+          qty: 0 
+        };
+        items.wallBoxesMasonry[wbKey].qty++;
+      }
 
       // Install Face
       const ifKey = `${assembly.size}M`;
       const ifPrice = getInstallFacePrice(assembly.size, library);
       items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `${t.installFace} ${assembly.size}M`, 
+        name: `Rama Montaj / Support ${assembly.size}M`, 
         color: '—',
         unitPrice: ifPrice,
         qty: 0 
@@ -2283,7 +2686,7 @@ function QuoteView({ project }) {
       const dfKey = `${assembly.size}M-${assembly.color}`;
       const dfPrice = getDecorFacePrice(assembly.size, assembly.color, library);
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `${t.decorFace} ${assembly.size}M`, 
+        name: `Rama Decor / Cover Plate ${assembly.size}M`, 
         color: colorName,
         unitPrice: dfPrice,
         qty: 0 
@@ -2310,7 +2713,7 @@ function QuoteView({ project }) {
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
           const mfPrice = getModuleFacePrice(mod.moduleId, assembly.color, library);
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
-            name: `${translatedName} ${t.face}`, 
+            name: `${translatedName} - Fata / Face`, 
             color: colorName,
             unitPrice: mfPrice,
             qty: 0 
@@ -2324,7 +2727,8 @@ function QuoteView({ project }) {
   }, [project, library, MODULE_CATALOG, t, lang]);
 
   const sections = [
-    { key: 'wallBoxes', title: t.wallBoxes },
+    { key: 'wallBoxesMasonry', title: t.wallBoxesMasonry || 'Wall Boxes (Masonry)' },
+    { key: 'wallBoxesDrywall', title: t.wallBoxesDrywall || 'Wall Boxes (Drywall)' },
     { key: 'installFaces', title: t.installFaces },
     { key: 'decorFaces', title: t.decorFaces },
     { key: 'modules', title: t.modules },
@@ -2359,6 +2763,217 @@ function QuoteView({ project }) {
   // Calculate price without VAT from price with VAT
   const priceWithoutVat = (priceWithVat) => priceWithVat / (1 + VAT_RATE);
 
+  // Export PDF function for Quote
+  const exportQuotePDF = () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Function to remove diacritics - defined first
+    const removeDiacritics = (str) => {
+      if (!str) return str;
+      return str
+        .replace(/ă/g, 'a').replace(/Ă/g, 'A')
+        .replace(/â/g, 'a').replace(/Â/g, 'A')
+        .replace(/î/g, 'i').replace(/Î/g, 'I')
+        .replace(/ș/g, 's').replace(/Ș/g, 'S')
+        .replace(/ț/g, 't').replace(/Ț/g, 'T');
+    };
+    
+    doc.setFont('helvetica');
+    
+    // Title
+    doc.setFontSize(20);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Client Quote / Oferta Client', pageWidth / 2, 20, { align: 'center' });
+    
+    // Subtitle
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text('All prices include VAT 21% / Toate preturile includ TVA 21%', pageWidth / 2, 28, { align: 'center' });
+    
+    // Line separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(14, 33, pageWidth - 14, 33);
+    
+    // Project info box
+    doc.setFillColor(248, 249, 250);
+    doc.rect(14, 38, pageWidth - 28, 28, 'F');
+    doc.setDrawColor(220, 220, 220);
+    doc.rect(14, 38, pageWidth - 28, 28, 'S');
+    
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('Project / Proiect:', 18, 47);
+    doc.setFont('helvetica', 'normal');
+    doc.text(removeDiacritics(project.name) || '—', 55, 47);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Client:', 18, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(removeDiacritics(project.clientName) || '—', 55, 55);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date / Data:', 110, 47);
+    doc.setFont('helvetica', 'normal');
+    doc.text(new Date().toLocaleDateString('ro-RO'), 145, 47);
+    
+    doc.setFont('helvetica', 'bold');
+    doc.text('Items / Articole:', 110, 55);
+    doc.setFont('helvetica', 'normal');
+    doc.text(totalItems.toString(), 145, 55);
+    
+    let yPos = 78;
+    
+    const sectionTitles = {
+      wallBoxesMasonry: 'Wall Boxes Masonry / Doze Zidarie',
+      wallBoxesDrywall: 'Wall Boxes Drywall / Doze Gips-carton',
+      installFaces: 'Supports / Rame Montaj', 
+      decorFaces: 'Cover Plates / Rame Decor',
+      modules: 'Modules / Module',
+      moduleFaces: 'Module Faces / Fete Module',
+    };
+    
+    // Fixed column widths for quote (6 columns)
+    const col1Width = 55;  // Item / Articol
+    const col2Width = 25;  // Color / Culoare
+    const col3Width = 28;  // Unit (excl. VAT)
+    const col4Width = 28;  // Unit (incl. VAT)
+    const col5Width = 18;  // Qty
+    const col6Width = 28;  // Total
+    const totalTableWidth = col1Width + col2Width + col3Width + col4Width + col5Width + col6Width;
+    
+    sections.forEach(({ key, title }) => {
+      const items = Object.values(quoteData[key]);
+      if (items.length === 0) return;
+      
+      const sectionTotalWithVat = calculateSectionTotal(quoteData[key]);
+      
+      // Estimate space needed
+      const estimatedHeight = 12 + 10 + (items.length * 8) + 10 + 15;
+      
+      if (yPos + estimatedHeight > 280) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Section header with gray background
+      doc.setFillColor(80, 80, 80);
+      doc.rect(14, yPos, totalTableWidth, 8, 'F');
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(sectionTitles[key] || title, 18, yPos + 6);
+      doc.setTextColor(0, 0, 0);
+      
+      // Move position AFTER the header
+      yPos += 8;
+      
+      // Build table body with items + subtotal row
+      const tableBody = items.map(item => {
+        const unitWithoutVat = priceWithoutVat(item.unitPrice);
+        const totalWithVat = item.unitPrice * item.qty;
+        return [
+          removeDiacritics(item.name) || '—', 
+          removeDiacritics(item.color) || '—', 
+          formatPrice(unitWithoutVat),
+          formatPrice(item.unitPrice),
+          item.qty.toString(),
+          formatPrice(totalWithVat)
+        ];
+      });
+      
+      // Add subtotal row
+      tableBody.push([
+        { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } },
+        { content: formatPrice(sectionTotalWithVat), styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } }
+      ]);
+      
+      // Table with fixed column widths
+      autoTable(doc, {
+        startY: yPos,
+        head: [['Item / Articol', 'Color', 'Unit (fara TVA)', 'Unit (cu TVA)', 'Cant.', 'Total']],
+        body: tableBody,
+        theme: 'grid',
+        styles: {
+          fontSize: 8,
+        },
+        headStyles: { 
+          fillColor: [240, 240, 240],
+          textColor: [50, 50, 50],
+          fontStyle: 'bold',
+        },
+        columnStyles: {
+          0: { cellWidth: col1Width, halign: 'left' },
+          1: { cellWidth: col2Width, halign: 'left' },
+          2: { cellWidth: col3Width, halign: 'right', textColor: [100, 100, 100] },
+          3: { cellWidth: col4Width, halign: 'right' },
+          4: { cellWidth: col5Width, halign: 'center' },
+          5: { cellWidth: col6Width, halign: 'right', fontStyle: 'bold' },
+        },
+        margin: { left: 14, right: 14 },
+      });
+      
+      // Update position for next section - more padding
+      if (doc.previousAutoTable) {
+        yPos = doc.previousAutoTable.finalY + 18;
+      } else {
+        yPos += 35;
+      }
+    });
+    
+    // Add more padding after last table before grand total
+    yPos += 20;
+    
+    if (yPos > 220) {
+      doc.addPage();
+      yPos = 20;
+    }
+    
+    // Grand Total Box
+    doc.setFillColor(240, 240, 240);
+    doc.rect(pageWidth - 100, yPos, 86, 40, 'F');
+    doc.setDrawColor(200, 200, 200);
+    doc.rect(pageWidth - 100, yPos, 86, 40, 'S');
+    
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    
+    // Total without VAT
+    doc.text('Total (fara TVA):', pageWidth - 96, yPos + 10);
+    doc.text(formatPrice(grandTotalWithoutVat) + ' RON', pageWidth - 18, yPos + 10, { align: 'right' });
+    
+    // VAT Amount
+    doc.text('TVA (21%):', pageWidth - 96, yPos + 20);
+    doc.text(formatPrice(vatAmount) + ' RON', pageWidth - 18, yPos + 20, { align: 'right' });
+    
+    // Total with VAT
+    doc.setDrawColor(150, 150, 150);
+    doc.line(pageWidth - 96, yPos + 25, pageWidth - 18, yPos + 25);
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text('TOTAL:', pageWidth - 96, yPos + 35);
+    doc.text(formatPrice(grandTotalWithVat) + ' RON', pageWidth - 18, yPos + 35, { align: 'right' });
+    
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150, 150, 150);
+      doc.text(
+        `BTicino Living Now Configurator - Page ${i} of ${pageCount}`,
+        pageWidth / 2,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'center' }
+      );
+    }
+    
+    // Reset text color and save
+    doc.setTextColor(0, 0, 0);
+    doc.save(`Quote_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       {/* Header */}
@@ -2371,10 +2986,21 @@ function QuoteView({ project }) {
               <p className="text-gray-500">{t.quoteFor}: {project.clientName}</p>
             )}
           </div>
-          <div className="text-right text-sm text-gray-500">
-            <p>{t.date}: {new Date().toLocaleDateString()}</p>
-            <p>{project.assemblies.length} {t.assemblies}</p>
-            <p>{totalItems} {t.totalItems}</p>
+          <div className="flex items-center gap-4">
+            <div className="text-right text-sm text-gray-500">
+              <p>{t.date}: {new Date().toLocaleDateString()}</p>
+              <p>{project.assemblies.length} {t.assemblies}</p>
+              <p>{totalItems} {t.totalItems}</p>
+            </div>
+            {project.assemblies.length > 0 && (
+              <button
+                onClick={exportQuotePDF}
+                className="bg-green-600 text-white px-4 py-2 rounded flex items-center gap-2 hover:bg-green-700"
+              >
+                <FileText className="w-4 h-4" />
+                Export PDF
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -2391,16 +3017,16 @@ function QuoteView({ project }) {
               const sectionTotalWithoutVat = sectionTotalWithVat / (1 + VAT_RATE);
               return (
                 <div key={key} className="p-4">
-                  <h3 className="font-medium text-gray-700 mb-2">{title}</h3>
-                  <table className="w-full text-sm">
+                  <h3 className="font-medium text-white bg-gray-600 px-3 py-2 rounded-t">{title}</h3>
+                  <table className="w-full text-sm border border-gray-200">
                     <thead>
-                      <tr className="text-left text-gray-500">
-                        <th className="pb-2">{t.item}</th>
-                        <th className="pb-2">{t.color}</th>
-                        <th className="pb-2 text-right">{t.unitPriceExclVat}</th>
-                        <th className="pb-2 text-right">{t.unitPriceInclVat}</th>
-                        <th className="pb-2 text-right">{t.qty}</th>
-                        <th className="pb-2 text-right">{t.total}</th>
+                      <tr className="bg-gray-100 text-left text-gray-600">
+                        <th className="p-2 border-b w-[30%]">{t.item}</th>
+                        <th className="p-2 border-b w-[12%]">{t.color}</th>
+                        <th className="p-2 border-b text-right w-[15%]">{t.unitPriceExclVat}</th>
+                        <th className="p-2 border-b text-right w-[15%]">{t.unitPriceInclVat}</th>
+                        <th className="p-2 border-b text-center w-[10%]">{t.qty}</th>
+                        <th className="p-2 border-b text-right w-[18%]">{t.total}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -2408,21 +3034,21 @@ function QuoteView({ project }) {
                         const unitWithoutVat = priceWithoutVat(item.unitPrice);
                         const totalWithVat = item.unitPrice * item.qty;
                         return (
-                          <tr key={idx} className="border-t">
-                            <td className="py-2">{item.name}</td>
-                            <td className="py-2 text-gray-600">{item.color}</td>
-                            <td className="py-2 text-right font-mono text-gray-500">{formatPrice(unitWithoutVat)}</td>
-                            <td className="py-2 text-right font-mono">{formatPrice(item.unitPrice)}</td>
-                            <td className="py-2 text-right font-mono">{item.qty}</td>
-                            <td className="py-2 text-right font-mono font-medium">
+                          <tr key={idx} className="border-b hover:bg-gray-50">
+                            <td className="p-2">{item.name}</td>
+                            <td className="p-2 text-gray-600">{item.color}</td>
+                            <td className="p-2 text-right font-mono text-gray-400">{formatPrice(unitWithoutVat)}</td>
+                            <td className="p-2 text-right font-mono">{formatPrice(item.unitPrice)}</td>
+                            <td className="p-2 text-center font-mono">{item.qty}</td>
+                            <td className="p-2 text-right font-mono font-bold">
                               {formatPrice(totalWithVat)}
                             </td>
                           </tr>
                         );
                       })}
-                      <tr className="border-t bg-gray-50">
-                        <td colSpan={5} className="py-2 text-right font-medium">{t.subtotal}:</td>
-                        <td className="py-2 text-right font-mono font-medium">{formatPrice(sectionTotalWithVat)}</td>
+                      <tr className="bg-gray-100">
+                        <td colSpan={5} className="p-2 text-right font-bold">{t.subtotal}:</td>
+                        <td className="p-2 text-right font-mono font-bold">{formatPrice(sectionTotalWithVat)}</td>
                       </tr>
                     </tbody>
                   </table>
@@ -2461,6 +3087,305 @@ function QuoteView({ project }) {
   );
 }
 
+// --- Profit View ---
+function ProfitView({ project }) {
+  const library = React.useContext(LibraryContext);
+  const t = useTranslation();
+  const lang = useLanguage();
+  const MODULE_CATALOG = getModuleCatalog(library);
+
+  const profitData = useMemo(() => {
+    const items = {
+      wallBoxesMasonry: {},
+      wallBoxesDrywall: {},
+      installFaces: {},
+      decorFaces: {},
+      modules: {},
+      moduleFaces: {},
+    };
+
+    project.assemblies.forEach((assembly) => {
+      const colorName = assembly.color === 'white' ? t.white : t.black;
+      const wallBoxType = assembly.wallBoxType || 'masonry';
+
+      // Wall Box
+      const wbKey = `${assembly.size}M`;
+      const wbData = wallBoxType === 'drywall' 
+        ? library.wallBoxesDrywall?.[assembly.size] 
+        : library.wallBoxesMasonry?.[assembly.size];
+      const wbPurchase = wbData?.purchasePrice || 0;
+      const wbPrice = wbData?.price || 0;
+      const wbSellingWithoutVat = wbPrice / (1 + VAT_RATE);
+      
+      const wbCategory = wallBoxType === 'drywall' ? 'wallBoxesDrywall' : 'wallBoxesMasonry';
+      const wbName = wallBoxType === 'drywall' 
+        ? `Doza Gips-carton / Wall Box Drywall ${assembly.size}M`
+        : `Doza Zidarie / Wall Box Masonry ${assembly.size}M`;
+      
+      items[wbCategory][wbKey] = items[wbCategory][wbKey] || { 
+        name: wbName,
+        color: '—',
+        purchasePrice: wbPurchase,
+        sellingPrice: wbSellingWithoutVat,
+        qty: 0 
+      };
+      items[wbCategory][wbKey].qty++;
+
+      // Install Face
+      const ifKey = `${assembly.size}M`;
+      const ifData = library.installFaces?.[assembly.size];
+      const ifPurchase = ifData?.purchasePrice || 0;
+      const ifPrice = ifData?.price || 0;
+      const ifSellingWithoutVat = ifPrice / (1 + VAT_RATE);
+      
+      items.installFaces[ifKey] = items.installFaces[ifKey] || { 
+        name: `Rama Montaj / Support ${assembly.size}M`,
+        color: '—',
+        purchasePrice: ifPurchase,
+        sellingPrice: ifSellingWithoutVat,
+        qty: 0 
+      };
+      items.installFaces[ifKey].qty++;
+
+      // Decor Face
+      const dfKey = `${assembly.size}M-${assembly.color}`;
+      const dfData = library.decorFaces?.[`${assembly.size}-${assembly.color}`];
+      const dfPurchase = dfData?.purchasePrice || 0;
+      const dfPrice = dfData?.price || 0;
+      const dfSellingWithoutVat = dfPrice / (1 + VAT_RATE);
+      
+      items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
+        name: `Rama Decor / Cover Plate ${assembly.size}M`,
+        color: colorName,
+        purchasePrice: dfPurchase,
+        sellingPrice: dfSellingWithoutVat,
+        qty: 0 
+      };
+      items.decorFaces[dfKey].qty++;
+
+      // Modules and their faces
+      assembly.modules.forEach((mod) => {
+        const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+        if (catalogItem) {
+          const translatedName = getModuleName(catalogItem, lang);
+          
+          // Module
+          const modKey = `${mod.moduleId}-${assembly.color}`;
+          const modPurchase = typeof catalogItem.modulePurchasePrice === 'object' 
+            ? catalogItem.modulePurchasePrice?.[assembly.color] || 0 
+            : catalogItem.modulePurchasePrice || 0;
+          const modPrice = typeof catalogItem.modulePrice === 'object'
+            ? catalogItem.modulePrice?.[assembly.color] || 0
+            : catalogItem.modulePrice || 0;
+          const modSellingWithoutVat = modPrice / (1 + VAT_RATE);
+          
+          items.modules[modKey] = items.modules[modKey] || { 
+            name: translatedName,
+            color: colorName,
+            purchasePrice: modPurchase,
+            sellingPrice: modSellingWithoutVat,
+            qty: 0 
+          };
+          items.modules[modKey].qty++;
+
+          // Module Face
+          const mfKey = `${mod.moduleId}-${assembly.color}-face`;
+          const mfPurchase = catalogItem.facePurchasePrice?.[assembly.color] || 0;
+          const mfPrice = catalogItem.facePrice?.[assembly.color] || 0;
+          const mfSellingWithoutVat = mfPrice / (1 + VAT_RATE);
+          
+          items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
+            name: `${translatedName} - Fata / Face`,
+            color: colorName,
+            purchasePrice: mfPurchase,
+            sellingPrice: mfSellingWithoutVat,
+            qty: 0 
+          };
+          items.moduleFaces[mfKey].qty++;
+        }
+      });
+    });
+
+    return items;
+  }, [project, library, MODULE_CATALOG, t, lang]);
+
+  const sections = [
+    { key: 'wallBoxesMasonry', title: t.wallBoxesMasonry || 'Wall Boxes (Masonry)' },
+    { key: 'wallBoxesDrywall', title: t.wallBoxesDrywall || 'Wall Boxes (Drywall)' },
+    { key: 'installFaces', title: t.installFaces },
+    { key: 'decorFaces', title: t.decorFaces },
+    { key: 'modules', title: t.modules },
+    { key: 'moduleFaces', title: t.moduleFaces },
+  ];
+
+  // Calculate totals
+  const calculateSectionTotals = (items) => {
+    let totalPurchase = 0;
+    let totalSelling = 0;
+    Object.values(items).forEach(item => {
+      totalPurchase += item.purchasePrice * item.qty;
+      totalSelling += item.sellingPrice * item.qty;
+    });
+    return { totalPurchase, totalSelling, profit: totalSelling - totalPurchase };
+  };
+
+  const grandTotals = useMemo(() => {
+    let totalPurchase = 0;
+    let totalSelling = 0;
+    
+    Object.values(profitData).forEach(category => {
+      Object.values(category).forEach(item => {
+        totalPurchase += item.purchasePrice * item.qty;
+        totalSelling += item.sellingPrice * item.qty;
+      });
+    });
+    
+    const grossProfit = totalSelling - totalPurchase;
+    const profitMargin = totalSelling > 0 ? (grossProfit / totalSelling) * 100 : 0;
+    
+    // VAT calculations
+    const vatCollected = totalSelling * VAT_RATE; // TVA colectat din vânzări
+    const vatDeductible = totalPurchase * VAT_RATE; // TVA deductibil din achiziții
+    const vatPayable = vatCollected - vatDeductible; // TVA de plată
+    
+    return {
+      totalPurchase,
+      totalSelling,
+      grossProfit,
+      profitMargin,
+      vatCollected,
+      vatDeductible,
+      vatPayable
+    };
+  }, [profitData]);
+
+  const totalItems = Object.values(profitData).reduce(
+    (sum, category) => sum + Object.values(category).reduce((s, item) => s + item.qty, 0),
+    0
+  );
+
+  const formatPrice = (price) => {
+    return price.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  };
+
+  return (
+    <div className="bg-white rounded-lg shadow">
+      <div className="flex justify-between items-center p-4 border-b">
+        <div>
+          <h2 className="font-semibold text-lg">{t.profitAnalysis}</h2>
+          <p className="text-sm text-gray-500">{project.name} · {totalItems} {t.totalItems?.toLowerCase()}</p>
+        </div>
+      </div>
+
+      {project.assemblies.length === 0 ? (
+        <p className="p-4 text-gray-500">{t.noAssemblies}</p>
+      ) : (
+        <>
+          <div className="divide-y">
+            {sections.map(({ key, title }) => {
+              const items = Object.values(profitData[key]);
+              if (items.length === 0) return null;
+              const sectionTotals = calculateSectionTotals(profitData[key]);
+              
+              return (
+                <div key={key} className="p-4">
+                  <h3 className="font-medium text-white bg-gray-600 px-3 py-2 rounded-t">{title}</h3>
+                  <table className="w-full text-sm border border-gray-200">
+                    <thead>
+                      <tr className="bg-gray-100 text-left text-gray-600">
+                        <th className="p-2 border-b w-[30%]">{t.item}</th>
+                        <th className="p-2 border-b w-[12%]">{t.color}</th>
+                        <th className="p-2 border-b text-right w-[15%]">{t.unitPurchase}</th>
+                        <th className="p-2 border-b text-right w-[15%]">{t.unitSelling}</th>
+                        <th className="p-2 border-b text-center w-[10%]">{t.qty}</th>
+                        <th className="p-2 border-b text-right w-[18%]">{t.unitProfit}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {items.map((item, idx) => {
+                        const lineProfit = (item.sellingPrice - item.purchasePrice) * item.qty;
+                        return (
+                          <tr key={idx} className="border-b hover:bg-gray-50">
+                            <td className="p-2">{item.name}</td>
+                            <td className="p-2 text-gray-600">{item.color}</td>
+                            <td className="p-2 text-right font-mono text-gray-500">{formatPrice(item.purchasePrice)}</td>
+                            <td className="p-2 text-right font-mono">{formatPrice(item.sellingPrice)}</td>
+                            <td className="p-2 text-center font-mono">{item.qty}</td>
+                            <td className={`p-2 text-right font-mono font-bold ${lineProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                              {formatPrice(lineProfit)}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                      <tr className="bg-gray-100">
+                        <td colSpan={5} className="p-2 text-right font-bold">{t.subtotal}:</td>
+                        <td className={`p-2 text-right font-mono font-bold ${sectionTotals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                          {formatPrice(sectionTotals.profit)}
+                        </td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              );
+            })}
+          </div>
+
+          {/* Grand Totals - Profit Summary */}
+          <div className="p-6 bg-green-50 border-t">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Profit Section */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="font-semibold text-gray-700 mb-3 border-b pb-2">{t.grossProfit}</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t.purchaseTotalExclVat}:</span>
+                    <span className="font-mono">{formatPrice(grandTotals.totalPurchase)} RON</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t.sellingTotalExclVat}:</span>
+                    <span className="font-mono">{formatPrice(grandTotals.totalSelling)} RON</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-200">
+                    <span className="font-semibold">{t.grossProfit}:</span>
+                    <span className={`font-mono font-bold text-lg ${grandTotals.grossProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      {formatPrice(grandTotals.grossProfit)} RON
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-gray-500">
+                    <span>{t.profitMargin}:</span>
+                    <span className="font-mono">{grandTotals.profitMargin.toFixed(1)}%</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* VAT Section */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h3 className="font-semibold text-gray-700 mb-3 border-b pb-2">{t.vatPayable}</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t.vatCollected}:</span>
+                    <span className="font-mono">{formatPrice(grandTotals.vatCollected)} RON</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-600">{t.vatDeductible}:</span>
+                    <span className="font-mono">-{formatPrice(grandTotals.vatDeductible)} RON</span>
+                  </div>
+                  <div className="flex justify-between pt-2 border-t border-gray-200">
+                    <span className="font-semibold">{t.vatPayable}:</span>
+                    <span className={`font-mono font-bold text-lg ${grandTotals.vatPayable >= 0 ? 'text-orange-600' : 'text-green-600'}`}>
+                      {formatPrice(grandTotals.vatPayable)} RON
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
 // ============================================================================
 // LIBRARY PAGE
 // ============================================================================
@@ -2487,13 +3412,26 @@ function LibraryPage({ library, onUpdate, onBack }) {
     facePrice: { white: 0, black: 0 },
   });
 
-  const updateWallBox = (size, field, value) => {
+  const updateWallBoxMasonry = (size, field, value) => {
     onUpdate({
       ...library,
-      wallBoxes: {
-        ...library.wallBoxes,
+      wallBoxesMasonry: {
+        ...library.wallBoxesMasonry,
         [size]: {
-          ...library.wallBoxes[size],
+          ...library.wallBoxesMasonry[size],
+          [field]: field === 'price' ? parseFloat(value) || 0 : value,
+        },
+      },
+    });
+  };
+
+  const updateWallBoxDrywall = (size, field, value) => {
+    onUpdate({
+      ...library,
+      wallBoxesDrywall: {
+        ...library.wallBoxesDrywall,
+        [size]: {
+          ...library.wallBoxesDrywall[size],
           [field]: field === 'price' ? parseFloat(value) || 0 : value,
         },
       },
@@ -3230,53 +4168,238 @@ function LibraryPage({ library, onUpdate, onBack }) {
 
       {/* Wall Boxes Tab */}
       {activeTab === 'wallboxes' && (
-        <div className="bg-white rounded-lg shadow">
-          <div className="p-4 border-b">
-            <h2 className="font-semibold">{t.wallBoxes}</h2>
-            <p className="text-sm text-gray-500">{t.configureSKUs}</p>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left text-sm text-gray-600">
-                <th className="p-3">{t.size}</th>
-                <th className="p-3">{t.sku}</th>
-                <th className="p-3">{t.priceInclVat}</th>
-                <th className="p-3 text-gray-400">{t.priceExclVat}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {SIZES.map((size) => {
-                const priceWithVat = library.wallBoxes[size]?.price || 0;
-                const priceWithoutVat = priceWithVat / 1.21;
-                return (
-                  <tr key={size} className="border-t">
-                    <td className="p-3 font-medium">{size}M</td>
-                    <td className="p-3">
-                      <input
-                        type="text"
-                        value={library.wallBoxes[size]?.sku || ''}
-                        onChange={(e) => updateWallBox(size, 'sku', e.target.value)}
-                        placeholder={t.enterSku}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={priceWithVat}
-                        onChange={(e) => updateWallBox(size, 'price', e.target.value)}
-                        className="w-32 border rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="p-3 text-gray-400 font-mono text-sm">
-                      {priceWithoutVat.toFixed(2)}
-                    </td>
+        <div className="space-y-6">
+          {/* Masonry Wall Boxes */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold">{t.wallBoxesMasonry || 'Wall Boxes (Masonry)'}</h2>
+              <p className="text-sm text-gray-500">{t.masonry} - {t.configureSKUs}</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left text-gray-600">
+                    <th className="p-2 w-16">{t.size}</th>
+                    <th className="p-2 w-28">{t.sku}</th>
+                    <th className="p-2 w-28">{t.purchasePrice}</th>
+                    <th className="p-2 w-20">{t.markup}</th>
+                    <th className="p-2 w-28">{t.sellingPrice}</th>
+                    <th className="p-2 w-28">{t.sellingPriceVat}</th>
                   </tr>
-                );
-              })}
-            </tbody>
-          </table>
+                </thead>
+                <tbody>
+                  {SIZES.map((size) => {
+                    const item = library.wallBoxesMasonry?.[size] || {};
+                    const purchasePrice = item.purchasePrice || 0;
+                    const markup = item.markup || 0;
+                    const priceWithVat = item.price || 0;
+                    const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
+                    
+                    return (
+                      <tr key={size} className="border-t">
+                        <td className="p-2 font-medium">{size}M</td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={item.sku || ''}
+                            onChange={(e) => updateWallBoxMasonry(size, 'sku', e.target.value)}
+                            placeholder={t.enterSku}
+                            className="w-full border rounded px-2 py-1 text-sm font-mono"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={purchasePrice}
+                            onChange={(e) => {
+                              const newPurchase = parseFloat(e.target.value) || 0;
+                              const newPrice = calcPriceWithVat(newPurchase, markup);
+                              onUpdate({
+                                ...library,
+                                wallBoxesMasonry: {
+                                  ...library.wallBoxesMasonry,
+                                  [size]: { ...item, purchasePrice: newPurchase, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={markup}
+                            onChange={(newMarkup) => {
+                              const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
+                              onUpdate({
+                                ...library,
+                                wallBoxesMasonry: {
+                                  ...library.wallBoxesMasonry,
+                                  [size]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            step="1"
+                            decimals={0}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={sellingWithoutVat}
+                            onChange={(newSellingWithoutVat) => {
+                              const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                              const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
+                              onUpdate({
+                                ...library,
+                                wallBoxesMasonry: {
+                                  ...library.wallBoxesMasonry,
+                                  [size]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={priceWithVat}
+                            onChange={(newPrice) => {
+                              const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
+                              onUpdate({
+                                ...library,
+                                wallBoxesMasonry: {
+                                  ...library.wallBoxesMasonry,
+                                  [size]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm font-medium"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Drywall Wall Boxes */}
+          <div className="bg-white rounded-lg shadow">
+            <div className="p-4 border-b">
+              <h2 className="font-semibold">{t.wallBoxesDrywall || 'Wall Boxes (Drywall)'}</h2>
+              <p className="text-sm text-gray-500">{t.drywall} - {t.configureSKUs}</p>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="bg-gray-50 text-left text-gray-600">
+                    <th className="p-2 w-16">{t.size}</th>
+                    <th className="p-2 w-28">{t.sku}</th>
+                    <th className="p-2 w-28">{t.purchasePrice}</th>
+                    <th className="p-2 w-20">{t.markup}</th>
+                    <th className="p-2 w-28">{t.sellingPrice}</th>
+                    <th className="p-2 w-28">{t.sellingPriceVat}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {SIZES.map((size) => {
+                    const item = library.wallBoxesDrywall?.[size] || {};
+                    const purchasePrice = item.purchasePrice || 0;
+                    const markup = item.markup || 0;
+                    const priceWithVat = item.price || 0;
+                    const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
+                    
+                    return (
+                      <tr key={size} className="border-t">
+                        <td className="p-2 font-medium">{size}M</td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={item.sku || ''}
+                            onChange={(e) => updateWallBoxDrywall(size, 'sku', e.target.value)}
+                            placeholder={t.enterSku}
+                            className="w-full border rounded px-2 py-1 text-sm font-mono"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={purchasePrice}
+                            onChange={(e) => {
+                              const newPurchase = parseFloat(e.target.value) || 0;
+                              const newPrice = calcPriceWithVat(newPurchase, markup);
+                              onUpdate({
+                                ...library,
+                                wallBoxesDrywall: {
+                                  ...library.wallBoxesDrywall,
+                                  [size]: { ...item, purchasePrice: newPurchase, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={markup}
+                            onChange={(newMarkup) => {
+                              const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
+                              onUpdate({
+                                ...library,
+                                wallBoxesDrywall: {
+                                  ...library.wallBoxesDrywall,
+                                  [size]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            step="1"
+                            decimals={0}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={sellingWithoutVat}
+                            onChange={(newSellingWithoutVat) => {
+                              const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                              const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
+                              onUpdate({
+                                ...library,
+                                wallBoxesDrywall: {
+                                  ...library.wallBoxesDrywall,
+                                  [size]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={priceWithVat}
+                            onChange={(newPrice) => {
+                              const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
+                              onUpdate({
+                                ...library,
+                                wallBoxesDrywall: {
+                                  ...library.wallBoxesDrywall,
+                                  [size]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm font-medium"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
         </div>
       )}
 
@@ -3287,48 +4410,114 @@ function LibraryPage({ library, onUpdate, onBack }) {
             <h2 className="font-semibold">{t.installFaces} ({t.supports})</h2>
             <p className="text-sm text-gray-500">{t.configureSKUs}</p>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left text-sm text-gray-600">
-                <th className="p-3">{t.size}</th>
-                <th className="p-3">{t.sku}</th>
-                <th className="p-3">{t.priceInclVat}</th>
-                <th className="p-3 text-gray-400">{t.priceExclVat}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {SIZES.map((size) => {
-                const priceWithVat = library.installFaces[size]?.price || 0;
-                const priceWithoutVat = priceWithVat / 1.21;
-                return (
-                  <tr key={size} className="border-t">
-                    <td className="p-3 font-medium">{size}M</td>
-                    <td className="p-3">
-                      <input
-                        type="text"
-                        value={library.installFaces[size]?.sku || ''}
-                        onChange={(e) => updateInstallFace(size, 'sku', e.target.value)}
-                        placeholder={t.enterSku}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={priceWithVat}
-                        onChange={(e) => updateInstallFace(size, 'price', e.target.value)}
-                        className="w-32 border rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="p-3 text-gray-400 font-mono text-sm">
-                      {priceWithoutVat.toFixed(2)}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left text-gray-600">
+                  <th className="p-2 w-16">{t.size}</th>
+                  <th className="p-2 w-28">{t.sku}</th>
+                  <th className="p-2 w-28">{t.purchasePrice}</th>
+                  <th className="p-2 w-20">{t.markup}</th>
+                  <th className="p-2 w-28">{t.sellingPrice}</th>
+                  <th className="p-2 w-28">{t.sellingPriceVat}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SIZES.map((size) => {
+                  const item = library.installFaces[size] || {};
+                  const purchasePrice = item.purchasePrice || 0;
+                  const markup = item.markup || 0;
+                  const priceWithVat = item.price || 0;
+                  const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
+                  
+                  return (
+                    <tr key={size} className="border-t">
+                      <td className="p-2 font-medium">{size}M</td>
+                      <td className="p-2">
+                        <input
+                          type="text"
+                          value={item.sku || ''}
+                          onChange={(e) => updateInstallFace(size, 'sku', e.target.value)}
+                          placeholder={t.enterSku}
+                          className="w-full border rounded px-2 py-1 text-sm font-mono"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <input
+                          type="number"
+                          step="0.01"
+                          value={purchasePrice}
+                          onChange={(e) => {
+                            const newPurchase = parseFloat(e.target.value) || 0;
+                            const newPrice = calcPriceWithVat(newPurchase, markup);
+                            onUpdate({
+                              ...library,
+                              installFaces: {
+                                ...library.installFaces,
+                                [size]: { ...item, purchasePrice: newPurchase, price: newPrice }
+                              }
+                            });
+                          }}
+                          className="w-full border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <PriceInput
+                          value={markup}
+                          onChange={(newMarkup) => {
+                            const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
+                            onUpdate({
+                              ...library,
+                              installFaces: {
+                                ...library.installFaces,
+                                [size]: { ...item, markup: newMarkup, price: newPrice }
+                              }
+                            });
+                          }}
+                          step="1"
+                          decimals={0}
+                          className="w-full border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <PriceInput
+                          value={sellingWithoutVat}
+                          onChange={(newSellingWithoutVat) => {
+                            const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                            const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
+                            onUpdate({
+                              ...library,
+                              installFaces: {
+                                ...library.installFaces,
+                                [size]: { ...item, markup: newMarkup, price: newPrice }
+                              }
+                            });
+                          }}
+                          className="w-full border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-2">
+                        <PriceInput
+                          value={priceWithVat}
+                          onChange={(newPrice) => {
+                            const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
+                            onUpdate({
+                              ...library,
+                              installFaces: {
+                                ...library.installFaces,
+                                [size]: { ...item, markup: newMarkup, price: newPrice }
+                              }
+                            });
+                          }}
+                          className="w-full border rounded px-2 py-1 text-sm font-medium"
+                        />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
 
@@ -3339,62 +4528,129 @@ function LibraryPage({ library, onUpdate, onBack }) {
             <h2 className="font-semibold">{t.decorFaces} ({t.coverPlates})</h2>
             <p className="text-sm text-gray-500">{t.configureSKUsColor}</p>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="bg-gray-50 text-left text-sm text-gray-600">
-                <th className="p-3">{t.size}</th>
-                <th className="p-3">{t.color}</th>
-                <th className="p-3">{t.sku}</th>
-                <th className="p-3">{t.priceInclVat}</th>
-                <th className="p-3 text-gray-400">{t.priceExclVat}</th>
-              </tr>
-            </thead>
-            <tbody>
-              {SIZES.map((size) => (
-                COLORS.map((color, colorIdx) => {
-                  const priceWithVat = library.decorFaces[`${size}-${color.id}`]?.price || 0;
-                  const priceWithoutVat = priceWithVat / 1.21;
-                  return (
-                    <tr key={`${size}-${color.id}`} className={colorIdx === 0 ? 'border-t' : ''}>
-                      {colorIdx === 0 && (
-                        <td className="p-3 font-medium" rowSpan={COLORS.length}>{size}M</td>
-                      )}
-                      <td className="p-3">
-                        <div className="flex items-center gap-2">
-                          <span 
-                            className="w-4 h-4 rounded border"
-                            style={{ backgroundColor: color.hex }}
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-left text-gray-600">
+                  <th className="p-2 w-16">{t.size}</th>
+                  <th className="p-2 w-20">{t.color}</th>
+                  <th className="p-2 w-28">{t.sku}</th>
+                  <th className="p-2 w-24">{t.purchasePrice}</th>
+                  <th className="p-2 w-16">{t.markup}</th>
+                  <th className="p-2 w-24">{t.sellingPrice}</th>
+                  <th className="p-2 w-24">{t.sellingPriceVat}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {SIZES.map((size) => (
+                  COLORS.map((color, colorIdx) => {
+                    const key = `${size}-${color.id}`;
+                    const item = library.decorFaces[key] || {};
+                    const purchasePrice = item.purchasePrice || 0;
+                    const markup = item.markup || 0;
+                    const priceWithVat = item.price || 0;
+                    const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
+                    
+                    return (
+                      <tr key={key} className={colorIdx === 0 ? 'border-t' : ''}>
+                        {colorIdx === 0 && (
+                          <td className="p-2 font-medium" rowSpan={COLORS.length}>{size}M</td>
+                        )}
+                        <td className="p-2">
+                          <div className="flex items-center gap-2">
+                            <span 
+                              className="w-4 h-4 rounded border"
+                              style={{ backgroundColor: color.hex }}
+                            />
+                            {color.id === 'white' ? t.white : t.black}
+                          </div>
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="text"
+                            value={item.sku || ''}
+                            onChange={(e) => updateDecorFace(key, 'sku', e.target.value)}
+                            placeholder={t.enterSku}
+                            className="w-full border rounded px-2 py-1 text-sm font-mono"
                           />
-                          {color.id === 'white' ? t.white : t.black}
-                        </div>
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="text"
-                        value={library.decorFaces[`${size}-${color.id}`]?.sku || ''}
-                        onChange={(e) => updateDecorFace(`${size}-${color.id}`, 'sku', e.target.value)}
-                        placeholder={t.enterSku}
-                        className="w-full border rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="p-3">
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={priceWithVat}
-                        onChange={(e) => updateDecorFace(`${size}-${color.id}`, 'price', e.target.value)}
-                        className="w-32 border rounded px-2 py-1 text-sm"
-                      />
-                    </td>
-                    <td className="p-3 text-gray-400 font-mono text-sm">
-                      {priceWithoutVat.toFixed(2)}
-                    </td>
-                  </tr>
-                  );
-                })
-              ))}
-            </tbody>
-          </table>
+                        </td>
+                        <td className="p-2">
+                          <input
+                            type="number"
+                            step="0.01"
+                            value={purchasePrice}
+                            onChange={(e) => {
+                              const newPurchase = parseFloat(e.target.value) || 0;
+                              const newPrice = calcPriceWithVat(newPurchase, markup);
+                              onUpdate({
+                                ...library,
+                                decorFaces: {
+                                  ...library.decorFaces,
+                                  [key]: { ...item, purchasePrice: newPurchase, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={markup}
+                            onChange={(newMarkup) => {
+                              const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
+                              onUpdate({
+                                ...library,
+                                decorFaces: {
+                                  ...library.decorFaces,
+                                  [key]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            step="1"
+                            decimals={0}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={sellingWithoutVat}
+                            onChange={(newSellingWithoutVat) => {
+                              const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
+                              const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
+                              onUpdate({
+                                ...library,
+                                decorFaces: {
+                                  ...library.decorFaces,
+                                  [key]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={priceWithVat}
+                            onChange={(newPrice) => {
+                              const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
+                              onUpdate({
+                                ...library,
+                                decorFaces: {
+                                  ...library.decorFaces,
+                                  [key]: { ...item, markup: newMarkup, price: newPrice }
+                                }
+                              });
+                            }}
+                            className="w-full border rounded px-2 py-1 text-sm font-medium"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
     </div>
