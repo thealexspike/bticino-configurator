@@ -3437,14 +3437,6 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     return () => subscription.unsubscribe();
   }, []);
 
-  // Încarcă proiectele din Supabase când user-ul e logat
-useEffect(() => {
-  if (session?.user) {
-    loadProjects();
-    loadLibraryFromSupabase();
-  }
-}, [session]);
-
   const loadProjects = async () => {
     const { data: projects, error } = await supabase
       .from('projects')
@@ -3519,6 +3511,13 @@ useEffect(() => {
       console.error('Error saving library:', error);
     }
   };
+
+  useEffect(() => {
+    if (session?.user) {
+      loadProjects();
+      loadLibraryFromSupabase();
+    }
+  }, [session]);
 
   const saveProject = async (project) => {
   const { error } = await supabase
