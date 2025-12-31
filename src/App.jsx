@@ -67,6 +67,8 @@ const TRANSLATIONS = {
     dropHere: 'Drop here',
     dragHint: 'Drag modules from the list or use + button • Drag to reorder • Click × to remove',
     editHint: 'Click size/room to edit inline · Drag to reorder · Click ⚙️ to edit modules',
+    editHintGrouped: 'Drag assemblies to room headers to move between rooms · Click ⚙️ to edit modules',
+    groupByRoom: 'Group by room',
     
     // Room suggestions
     livingRoom: 'Living Room',
@@ -131,6 +133,19 @@ const TRANSLATIONS = {
     unitPurchase: 'Purchase',
     unitSelling: 'Selling',
     unitProfit: 'Profit',
+    
+    // Presets
+    presets: 'Presets',
+    presetsDescription: 'Pre-configured assemblies for quick creation',
+    addPreset: 'Add Preset',
+    presetName: 'Preset Name',
+    presetType: 'Type',
+    presetModules: 'Modules',
+    emptyAssembly: 'Empty Assembly',
+    selectPreset: 'Select a preset or start empty',
+    noPresets: 'No presets configured for this type',
+    deletePresetConfirm: 'Delete this preset?',
+    noModules: 'No modules',
     
     // Library
     componentLibrary: 'Component Library',
@@ -236,6 +251,8 @@ const TRANSLATIONS = {
     dropHere: 'Plasează aici',
     dragHint: 'Trage modulele din listă sau folosește butonul + • Trage pentru reordonare • Click × pentru ștergere',
     editHint: 'Click pe dimensiune/cameră pentru editare · Trage pentru reordonare · Click ⚙️ pentru editare module',
+    editHintGrouped: 'Trage aparatajele pe header-ul camerei pentru a le muta · Click ⚙️ pentru editare module',
+    groupByRoom: 'Grupează pe camere',
     
     // Room suggestions
     livingRoom: 'Living',
@@ -300,6 +317,19 @@ const TRANSLATIONS = {
     unitPurchase: 'Achiziție',
     unitSelling: 'Vânzare',
     unitProfit: 'Profit',
+    
+    // Presets
+    presets: 'Preseturi',
+    presetsDescription: 'Ansambluri preconfigurate pentru creare rapidă',
+    addPreset: 'Adaugă Preset',
+    presetName: 'Nume Preset',
+    presetType: 'Tip',
+    presetModules: 'Module',
+    emptyAssembly: 'Ansamblu Gol',
+    selectPreset: 'Selectează un preset sau începe gol',
+    noPresets: 'Niciun preset configurat pentru acest tip',
+    deletePresetConfirm: 'Ștergi acest preset?',
+    noModules: 'Fără module',
     
     // Library
     componentLibrary: 'Bibliotecă Componente',
@@ -415,123 +445,140 @@ const getFacePlateImageUrl = (size, color) => {
 };
 
 // ============================================================================
-// SVG MODULE GRAPHICS (Fallback if images don't load)
+// SVG MODULE GRAPHICS - Full-size, single tone, contrasting symbols
 // ============================================================================
 
 // Graphics definitions by type
 const ModuleGraphicsByType = {
+  // Schuko outlet - 2M full size
   schuko: ({ color = 'white', width = 60, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const accent = color === 'black' ? '#444' : '#f5f5f5';
-    const holes = color === 'black' ? '#0a0a0a' : '#333';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const accent = color === 'black' ? '#4a4a4a' : '#e8e8e8';
+    const holes = color === 'black' ? '#1a1a1a' : '#333';
+    const ground = color === 'black' ? '#666' : '#999';
     return (
       <svg width={width} height={height} viewBox="0 0 60 80">
-        <rect x="2" y="2" width="56" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="8" y="15" width="44" height="50" rx="22" fill={accent} stroke={border} strokeWidth="1"/>
-        <circle cx="22" cy="40" r="4" fill={holes}/>
-        <circle cx="38" cy="40" r="4" fill={holes}/>
-        <rect x="10" y="35" width="3" height="10" rx="1" fill={border}/>
-        <rect x="47" y="35" width="3" height="10" rx="1" fill={border}/>
+        <rect x="0" y="0" width="60" height="80" fill={bg}/>
+        {/* Outlet recess - circle not ellipse */}
+        <circle cx="30" cy="40" r="24" fill={accent}/>
+        {/* Ground clips */}
+        <rect x="8" y="32" width="4" height="16" rx="1" fill={ground}/>
+        <rect x="48" y="32" width="4" height="16" rx="1" fill={ground}/>
+        {/* Holes - perfect circles */}
+        <circle cx="20" cy="40" r="5" fill={holes}/>
+        <circle cx="40" cy="40" r="5" fill={holes}/>
       </svg>
     );
   },
+  // Italian outlet - 1M full size
   italian: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const accent = color === 'black' ? '#444' : '#f5f5f5';
-    const holes = color === 'black' ? '#0a0a0a' : '#333';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const accent = color === 'black' ? '#4a4a4a' : '#e8e8e8';
+    const holes = color === 'black' ? '#1a1a1a' : '#333';
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="2" y="2" width="26" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="5" y="20" width="20" height="40" rx="10" fill={accent} stroke={border} strokeWidth="1"/>
-        <circle cx="15" cy="32" r="2.5" fill={holes}/>
-        <circle cx="15" cy="40" r="2.5" fill={holes}/>
-        <circle cx="15" cy="48" r="2.5" fill={holes}/>
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* Outlet recess - oval for italian style */}
+        <ellipse cx="15" cy="40" rx="10" ry="22" fill={accent}/>
+        {/* Holes - perfect circles */}
+        <circle cx="15" cy="28" r="3" fill={holes}/>
+        <circle cx="15" cy="40" r="3" fill={holes}/>
+        <circle cx="15" cy="52" r="3" fill={holes}/>
       </svg>
     );
   },
+  // Switch - full size, single tone, contrasting symbol
   switch: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const button = color === 'black' ? '#2a2a2a' : '#f8f8f8';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
     const led = '#4ade80';
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="2" y="2" width="26" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="5" y="10" width="20" height="55" rx="3" fill={button} stroke={border} strokeWidth="1"/>
-        <circle cx="15" cy="70" r="2" fill={led}/>
-        <path d="M12 35 L18 35 M15 32 L15 38" stroke={border} strokeWidth="1.5" strokeLinecap="round"/>
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* Plus symbol */}
+        <path d="M10 40 L20 40 M15 35 L15 45" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        {/* LED indicator */}
+        <circle cx="15" cy="70" r="3" fill={led}/>
       </svg>
     );
   },
+  // Stair switch - full size with up/down arrows
   switch_stair: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const button = color === 'black' ? '#2a2a2a' : '#f8f8f8';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
     const led = '#fbbf24';
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="2" y="2" width="26" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="5" y="10" width="20" height="55" rx="3" fill={button} stroke={border} strokeWidth="1"/>
-        <circle cx="15" cy="70" r="2" fill={led}/>
-        <path d="M10 38 L15 32 L20 38" stroke={border} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        <path d="M10 44 L15 50 L20 44" stroke={border} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* Up arrow */}
+        <path d="M9 38 L15 30 L21 38" stroke={symbol} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        {/* Down arrow */}
+        <path d="M9 46 L15 54 L21 46" stroke={symbol} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        {/* LED indicator */}
+        <circle cx="15" cy="70" r="3" fill={led}/>
       </svg>
     );
   },
+  // Cross switch - full size with X symbol
   switch_cross: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const button = color === 'black' ? '#2a2a2a' : '#f8f8f8';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
     const led = '#f97316';
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="2" y="2" width="26" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="5" y="10" width="20" height="55" rx="3" fill={button} stroke={border} strokeWidth="1"/>
-        <circle cx="15" cy="70" r="2" fill={led}/>
-        <path d="M10 32 L20 48 M20 32 L10 48" stroke={border} strokeWidth="1.5" strokeLinecap="round"/>
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* X symbol */}
+        <path d="M9 32 L21 52 M21 32 L9 52" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        {/* LED indicator */}
+        <circle cx="15" cy="70" r="3" fill={led}/>
       </svg>
     );
   },
+  // Dimmer - 2M full size with +/- symbols
   dimmer: ({ color = 'white', width = 60, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const button = color === 'black' ? '#2a2a2a' : '#f8f8f8';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
+    const divider = color === 'black' ? '#555' : '#ddd';
     const led = '#4ade80';
     return (
       <svg width={width} height={height} viewBox="0 0 60 80">
-        <rect x="2" y="2" width="56" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="6" y="10" width="22" height="55" rx="3" fill={button} stroke={border} strokeWidth="1"/>
-        <rect x="32" y="10" width="22" height="55" rx="3" fill={button} stroke={border} strokeWidth="1"/>
-        <circle cx="17" cy="70" r="2" fill={led}/>
-        <circle cx="43" cy="70" r="2" fill={led}/>
-        <path d="M14 30 L20 30 M17 27 L17 33" stroke={border} strokeWidth="1.5" strokeLinecap="round"/>
-        <path d="M40 30 L46 30" stroke={border} strokeWidth="1.5" strokeLinecap="round"/>
+        <rect x="0" y="0" width="60" height="80" fill={bg}/>
+        {/* Divider line */}
+        <line x1="30" y1="5" x2="30" y2="75" stroke={divider} strokeWidth="1"/>
+        {/* Plus symbol (left) */}
+        <path d="M10 40 L20 40 M15 35 L15 45" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        {/* Minus symbol (right) */}
+        <path d="M40 40 L50 40" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        {/* LED indicators */}
+        <circle cx="15" cy="70" r="3" fill={led}/>
+        <circle cx="45" cy="70" r="3" fill={led}/>
       </svg>
     );
   },
   usb: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
-    const port = color === 'black' ? '#0a0a0a' : '#333';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const port = color === 'black' ? '#1a1a1a' : '#333';
+    const portInner = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="2" y="2" width="26" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
-        <rect x="8" y="25" width="14" height="8" rx="1" fill={port}/>
-        <rect x="10" y="27" width="10" height="4" rx="0.5" fill={bg}/>
-        <rect x="8" y="45" width="14" height="8" rx="1" fill={port}/>
-        <rect x="10" y="47" width="10" height="4" rx="0.5" fill={bg}/>
-        <text x="15" y="70" fontSize="6" fill={border} textAnchor="middle" fontFamily="Arial">USB</text>
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* USB-A port */}
+        <rect x="7" y="20" width="16" height="10" rx="1" fill={port}/>
+        <rect x="9" y="22" width="12" height="6" rx="0.5" fill={portInner}/>
+        {/* USB-C port */}
+        <rect x="7" y="45" width="16" height="8" rx="4" fill={port}/>
+        <rect x="9" y="47" width="12" height="4" rx="2" fill={portInner}/>
+        {/* USB text */}
+        <text x="15" y="72" fontSize="8" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">USB</text>
       </svg>
     );
   },
   blank: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#1a1a1a' : '#ffffff';
-    const border = color === 'black' ? '#333' : '#e0e0e0';
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="2" y="2" width="26" height="76" rx="4" fill={bg} stroke={border} strokeWidth="2"/>
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
       </svg>
     );
   },
@@ -636,6 +683,93 @@ const ModuleThumbnail = ({ moduleId, size = 32 }) => {
   return (
     <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width, height: size }}>
       <Component color="white" />
+    </div>
+  );
+};
+
+// Assembly Thumbnail - static preview of an assembly
+// Real BTicino proportions: 1M module = 8.5 x 31, side parts = 10.5 x 31
+const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
+  if (!assembly) return null;
+  
+  const MODULE_CATALOG = library?.modules || [];
+  
+  // Base unit for scaling (1M width = 8.5, height = 31)
+  const baseScale = 3 * scale; // Multiplier to get reasonable pixel sizes
+  const moduleWidth1M = 8.5 * baseScale;  // Width of 1M module
+  const faceHeight = 31 * baseScale;       // Height (same for all)
+  const sideMargin = 10.5 * baseScale;     // Fixed side parts width
+  
+  const moduleAreaWidth = assembly.size * moduleWidth1M;
+  const totalWidth = moduleAreaWidth + (sideMargin * 2);
+  
+  // Colors - synced with SVG module colors (#3a3a3a for black, #f5f5f5 for white)
+  const faceBgColor = assembly.color === 'black' ? '#3a3a3a' : '#f5f5f5';
+  const frameBorderColor = assembly.color === 'black' ? '#888' : '#999';
+  const moduleBorderColor = assembly.color === 'black' ? '#666' : '#aaa';
+  
+  // Calculate module slots
+  const getModuleSlots = () => {
+    const slots = [];
+    let currentPos = 0;
+    (assembly.modules || []).forEach((mod, index) => {
+      const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+      const size = catalogItem?.size || 1;
+      slots.push({
+        ...mod,
+        index,
+        startPos: currentPos,
+        size,
+        catalogItem,
+      });
+      currentPos += size;
+    });
+    return slots;
+  };
+  
+  const moduleSlots = getModuleSlots();
+  
+  return (
+    <div
+      className="relative"
+      style={{
+        width: totalWidth,
+        height: faceHeight,
+        backgroundColor: faceBgColor,
+        border: `1px solid ${frameBorderColor}`,
+      }}
+    >
+      {/* Installed modules */}
+      <div 
+        className="absolute flex"
+        style={{ 
+          left: sideMargin,
+          top: 0,
+          width: moduleAreaWidth,
+          height: faceHeight,
+        }}
+      >
+        {moduleSlots.map((slot, idx) => {
+          const ModuleGraphic = slot.catalogItem ? getModuleGraphic(slot.catalogItem.id) : null;
+          
+          return (
+            <div
+              key={slot.id || idx}
+              className="relative flex-shrink-0 flex items-center justify-center"
+              style={{
+                width: slot.size * moduleWidth1M,
+                height: '100%',
+                borderLeft: idx === 0 ? `1px solid ${moduleBorderColor}` : 'none',
+                borderRight: `1px solid ${moduleBorderColor}`,
+              }}
+            >
+              {ModuleGraphic && (
+                <ModuleGraphic color={assembly.color} width={slot.size * moduleWidth1M - 2} height={faceHeight} />
+              )}
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };
@@ -812,6 +946,72 @@ const DEFAULT_LIBRARY = {
       facePrice: { white: 4.54, black: 7.56 },
     },
   ],
+  presets: [
+    {
+      id: 'double_schuko',
+      nameEn: 'Double Schuko Outlet',
+      nameRo: 'Priză Dublă Schuko',
+      type: 'outlet',
+      size: 4,
+      modules: ['schuko', 'schuko'],
+    },
+    {
+      id: 'single_schuko',
+      nameEn: 'Single Schuko Outlet',
+      nameRo: 'Priză Simplă Schuko',
+      type: 'outlet',
+      size: 2,
+      modules: ['schuko'],
+    },
+    {
+      id: 'schuko_usb',
+      nameEn: 'Schuko + USB',
+      nameRo: 'Schuko + USB',
+      type: 'outlet',
+      size: 3,
+      modules: ['schuko', 'usb'],
+    },
+    {
+      id: 'double_switch',
+      nameEn: 'Double Switch',
+      nameRo: 'Întrerupător Dublu',
+      type: 'switch',
+      size: 2,
+      modules: ['switch_simple', 'switch_simple'],
+    },
+    {
+      id: 'single_switch',
+      nameEn: 'Single Switch',
+      nameRo: 'Întrerupător Simplu',
+      type: 'switch',
+      size: 2,
+      modules: ['switch_simple', 'blank'],
+    },
+    {
+      id: 'triple_switch',
+      nameEn: 'Triple Switch',
+      nameRo: 'Întrerupător Triplu',
+      type: 'switch',
+      size: 3,
+      modules: ['switch_simple', 'switch_simple', 'switch_simple'],
+    },
+    {
+      id: 'stair_switch',
+      nameEn: 'Stair Switch (Cap-Scară)',
+      nameRo: 'Întrerupător Cap Scară',
+      type: 'switch',
+      size: 2,
+      modules: ['switch_stair', 'blank'],
+    },
+    {
+      id: 'dimmer_single',
+      nameEn: 'Dimmer',
+      nameRo: 'Variator (Dimmer)',
+      type: 'switch',
+      size: 2,
+      modules: ['dimmer'],
+    },
+  ],
 };
 
 // Library storage functions
@@ -838,6 +1038,7 @@ const loadLibrary = () => {
         installFaces: { ...DEFAULT_LIBRARY.installFaces, ...parsed.installFaces },
         decorFaces: { ...DEFAULT_LIBRARY.decorFaces, ...parsed.decorFaces },
         modules: parsed.modules || DEFAULT_LIBRARY.modules,
+        presets: parsed.presets || DEFAULT_LIBRARY.presets,
       };
     }
   } catch (e) {
@@ -1208,18 +1409,40 @@ function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary }) 
 function ProjectDetail({ project, onBack, onUpdate }) {
   const [activeTab, setActiveTab] = useState('outlets');
   const [editingAssembly, setEditingAssembly] = useState(null);
+  const [showPresetDialog, setShowPresetDialog] = useState(null); // 'outlet' or 'switch' or null
   const t = useTranslation();
+  const library = React.useContext(LibraryContext);
 
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
   const switches = project.assemblies.filter(a => a.type === 'switch');
 
-  const addAssembly = (type) => {
+  const addAssembly = (type, presetId = null) => {
     const code = generateAssemblyCode(project.assemblies, type);
-    const assembly = createAssembly(type, code);
+    let assembly = createAssembly(type, code);
+    
+    // If preset selected, apply it
+    if (presetId && library?.presets) {
+      const preset = library.presets.find(p => p.id === presetId);
+      if (preset) {
+        assembly.size = preset.size;
+        assembly.modules = preset.modules.map(moduleId => createModuleInstance(moduleId));
+      }
+    }
+    
     onUpdate({
       ...project,
       assemblies: [...project.assemblies, assembly],
     });
+    setShowPresetDialog(null);
+  };
+
+  const handleAddClick = (type) => {
+    const typePresets = library?.presets?.filter(p => p.type === type) || [];
+    if (typePresets.length > 0) {
+      setShowPresetDialog(type);
+    } else {
+      addAssembly(type);
+    }
   };
 
   const updateAssembly = (updated) => {
@@ -1251,6 +1474,62 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       .filter(r => r && r.trim());
     return [...new Set(rooms)];
   }, [project.assemblies]);
+
+  // Preset selection dialog
+  const PresetDialog = ({ type, onSelect, onClose }) => {
+    const lang = useLanguage();
+    const presets = library?.presets?.filter(p => p.type === type) || [];
+    const modules = library?.modules || [];
+    
+    const getPresetName = (preset) => lang === 'ro' ? preset.nameRo : preset.nameEn;
+    const getModuleName = (moduleId) => {
+      const mod = modules.find(m => m.id === moduleId);
+      if (!mod) return moduleId;
+      return lang === 'ro' ? (mod.nameRo || mod.nameEn) : mod.nameEn;
+    };
+    
+    return (
+      <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-lg shadow-xl max-w-md w-full mx-4 max-h-[80vh] overflow-hidden">
+          <div className="p-4 border-b">
+            <h3 className="font-semibold text-lg">{t.selectPreset}</h3>
+          </div>
+          <div className="p-4 overflow-y-auto max-h-[60vh]">
+            {/* Empty option */}
+            <button
+              onClick={() => onSelect(null)}
+              className="w-full text-left p-3 rounded-lg border-2 border-dashed border-gray-300 hover:border-blue-400 hover:bg-blue-50 mb-3 transition-colors"
+            >
+              <div className="font-medium text-gray-600">{t.emptyAssembly}</div>
+              <div className="text-sm text-gray-400">2M · {t.noModules || 'No modules'}</div>
+            </button>
+            
+            {/* Presets */}
+            {presets.map(preset => (
+              <button
+                key={preset.id}
+                onClick={() => onSelect(preset.id)}
+                className="w-full text-left p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 mb-2 transition-colors"
+              >
+                <div className="font-medium">{getPresetName(preset)}</div>
+                <div className="text-sm text-gray-500">
+                  {preset.size}M · {preset.modules.map(m => getModuleName(m)).join(' + ')}
+                </div>
+              </button>
+            ))}
+          </div>
+          <div className="p-4 border-t bg-gray-50">
+            <button
+              onClick={onClose}
+              className="w-full py-2 text-gray-600 hover:text-gray-800"
+            >
+              {t.cancel}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   if (editingAssembly) {
     const currentAssembly = project.assemblies.find(a => a.id === editingAssembly.id) || editingAssembly;
@@ -1332,7 +1611,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         <AssemblyList
           assemblies={outlets}
           type="outlet"
-          onAdd={() => addAssembly('outlet')}
+          onAdd={() => handleAddClick('outlet')}
           onEdit={setEditingAssembly}
           onDelete={deleteAssembly}
           onReorder={handleReorder}
@@ -1344,7 +1623,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         <AssemblyList
           assemblies={switches}
           type="switch"
-          onAdd={() => addAssembly('switch')}
+          onAdd={() => handleAddClick('switch')}
           onEdit={setEditingAssembly}
           onDelete={deleteAssembly}
           onReorder={handleReorder}
@@ -1355,6 +1634,15 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       {activeTab === 'boq' && <BOQView project={project} />}
       {activeTab === 'quote' && <QuoteView project={project} />}
       {activeTab === 'profit' && <ProfitView project={project} />}
+      
+      {/* Preset Selection Dialog */}
+      {showPresetDialog && (
+        <PresetDialog
+          type={showPresetDialog}
+          onSelect={(presetId) => addAssembly(showPresetDialog, presetId)}
+          onClose={() => setShowPresetDialog(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1363,21 +1651,44 @@ function ProjectDetail({ project, onBack, onUpdate }) {
 function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, onUpdate, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
+  const [dragOverRoom, setDragOverRoom] = useState(null);
   const [editingCodeId, setEditingCodeId] = useState(null);
   const [editingCodeValue, setEditingCodeValue] = useState('');
   const [editingRoomId, setEditingRoomId] = useState(null);
   const [editingRoomValue, setEditingRoomValue] = useState('');
   const [roomDropdownOpen, setRoomDropdownOpen] = useState(false);
+  const [groupByRoom, setGroupByRoom] = useState(false);
 
   // Get library and translations from context
   const library = React.useContext(LibraryContext);
   const t = useTranslation();
+  const lang = useLanguage();
+  const MODULE_CATALOG = getModuleCatalog(library);
 
   const sortedAssemblies = [...assemblies].sort((a, b) => a.code.localeCompare(b.code));
   const typeName = type === 'outlet' ? t.outlet : t.switch;
   const addLabel = type === 'outlet' ? t.addOutlet : t.addSwitch;
   const noItemsLabel = type === 'outlet' ? t.noOutlets : t.noSwitches;
   const prefix = type === 'outlet' ? 'P' : 'I';
+
+  // Group assemblies by room
+  const groupedByRoom = useMemo(() => {
+    const groups = {};
+    sortedAssemblies.forEach(assembly => {
+      const room = assembly.room || t.noRoom;
+      if (!groups[room]) {
+        groups[room] = [];
+      }
+      groups[room].push(assembly);
+    });
+    // Sort rooms alphabetically, but put "No room" at the end
+    const sortedRooms = Object.keys(groups).sort((a, b) => {
+      if (a === t.noRoom) return 1;
+      if (b === t.noRoom) return -1;
+      return a.localeCompare(b);
+    });
+    return { groups, sortedRooms };
+  }, [sortedAssemblies, t.noRoom]);
 
   // Common room suggestions (translated)
   const defaultRooms = [
@@ -1423,6 +1734,33 @@ function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, on
   const handleDragEnd = () => {
     setDraggedId(null);
     setDragOverIndex(null);
+    setDragOverRoom(null);
+  };
+
+  // Room drag handlers for grouped view
+  const handleRoomDragOver = (e, room) => {
+    e.preventDefault();
+    setDragOverRoom(room);
+  };
+
+  const handleRoomDragLeave = () => {
+    setDragOverRoom(null);
+  };
+
+  const handleRoomDrop = (e, targetRoom) => {
+    e.preventDefault();
+    if (draggedId && onUpdate) {
+      const assembly = assemblies.find(a => a.id === draggedId);
+      if (assembly) {
+        // Convert "Fără cameră" / "No room" back to empty string
+        const newRoom = targetRoom === t.noRoom ? '' : targetRoom;
+        if (assembly.room !== newRoom) {
+          onUpdate({ ...assembly, room: newRoom });
+        }
+      }
+    }
+    setDraggedId(null);
+    setDragOverRoom(null);
   };
 
   const startEditingCode = (assembly, e) => {
@@ -1510,10 +1848,229 @@ function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, on
     }, 150);
   };
 
+  // Render a single assembly item
+  const renderAssemblyItem = (assembly, index, showRoom = true) => {
+    const usedSize = calculateModulesSize(assembly.modules, library);
+    const colorInfo = COLORS.find(c => c.id === assembly.color);
+    const isDragging = draggedId === assembly.id;
+    const isDragOver = !groupByRoom && dragOverIndex === index && draggedId !== assembly.id;
+
+    return (
+      <li
+        key={assembly.id}
+        draggable
+        onDragStart={(e) => handleDragStart(e, assembly)}
+        onDragOver={(e) => !groupByRoom && handleDragOver(e, index)}
+        onDragLeave={!groupByRoom ? handleDragLeave : undefined}
+        onDrop={(e) => !groupByRoom && handleDrop(e, index)}
+        onDragEnd={handleDragEnd}
+        className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-all ${
+          isDragging ? 'opacity-50 bg-blue-50' : ''
+        } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
+      >
+        <div className="flex items-center gap-3 mr-3">
+          <div className="text-gray-300 hover:text-gray-500">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div className="flex-1">
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Code (position) editor */}
+            {editingCodeId === assembly.id ? (
+              <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
+                <span className="font-mono font-bold text-lg">{prefix}</span>
+                <input
+                  type="text"
+                  value={editingCodeValue}
+                  onChange={handleCodeChange}
+                  onBlur={() => handleCodeSubmit(assembly.id)}
+                  onKeyDown={(e) => handleCodeKeyDown(e, assembly.id)}
+                  className="w-12 font-mono font-bold text-lg border rounded px-1 ml-0.5"
+                  autoFocus
+                  maxLength={2}
+                />
+              </div>
+            ) : (
+              <span 
+                className="font-mono font-bold text-lg hover:bg-blue-100 px-1 rounded cursor-text"
+                onClick={(e) => startEditingCode(assembly, e)}
+                title="Click to change position"
+              >
+                {assembly.code}
+              </span>
+            )}
+
+            {/* Size selector */}
+            <select
+              value={assembly.size}
+              onChange={(e) => {
+                e.stopPropagation();
+                handleSizeChange(assembly, e.target.value);
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm bg-gray-100 px-2 py-0.5 rounded border-0 cursor-pointer hover:bg-gray-200"
+              title="Change size"
+            >
+              {FRAME_SIZES.map(s => (
+                <option key={s} value={s}>{s}M</option>
+              ))}
+            </select>
+
+            {/* Color selector */}
+            <select
+              value={assembly.color}
+              onChange={(e) => {
+                e.stopPropagation();
+                if (onUpdate) {
+                  onUpdate({ ...assembly, color: e.target.value });
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
+              style={{ 
+                backgroundColor: colorInfo?.hex,
+                color: assembly.color === 'black' ? '#fff' : '#333'
+              }}
+              title="Change color"
+            >
+              {COLORS.map(c => (
+                <option key={c.id} value={c.id}>{c.name}</option>
+              ))}
+            </select>
+
+            {/* Capacity indicator */}
+            <span className={`text-sm px-2 py-0.5 rounded ${
+              usedSize > assembly.size ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
+            }`}>
+              {usedSize}/{assembly.size}M
+            </span>
+          </div>
+
+          {/* Room editor - only show if not grouped */}
+          <div className="text-sm text-gray-500 flex items-center gap-1 mt-1 flex-wrap">
+            {showRoom && (
+              <>
+                <Home className="w-3 h-3" />
+                {editingRoomId === assembly.id ? (
+                  <div className="relative" onClick={(e) => e.stopPropagation()}>
+                    <input
+                      type="text"
+                      value={editingRoomValue}
+                      onChange={handleRoomChange}
+                      onBlur={() => handleRoomBlur(assembly)}
+                      onKeyDown={(e) => handleRoomKeyDown(e, assembly)}
+                      onFocus={() => setRoomDropdownOpen(true)}
+                      placeholder={t.room + '...'}
+                      className="border rounded px-2 py-0.5 text-sm w-40"
+                      autoFocus
+                    />
+                    {roomDropdownOpen && filteredRoomSuggestions.length > 0 && (
+                      <ul className="absolute z-20 w-48 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-auto">
+                        {filteredRoomSuggestions.map((room, idx) => {
+                          const isExisting = existingRooms.includes(room);
+                          return (
+                            <li
+                              key={idx}
+                              onMouseDown={(e) => {
+                                e.preventDefault();
+                                handleRoomSelect(assembly, room);
+                              }}
+                              className="px-3 py-1.5 hover:bg-blue-50 cursor-pointer flex justify-between items-center text-sm"
+                            >
+                              <span>{room}</span>
+                              {isExisting && (
+                                <span className="text-xs bg-blue-100 text-blue-600 px-1 rounded">
+                                  {t.used}
+                                </span>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </div>
+                ) : (
+                  <span
+                    className="hover:bg-blue-100 px-1 rounded cursor-text"
+                    onClick={(e) => startEditingRoom(assembly, e)}
+                    title={t.room}
+                  >
+                    {assembly.room || t.noRoom}
+                  </span>
+                )}
+                <span className="text-gray-400">·</span>
+              </>
+            )}
+            <span>{assembly.modules.length} {t.modules}</span>
+            {/* Module quick view */}
+            {assembly.modules.length > 0 && (
+              <div className="flex items-center gap-1 ml-2">
+                {assembly.modules.map((mod, idx) => {
+                  const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+                  const moduleName = catalogItem ? getModuleName(catalogItem, lang) : mod.moduleId;
+                  const moduleSize = catalogItem?.size || 1;
+                  return (
+                    <span
+                      key={mod.id || idx}
+                      className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-1.5 py-0.5 rounded"
+                      title={moduleName}
+                    >
+                      {moduleName.length > 12 ? moduleName.substring(0, 10) + '...' : moduleName}
+                      <span className="text-blue-400 text-[10px]">{moduleSize}M</span>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3">
+          {/* Assembly Preview Thumbnail */}
+          <div className="hidden sm:block">
+            <AssemblyThumbnail assembly={assembly} library={library} scale={0.5} />
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <button
+              onClick={(e) => { e.stopPropagation(); onEdit(assembly); }}
+              className="text-blue-500 hover:text-blue-700 p-2"
+              title={t.edit + ' ' + t.modules}
+            >
+              <Settings className="w-4 h-4" />
+            </button>
+            <button
+              onClick={(e) => { e.stopPropagation(); onDelete(assembly.id); }}
+              className="text-red-500 hover:text-red-700 p-2"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </li>
+    );
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="flex justify-between items-center p-4 border-b">
-        <h2 className="font-semibold">{type === 'outlet' ? t.outlets : t.switches}</h2>
+        <div className="flex items-center gap-4">
+          <h2 className="font-semibold">{type === 'outlet' ? t.outlets : t.switches}</h2>
+          {/* Group by room toggle */}
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={groupByRoom}
+              onChange={(e) => setGroupByRoom(e.target.checked)}
+              className="w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+            />
+            <Home className="w-4 h-4" />
+            {t.groupByRoom}
+          </label>
+        </div>
         <button
           onClick={onAdd}
           className="bg-green-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-green-700"
@@ -1524,186 +2081,62 @@ function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, on
 
       {sortedAssemblies.length === 0 ? (
         <p className="p-4 text-gray-500">{noItemsLabel}</p>
-      ) : (
-        <ul>
-          {sortedAssemblies.map((assembly, index) => {
-            const usedSize = calculateModulesSize(assembly.modules, library);
-            const colorInfo = COLORS.find(c => c.id === assembly.color);
-            const isDragging = draggedId === assembly.id;
-            const isDragOver = dragOverIndex === index && draggedId !== assembly.id;
-
+      ) : groupByRoom ? (
+        // Grouped by room view
+        <div>
+          {groupedByRoom.sortedRooms.map(room => {
+            const isDropTarget = dragOverRoom === room && draggedId;
+            const draggedAssembly = draggedId ? assemblies.find(a => a.id === draggedId) : null;
+            const draggedFromSameRoom = draggedAssembly && (draggedAssembly.room || t.noRoom) === room;
+            
             return (
-              <li
-                key={assembly.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, assembly)}
-                onDragOver={(e) => handleDragOver(e, index)}
-                onDragLeave={handleDragLeave}
-                onDrop={(e) => handleDrop(e, index)}
-                onDragEnd={handleDragEnd}
-                className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-all ${
-                  isDragging ? 'opacity-50 bg-blue-50' : ''
-                } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
+              <div 
+                key={room}
+                onDragOver={(e) => handleRoomDragOver(e, room)}
+                onDragLeave={handleRoomDragLeave}
+                onDrop={(e) => handleRoomDrop(e, room)}
+                className={`transition-all ${
+                  isDropTarget && !draggedFromSameRoom
+                    ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' 
+                    : ''
+                }`}
               >
-                <div className="flex items-center gap-3 mr-3">
-                  <div className="text-gray-300 hover:text-gray-500">
-                    <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                      <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
-                    </svg>
-                  </div>
-                </div>
-
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    {/* Code (position) editor */}
-                    {editingCodeId === assembly.id ? (
-                      <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
-                        <span className="font-mono font-bold text-lg">{prefix}</span>
-                        <input
-                          type="text"
-                          value={editingCodeValue}
-                          onChange={handleCodeChange}
-                          onBlur={() => handleCodeSubmit(assembly.id)}
-                          onKeyDown={(e) => handleCodeKeyDown(e, assembly.id)}
-                          className="w-12 font-mono font-bold text-lg border rounded px-1 ml-0.5"
-                          autoFocus
-                          maxLength={2}
-                        />
-                      </div>
-                    ) : (
-                      <span 
-                        className="font-mono font-bold text-lg hover:bg-blue-100 px-1 rounded cursor-text"
-                        onClick={(e) => startEditingCode(assembly, e)}
-                        title="Click to change position"
-                      >
-                        {assembly.code}
-                      </span>
-                    )}
-
-                    {/* Size selector */}
-                    <select
-                      value={assembly.size}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        handleSizeChange(assembly, e.target.value);
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-sm bg-gray-100 px-2 py-0.5 rounded border-0 cursor-pointer hover:bg-gray-200"
-                      title="Change size"
-                    >
-                      {FRAME_SIZES.map(s => (
-                        <option key={s} value={s}>{s}M</option>
-                      ))}
-                    </select>
-
-                    {/* Color selector */}
-                    <select
-                      value={assembly.color}
-                      onChange={(e) => {
-                        e.stopPropagation();
-                        if (onUpdate) {
-                          onUpdate({ ...assembly, color: e.target.value });
-                        }
-                      }}
-                      onClick={(e) => e.stopPropagation()}
-                      className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
-                      style={{ 
-                        backgroundColor: colorInfo?.hex,
-                        color: assembly.color === 'black' ? '#fff' : '#333'
-                      }}
-                      title="Change color"
-                    >
-                      {COLORS.map(c => (
-                        <option key={c.id} value={c.id}>{c.name}</option>
-                      ))}
-                    </select>
-
-                    {/* Capacity indicator */}
-                    <span className={`text-sm px-2 py-0.5 rounded ${
-                      usedSize > assembly.size ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                    }`}>
-                      {usedSize}/{assembly.size}M
+                <div 
+                  className={`px-4 py-2 border-b flex items-center gap-2 transition-all ${
+                    isDropTarget && !draggedFromSameRoom
+                      ? 'bg-blue-100' 
+                      : 'bg-gray-100'
+                  }`}
+                >
+                  <Home className={`w-4 h-4 ${isDropTarget && !draggedFromSameRoom ? 'text-blue-600' : 'text-gray-500'}`} />
+                  <span className={`font-medium ${isDropTarget && !draggedFromSameRoom ? 'text-blue-700' : 'text-gray-700'}`}>
+                    {room}
+                  </span>
+                  <span className="text-sm text-gray-500">({groupedByRoom.groups[room].length})</span>
+                  {isDropTarget && !draggedFromSameRoom && (
+                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded ml-auto animate-pulse">
+                      {t.dropHere}
                     </span>
-                  </div>
-
-                  {/* Room editor */}
-                  <div className="text-sm text-gray-500 flex items-center gap-1 mt-1">
-                    <Home className="w-3 h-3" />
-                    {editingRoomId === assembly.id ? (
-                      <div className="relative" onClick={(e) => e.stopPropagation()}>
-                        <input
-                          type="text"
-                          value={editingRoomValue}
-                          onChange={handleRoomChange}
-                          onBlur={() => handleRoomBlur(assembly)}
-                          onKeyDown={(e) => handleRoomKeyDown(e, assembly)}
-                          onFocus={() => setRoomDropdownOpen(true)}
-                          placeholder={t.room + '...'}
-                          className="border rounded px-2 py-0.5 text-sm w-40"
-                          autoFocus
-                        />
-                        {roomDropdownOpen && filteredRoomSuggestions.length > 0 && (
-                          <ul className="absolute z-20 w-48 mt-1 bg-white border rounded-lg shadow-lg max-h-40 overflow-auto">
-                            {filteredRoomSuggestions.map((room, idx) => {
-                              const isExisting = existingRooms.includes(room);
-                              return (
-                                <li
-                                  key={idx}
-                                  onMouseDown={(e) => {
-                                    e.preventDefault();
-                                    handleRoomSelect(assembly, room);
-                                  }}
-                                  className="px-3 py-1.5 hover:bg-blue-50 cursor-pointer flex justify-between items-center text-sm"
-                                >
-                                  <span>{room}</span>
-                                  {isExisting && (
-                                    <span className="text-xs bg-blue-100 text-blue-600 px-1 rounded">
-                                      {t.used}
-                                    </span>
-                                  )}
-                                </li>
-                              );
-                            })}
-                          </ul>
-                        )}
-                      </div>
-                    ) : (
-                      <span
-                        className="hover:bg-blue-100 px-1 rounded cursor-text"
-                        onClick={(e) => startEditingRoom(assembly, e)}
-                        title={t.room}
-                      >
-                        {assembly.room || t.noRoom}
-                      </span>
-                    )}
-                    <span className="text-gray-400">·</span>
-                    <span>{assembly.modules.length} {t.modules}</span>
-                  </div>
+                  )}
                 </div>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onEdit(assembly); }}
-                    className="text-blue-500 hover:text-blue-700 p-2"
-                    title={t.edit + ' ' + t.modules}
-                  >
-                    <Settings className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={(e) => { e.stopPropagation(); onDelete(assembly.id); }}
-                    className="text-red-500 hover:text-red-700 p-2"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </li>
+                <ul>
+                  {groupedByRoom.groups[room].map((assembly, index) => 
+                    renderAssemblyItem(assembly, index, false)
+                  )}
+                </ul>
+              </div>
             );
           })}
+        </div>
+      ) : (
+        // Regular list view
+        <ul>
+          {sortedAssemblies.map((assembly, index) => renderAssemblyItem(assembly, index, true))}
         </ul>
       )}
       
       <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t">
-        💡 {t.editHint}
+        💡 {groupByRoom ? t.editHintGrouped : t.editHint}
       </div>
     </div>
   );
@@ -1954,13 +2387,16 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const decorFaceSku = getDecorFaceSku(assembly.size, assembly.color, library);
   const wallBoxTypeLabel = (assembly.wallBoxType || 'masonry') === 'drywall' ? t.drywall : t.masonry;
 
-  // Visual dimensions
-  const slotWidth = 60;
-  const faceWidth = assembly.size * slotWidth;
-  const faceHeight = 120;
+  // Visual dimensions - Real BTicino proportions: 1M = 8.5 x 31, side parts = 10.5 x 31
+  const baseScale = 4; // Multiplier for reasonable pixel sizes in editor
+  const moduleWidth1M = 8.5 * baseScale;  // Width of 1M module (34px)
+  const sideMargin = 10.5 * baseScale;     // Fixed side parts width (42px)
+  const faceHeight = 31 * baseScale;       // Height (124px)
+  const moduleAreaWidth = assembly.size * moduleWidth1M;
+  const faceWidth = moduleAreaWidth + (sideMargin * 2);
 
   const colorInfo = COLORS.find(c => c.id === assembly.color);
-  const faceBgColor = assembly.color === 'black' ? '#1a1a1a' : '#f5f5f5';
+  const faceBgColor = assembly.color === 'black' ? '#454545' : '#f0f0f0';
   const faceTextColor = assembly.color === 'black' ? '#ffffff' : '#333333';
 
   return (
@@ -2069,41 +2505,55 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               backgroundPosition: '0 0, 0 2px, 2px -2px, -2px 0px',
             }}
           >
-            {/* Face plate container */}
+            {/* Face plate container - with padding for delete buttons */}
             <div
-              className={`relative border-4 rounded-lg transition-all ${
+              className={`relative transition-all ${
                 dragOverFace ? 'ring-2 ring-blue-400 ring-offset-2' : ''
               }`}
               style={{
-                width: faceWidth + 24,
-                height: faceHeight + 24,
+                width: faceWidth,
+                height: faceHeight,
                 backgroundColor: faceBgColor,
-                borderColor: assembly.color === 'black' ? '#333' : '#ddd',
+                margin: '10px', // Space for delete buttons
               }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, null)}
             >
-              {/* Slot grid background */}
+              {/* Slot grid background - centered between side margins */}
               <div 
-                className="absolute inset-3 flex"
-                style={{ gap: 0 }}
+                className="absolute flex"
+                style={{ 
+                  left: sideMargin,
+                  right: sideMargin,
+                  top: 0,
+                  bottom: 0,
+                  gap: 0 
+                }}
               >
                 {Array.from({ length: assembly.size }).map((_, i) => (
                   <div
                     key={i}
                     className="border border-dashed flex-shrink-0"
                     style={{
-                      width: slotWidth,
-                      height: faceHeight - 2,
-                      borderColor: assembly.color === 'black' ? '#444' : '#ccc',
+                      width: moduleWidth1M,
+                      height: faceHeight,
+                      borderColor: assembly.color === 'black' ? '#555' : '#ccc',
                     }}
                   />
                 ))}
               </div>
 
-              {/* Installed modules */}
-              <div className="absolute inset-3 flex">
+              {/* Installed modules - centered between side margins */}
+              <div 
+                className="absolute flex"
+                style={{ 
+                  left: sideMargin,
+                  right: sideMargin,
+                  top: 0,
+                  bottom: 0,
+                }}
+              >
                 {moduleSlots.map((slot, idx) => {
                   const isDragging = draggedModule?.type === 'installed' && draggedModule?.index === idx;
                   const isDragOver = dragOverSlot === idx;
@@ -2116,33 +2566,36 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                       onDragEnd={resetDragState}
                       onDragOver={(e) => handleSlotDragOver(e, idx)}
                       onDrop={(e) => handleDrop(e, idx)}
-                      className={`relative flex-shrink-0 rounded cursor-grab active:cursor-grabbing transition-all ${
-                        isDragging ? 'opacity-40 scale-95' : ''
+                      className={`relative flex-shrink-0 cursor-grab active:cursor-grabbing transition-all duration-150 group ${
+                        isDragging ? 'opacity-40 scale-95' : 'hover:scale-110 hover:z-20 hover:shadow-xl'
                       } ${isDragOver ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                       style={{
-                        width: slot.size * slotWidth,
-                        height: faceHeight - 2,
-                        backgroundColor: assembly.color === 'black' ? '#2a2a2a' : '#fff',
+                        width: slot.size * moduleWidth1M,
+                        height: faceHeight,
+                        backgroundColor: assembly.color === 'black' ? '#3a3a3a' : '#fff',
                         border: `2px solid ${assembly.color === 'black' ? '#555' : '#bbb'}`,
                       }}
                     >
-                      {/* Module image with real Bticino graphics */}
-                      <div className="absolute inset-0 flex items-center justify-center overflow-hidden rounded">
+                      {/* Module image with real Bticino graphics - fills entire module */}
+                      <div className="absolute inset-0 flex items-center justify-center">
                         <ModuleImage 
                           moduleId={slot.moduleId} 
                           color={assembly.color}
-                          width={slot.size * slotWidth - 8}
-                          height={faceHeight - 12}
+                          width={slot.size * moduleWidth1M}
+                          height={faceHeight}
                         />
                       </div>
                       
-                      {/* Remove button */}
+                      {/* Hover overlay - on top of module image */}
+                      <div className="absolute inset-0 bg-blue-400 opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none z-10" />
+                      
+                      {/* Remove button - visible on hover */}
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
                           handleRemoveModule(idx);
                         }}
-                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow"
+                        className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 shadow z-50 opacity-70 group-hover:opacity-100 transition-opacity"
                       >
                         <span className="text-xs">×</span>
                       </button>
@@ -2153,12 +2606,12 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                 {/* Empty drop zone indicator */}
                 {remainingSize > 0 && (
                   <div
-                    className={`flex-shrink-0 border-2 border-dashed rounded flex items-center justify-center transition-all ${
+                    className={`flex-shrink-0 border-2 border-dashed flex items-center justify-center transition-all ${
                       draggedModule ? 'border-blue-400 bg-blue-100/30' : 'border-gray-300'
                     }`}
                     style={{
-                      width: remainingSize * slotWidth,
-                      height: faceHeight - 2,
+                      width: remainingSize * moduleWidth1M,
+                      height: faceHeight,
                     }}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, assembly.modules.length)}
@@ -2195,6 +2648,36 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           <p className="text-xs text-gray-500 mt-3 text-center">
             💡 {t.dragHint}
           </p>
+
+          {/* Installed modules list */}
+          {assembly.modules.length > 0 && (
+            <div className="mt-4 pt-4 border-t">
+              <h3 className="font-medium text-gray-700 mb-2">{t.installed} ({assembly.modules.length})</h3>
+              <ul className="space-y-1 text-sm">
+                {assembly.modules.map((mod, idx) => {
+                  const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+                  const moduleSku = getModuleSku(mod.moduleId, assembly.color, library);
+                  const faceSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
+                  return (
+                    <li key={mod.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
+                      <span>{idx + 1}. {getModuleName(catalogItem, lang)} ({catalogItem?.size}M)</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-400 font-mono">
+                          {moduleSku || '—'} / {faceSku || '—'}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveModule(idx)}
+                          className="text-red-500 hover:text-red-700 p-1"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
 
         {/* Module Catalog */}
@@ -2253,36 +2736,6 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               );
             })}
           </div>
-
-          {/* Installed modules list */}
-          {assembly.modules.length > 0 && (
-            <div className="mt-6 pt-4 border-t">
-              <h3 className="font-medium text-gray-700 mb-2">{t.installed} ({assembly.modules.length})</h3>
-              <ul className="space-y-1 text-sm">
-                {assembly.modules.map((mod, idx) => {
-                  const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
-                  const moduleSku = getModuleSku(mod.moduleId, assembly.color, library);
-                  const faceSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
-                  return (
-                    <li key={mod.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span>{idx + 1}. {getModuleName(catalogItem, lang)} ({catalogItem?.size}M)</span>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400 font-mono">
-                          {moduleSku || '—'} / {faceSku || '—'}
-                        </span>
-                        <button
-                          onClick={() => handleRemoveModule(idx)}
-                          className="text-red-500 hover:text-red-700 p-1"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                        </button>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
-            </div>
-          )}
         </div>
       </div>
     </div>
@@ -3391,6 +3844,8 @@ function LibraryPage({ library, onUpdate, onBack }) {
   const [editingModule, setEditingModule] = useState(null);
   const [showAddModule, setShowAddModule] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
+  const [showAddPreset, setShowAddPreset] = useState(false);
+  const [editingPreset, setEditingPreset] = useState(null);
   const t = useTranslation();
   const lang = useLanguage();
 
@@ -3406,6 +3861,16 @@ function LibraryPage({ library, onUpdate, onBack }) {
     faceSku: { white: '', black: '' },
     modulePrice: 0,
     facePrice: { white: 0, black: 0 },
+  });
+
+  // New preset form state
+  const [newPreset, setNewPreset] = useState({
+    id: '',
+    nameEn: '',
+    nameRo: '',
+    type: 'outlet',
+    size: 2,
+    modules: [],
   });
 
   const updateWallBoxMasonry = (size, field, value) => {
@@ -3507,6 +3972,55 @@ function LibraryPage({ library, onUpdate, onBack }) {
     setConfirmDeleteId(null);
   };
 
+  // Preset functions
+  const addPreset = () => {
+    if (!newPreset.id.trim() || !newPreset.nameEn.trim()) {
+      alert(t.enterIdAndName);
+      return;
+    }
+    if (library.presets?.some(p => p.id === newPreset.id)) {
+      alert('A preset with this ID already exists');
+      return;
+    }
+    onUpdate({
+      ...library,
+      presets: [...(library.presets || []), { ...newPreset }],
+    });
+    setNewPreset({
+      id: '',
+      nameEn: '',
+      nameRo: '',
+      type: 'outlet',
+      size: 2,
+      modules: [],
+    });
+    setShowAddPreset(false);
+  };
+
+  const updatePreset = (presetId, updates) => {
+    onUpdate({
+      ...library,
+      presets: (library.presets || []).map(p => 
+        p.id === presetId ? { ...p, ...updates } : p
+      ),
+    });
+  };
+
+  const deletePreset = (presetId) => {
+    onUpdate({
+      ...library,
+      presets: (library.presets || []).filter(p => p.id !== presetId),
+    });
+    setConfirmDeleteId(null);
+  };
+
+  const getPresetName = (preset) => lang === 'ro' ? (preset.nameRo || preset.nameEn) : preset.nameEn;
+  const getModuleNameById = (moduleId) => {
+    const mod = library.modules?.find(m => m.id === moduleId);
+    if (!mod) return moduleId;
+    return lang === 'ro' ? (mod.nameRo || mod.nameEn) : mod.nameEn;
+  };
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <button
@@ -3532,6 +4046,12 @@ function LibraryPage({ library, onUpdate, onBack }) {
           {t.modules}
         </button>
         <button
+          onClick={() => setActiveTab('presets')}
+          className={`px-4 py-2 rounded ${activeTab === 'presets' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+        >
+          {t.presets}
+        </button>
+        <button
           onClick={() => setActiveTab('wallboxes')}
           className={`px-4 py-2 rounded ${activeTab === 'wallboxes' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
         >
@@ -3550,6 +4070,243 @@ function LibraryPage({ library, onUpdate, onBack }) {
           {t.decorFaces}
         </button>
       </div>
+
+      {/* Presets Tab */}
+      {activeTab === 'presets' && (
+        <div className="bg-white rounded-lg shadow">
+          <div className="flex justify-between items-center p-4 border-b">
+            <div>
+              <h2 className="font-semibold">{t.presets}</h2>
+              <p className="text-sm text-gray-500">{t.presetsDescription}</p>
+            </div>
+            <button
+              onClick={() => setShowAddPreset(true)}
+              className="bg-purple-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-purple-700"
+            >
+              <Plus className="w-4 h-4" /> {t.addPreset}
+            </button>
+          </div>
+
+          {/* Add Preset Form */}
+          {showAddPreset && (
+            <div className="p-4 bg-purple-50 border-b">
+              <h3 className="font-medium mb-3">{t.addPreset}</h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">ID</label>
+                  <input
+                    type="text"
+                    value={newPreset.id}
+                    onChange={(e) => setNewPreset({ ...newPreset, id: e.target.value.toLowerCase().replace(/\s/g, '_') })}
+                    placeholder="e.g., triple_outlet"
+                    className="w-full border rounded px-2 py-1 text-sm font-mono"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">🇬🇧 {t.presetName} (EN)</label>
+                  <input
+                    type="text"
+                    value={newPreset.nameEn}
+                    onChange={(e) => setNewPreset({ ...newPreset, nameEn: e.target.value })}
+                    placeholder="e.g., Triple Outlet"
+                    className="w-full border rounded px-2 py-1 text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs text-gray-600 mb-1">🇷🇴 {t.presetName} (RO)</label>
+                  <input
+                    type="text"
+                    value={newPreset.nameRo}
+                    onChange={(e) => setNewPreset({ ...newPreset, nameRo: e.target.value })}
+                    placeholder="ex: Priză Triplă"
+                    className="w-full border rounded px-2 py-1 text-sm"
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">{t.presetType}</label>
+                    <select
+                      value={newPreset.type}
+                      onChange={(e) => setNewPreset({ ...newPreset, type: e.target.value })}
+                      className="w-full border rounded px-2 py-1 text-sm"
+                    >
+                      <option value="outlet">{t.outlet}</option>
+                      <option value="switch">{t.switch}</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 mb-1">{t.size}</label>
+                    <select
+                      value={newPreset.size}
+                      onChange={(e) => setNewPreset({ ...newPreset, size: parseInt(e.target.value) })}
+                      className="w-full border rounded px-2 py-1 text-sm"
+                    >
+                      {FRAME_SIZES.map(s => (
+                        <option key={s} value={s}>{s}M</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Module selection */}
+              <div className="mb-4">
+                <label className="block text-xs text-gray-600 mb-2">{t.presetModules}</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {newPreset.modules.map((moduleId, idx) => (
+                    <span key={idx} className="bg-purple-100 text-purple-800 px-2 py-1 rounded text-sm flex items-center gap-1">
+                      {getModuleNameById(moduleId)}
+                      <button
+                        onClick={() => setNewPreset({
+                          ...newPreset,
+                          modules: newPreset.modules.filter((_, i) => i !== idx)
+                        })}
+                        className="text-purple-600 hover:text-purple-800"
+                      >×</button>
+                    </span>
+                  ))}
+                </div>
+                <select
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      setNewPreset({
+                        ...newPreset,
+                        modules: [...newPreset.modules, e.target.value]
+                      });
+                      e.target.value = '';
+                    }
+                  }}
+                  className="border rounded px-2 py-1 text-sm"
+                >
+                  <option value="">+ Add module...</option>
+                  {library.modules?.map(mod => (
+                    <option key={mod.id} value={mod.id}>
+                      {getModuleNameById(mod.id)} ({mod.size}M)
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div className="flex gap-2">
+                <button
+                  onClick={addPreset}
+                  className="bg-purple-600 text-white px-4 py-1.5 rounded text-sm hover:bg-purple-700"
+                >
+                  {t.save}
+                </button>
+                <button
+                  onClick={() => {
+                    setShowAddPreset(false);
+                    setNewPreset({ id: '', nameEn: '', nameRo: '', type: 'outlet', size: 2, modules: [] });
+                  }}
+                  className="bg-gray-300 text-gray-700 px-4 py-1.5 rounded text-sm hover:bg-gray-400"
+                >
+                  {t.cancel}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Preset List */}
+          <div className="divide-y">
+            {/* Outlet Presets */}
+            <div className="p-4">
+              <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                <Package className="w-4 h-4" /> {t.outlets}
+              </h3>
+              {(library.presets || []).filter(p => p.type === 'outlet').length === 0 ? (
+                <p className="text-gray-400 text-sm">{t.noPresets}</p>
+              ) : (
+                <div className="space-y-2">
+                  {(library.presets || []).filter(p => p.type === 'outlet').map(preset => (
+                    <div key={preset.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium">{getPresetName(preset)}</div>
+                        <div className="text-sm text-gray-500">
+                          {preset.size}M · {preset.modules.map(m => getModuleNameById(m)).join(' + ')}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {confirmDeleteId === preset.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => deletePreset(preset.id)}
+                              className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600"
+                            >
+                              {t.delete}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400"
+                            >
+                              {t.cancel}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(preset.id)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+            
+            {/* Switch Presets */}
+            <div className="p-4">
+              <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                <Zap className="w-4 h-4" /> {t.switches}
+              </h3>
+              {(library.presets || []).filter(p => p.type === 'switch').length === 0 ? (
+                <p className="text-gray-400 text-sm">{t.noPresets}</p>
+              ) : (
+                <div className="space-y-2">
+                  {(library.presets || []).filter(p => p.type === 'switch').map(preset => (
+                    <div key={preset.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <div className="font-medium">{getPresetName(preset)}</div>
+                        <div className="text-sm text-gray-500">
+                          {preset.size}M · {preset.modules.map(m => getModuleNameById(m)).join(' + ')}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {confirmDeleteId === preset.id ? (
+                          <div className="flex items-center gap-1">
+                            <button
+                              onClick={() => deletePreset(preset.id)}
+                              className="bg-red-500 text-white text-xs px-2 py-1 rounded hover:bg-red-600"
+                            >
+                              {t.delete}
+                            </button>
+                            <button
+                              onClick={() => setConfirmDeleteId(null)}
+                              className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400"
+                            >
+                              {t.cancel}
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmDeleteId(preset.id)}
+                            className="text-red-500 hover:text-red-700 p-1"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Modules Tab */}
       {activeTab === 'modules' && (
@@ -4362,7 +5119,9 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           <span className="font-mono">{typeof mod.moduleSku === 'object' ? `${mod.moduleSku?.white || '?'} / ${mod.moduleSku?.black || '?'}` : mod.moduleSku}</span> · {mod.size}M · {mod.category === 'outlet' ? t.outlet : mod.category === 'switch' ? t.switch : t.other}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
-                          {t.priceInclVat}: {typeof mod.modulePrice === 'object' ? `${mod.modulePrice?.white || 0} / ${mod.modulePrice?.black || 0}` : mod.modulePrice || 0} RON
+                          {t.priceInclVat}: {typeof mod.modulePrice === 'object' 
+                            ? `${(mod.modulePrice?.white || 0).toFixed(2)} / ${(mod.modulePrice?.black || 0).toFixed(2)}` 
+                            : (mod.modulePrice || 0).toFixed(2)} RON
                         </div>
                       </div>
                     </div>
@@ -4966,6 +5725,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
             room: a.room,
             size: a.size,
             color: a.color,
+            wallBoxType: a.wall_box_type || 'masonry',
             modules: a.modules || [],
           })),
         };
@@ -5030,9 +5790,26 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     return;
   }
 
+  // Obține ansamblurile existente din Supabase
+  const { data: existingAssemblies } = await supabase
+    .from('assemblies')
+    .select('id')
+    .eq('project_id', project.id);
+
+  const existingIds = (existingAssemblies || []).map(a => a.id);
+  const currentIds = project.assemblies.map(a => a.id).filter(id => existingIds.includes(id));
+  
+  // Șterge ansamblurile care nu mai există în proiect
+  const idsToDelete = existingIds.filter(id => !project.assemblies.some(a => a.id === id));
+  if (idsToDelete.length > 0) {
+    await supabase
+      .from('assemblies')
+      .delete()
+      .in('id', idsToDelete);
+  }
+
   // Salvează ansamblurile
   for (const assembly of project.assemblies) {
-    // Verifică dacă assembly.id e UUID valid sau nu
     const assemblyData = {
       project_id: project.id,
       type: assembly.type,
@@ -5040,17 +5817,14 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       room: assembly.room,
       size: assembly.size,
       color: assembly.color,
+      wall_box_type: assembly.wallBoxType || 'masonry',
       modules: assembly.modules,
     };
 
-    // Încearcă update, dacă nu există face insert
-    const { data: existing } = await supabase
-      .from('assemblies')
-      .select('id')
-      .eq('id', assembly.id)
-      .single();
+    // Verifică dacă assembly există deja în Supabase
+    const isExisting = existingIds.includes(assembly.id);
 
-    if (existing) {
+    if (isExisting) {
       await supabase
         .from('assemblies')
         .update(assemblyData)
@@ -5062,7 +5836,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
         .select()
         .single();
       
-      // Actualizează ID-ul local
+      // Actualizează ID-ul local cu cel din Supabase
       if (newAssembly) {
         assembly.id = newAssembly.id;
       }
