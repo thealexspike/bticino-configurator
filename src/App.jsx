@@ -136,7 +136,8 @@ const TRANSLATIONS = {
     vatPayable: 'VAT Payable',
     unitPurchase: 'Purchase',
     unitSelling: 'Selling',
-    unitProfit: 'Profit',
+    unitDifference: 'Unit Profit',
+    unitProfit: 'Total Profit',
     
     // Presets
     presets: 'Presets',
@@ -190,6 +191,12 @@ const TRANSLATIONS = {
     
     // Module names
     face: 'Face',
+    
+    // Item names for BOQ/Quote
+    wallBoxMasonryItem: 'Wall Box Masonry',
+    wallBoxDrywallItem: 'Wall Box Drywall',
+    supportItem: 'Support Frame',
+    coverPlateItem: 'Cover Plate',
     
     // Wall Box Types
     wallBoxType: 'Wall Box Type',
@@ -324,7 +331,8 @@ const TRANSLATIONS = {
     vatPayable: 'TVA de Plată',
     unitPurchase: 'Achiziție',
     unitSelling: 'Vânzare',
-    unitProfit: 'Profit',
+    unitDifference: 'Profit Unitar',
+    unitProfit: 'Profit Total',
     
     // Presets
     presets: 'Preseturi',
@@ -377,13 +385,19 @@ const TRANSLATIONS = {
     hasColorVariants: 'Are variante de culoare (SKU diferit pentru alb/negru)',
     
     // Module names
-    face: 'Față',
+    face: 'Fata',
+    
+    // Item names for BOQ/Quote
+    wallBoxMasonryItem: 'Doza Zidarie',
+    wallBoxDrywallItem: 'Doza Gips-carton',
+    supportItem: 'Rama Suport',
+    coverPlateItem: 'Rama Decor',
     
     // Wall Box Types
     wallBoxType: 'Tip Doză',
     masonry: 'Zidărie',
     drywall: 'Gips-carton',
-    wallBoxesMasonry: 'Doze (Zidărie)',
+    wallBoxesMasonry: 'Doze (Zidarie)',
     wallBoxesDrywall: 'Doze (Gips-carton)',
   },
 };
@@ -571,14 +585,14 @@ const ModuleGraphicsByType = {
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
         <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* USB-A port */}
-        <rect x="7" y="20" width="16" height="10" rx="1" fill={port}/>
-        <rect x="9" y="22" width="12" height="6" rx="0.5" fill={portInner}/>
-        {/* USB-C port */}
-        <rect x="7" y="45" width="16" height="8" rx="4" fill={port}/>
-        <rect x="9" y="47" width="12" height="4" rx="2" fill={portInner}/>
+        {/* USB-A port 1 */}
+        <rect x="7" y="18" width="16" height="10" rx="1" fill={port}/>
+        <rect x="9" y="20" width="12" height="6" rx="0.5" fill={portInner}/>
+        {/* USB-A port 2 */}
+        <rect x="7" y="38" width="16" height="10" rx="1" fill={port}/>
+        <rect x="9" y="40" width="12" height="6" rx="0.5" fill={portInner}/>
         {/* USB text */}
-        <text x="15" y="72" fontSize="8" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">USB</text>
+        <text x="15" y="68" fontSize="8" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">USB</text>
       </svg>
     );
   },
@@ -1730,28 +1744,28 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-2 mb-4 flex-wrap">
+      <div className="flex gap-1 mb-4 flex-wrap">
         <button
           onClick={() => setActiveTab('outlets')}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
+          className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${
             activeTab === 'outlets' ? 'bg-blue-600 text-white' : 'bg-gray-200'
           }`}
         >
-          <Package className="w-4 h-4" /> {t.outlets} (P##)
-          <span className="bg-white/20 px-2 rounded text-sm">{outlets.length}</span>
+          <Package className="w-4 h-4" /> {t.outlets}
+          <span className="bg-white/20 px-1.5 rounded text-xs font-bold">{outlets.length}</span>
         </button>
         <button
           onClick={() => setActiveTab('switches')}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
+          className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${
             activeTab === 'switches' ? 'bg-blue-600 text-white' : 'bg-gray-200'
           }`}
         >
-          <Zap className="w-4 h-4" /> {t.switches} (I##)
-          <span className="bg-white/20 px-2 rounded text-sm">{switches.length}</span>
+          <Zap className="w-4 h-4" /> {t.switches}
+          <span className="bg-white/20 px-1.5 rounded text-xs font-bold">{switches.length}</span>
         </button>
         <button
           onClick={() => setActiveTab('boq')}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
+          className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${
             activeTab === 'boq' ? 'bg-blue-600 text-white' : 'bg-gray-200'
           }`}
         >
@@ -1759,7 +1773,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         </button>
         <button
           onClick={() => setActiveTab('quote')}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
+          className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${
             activeTab === 'quote' ? 'bg-blue-600 text-white' : 'bg-gray-200'
           }`}
         >
@@ -1767,7 +1781,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         </button>
         <button
           onClick={() => setActiveTab('profit')}
-          className={`flex items-center gap-2 px-4 py-2 rounded ${
+          className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${
             activeTab === 'profit' ? 'bg-green-600 text-white' : 'bg-gray-200'
           }`}
         >
@@ -2451,6 +2465,14 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
     if (catalogItem && catalogItem.size <= remainingSize) {
       e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'catalog', moduleId }));
       e.dataTransfer.effectAllowed = 'copy';
+      
+      // Find the ModuleImage container in the dragged row and use it as drag image
+      const moduleImageContainer = e.currentTarget.querySelector('.module-drag-preview');
+      if (moduleImageContainer) {
+        const rect = moduleImageContainer.getBoundingClientRect();
+        e.dataTransfer.setDragImage(moduleImageContainer, rect.width / 2, rect.height / 2);
+      }
+      
       setDraggedModule({ type: 'catalog', moduleId });
     }
   };
@@ -2682,13 +2704,53 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               style={{
                 width: faceWidth,
                 height: faceHeight,
-                backgroundColor: faceBgColor,
+                backgroundColor: 'transparent',
                 margin: '10px', // Space for delete buttons
               }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, null)}
             >
+              {/* Side margins (face plate edges) */}
+              <div 
+                className="absolute top-0 bottom-0 left-0"
+                style={{ 
+                  width: sideMargin,
+                  backgroundColor: faceBgColor,
+                }}
+              />
+              <div 
+                className="absolute top-0 bottom-0 right-0"
+                style={{ 
+                  width: sideMargin,
+                  backgroundColor: faceBgColor,
+                }}
+              />
+              
+              {/* Support frame bars - top and bottom connecting side margins (in background) */}
+              <div 
+                className="absolute"
+                style={{ 
+                  left: sideMargin,
+                  right: sideMargin,
+                  top: 10,
+                  height: 16,
+                  backgroundColor: '#4a4a4a',
+                  zIndex: 0,
+                }}
+              />
+              <div 
+                className="absolute"
+                style={{ 
+                  left: sideMargin,
+                  right: sideMargin,
+                  bottom: 10,
+                  height: 16,
+                  backgroundColor: '#4a4a4a',
+                  zIndex: 0,
+                }}
+              />
+              
               {/* Slot grid background - centered between side margins */}
               <div 
                 className="absolute flex"
@@ -2697,7 +2759,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                   right: sideMargin,
                   top: 0,
                   bottom: 0,
-                  gap: 0 
+                  gap: 0,
+                  zIndex: 1,
                 }}
               >
                 {Array.from({ length: assembly.size }).map((_, i) => (
@@ -2721,6 +2784,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                   right: sideMargin,
                   top: 0,
                   bottom: 0,
+                  zIndex: 2,
                 }}
               >
                 {moduleSlots.map((slot, idx) => {
@@ -2741,7 +2805,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                       style={{
                         width: slot.size * moduleWidth1M,
                         height: faceHeight,
-                        backgroundColor: assembly.color === 'black' ? '#3a3a3a' : '#fff',
+                        backgroundColor: assembly.color === 'black' ? '#3a3a3a' : '#f5f5f5',
                         border: `2px solid ${assembly.color === 'black' ? '#555' : '#bbb'}`,
                       }}
                     >
@@ -2871,13 +2935,28 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-14 rounded bg-gray-50 flex items-center justify-center overflow-hidden border">
-                      <ModuleImage 
-                        moduleId={mod.id} 
-                        color="white"
-                        width={36}
-                        height={50}
-                      />
+                    <div 
+                      className="flex items-center justify-center"
+                      style={{
+                        width: 40, // Fixed container width for text alignment
+                        height: 56,
+                      }}
+                    >
+                      <div 
+                        className="module-drag-preview rounded bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-300"
+                        style={{
+                          // BTicino proportions: 1M = 8.5x31, 2M = 17x31
+                          width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31),
+                          height: 52,
+                        }}
+                      >
+                        <ModuleImage 
+                          moduleId={mod.id} 
+                          color="white"
+                          width={mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31)}
+                          height={52}
+                        />
+                      </div>
                     </div>
                     <div>
                       <span className="font-medium">{getModuleName(mod, lang)}</span>
@@ -2939,7 +3018,7 @@ function BOQView({ project }) {
       
       if (wallBoxType === 'drywall') {
         items.wallBoxesDrywall[wbKey] = items.wallBoxesDrywall[wbKey] || { 
-          name: `Doza Gips-carton / Wall Box Drywall ${assembly.size}M`, 
+          name: `${t.wallBoxDrywallItem} ${assembly.size}M`, 
           sku: wbSku,
           color: '—',
           qty: 0 
@@ -2947,7 +3026,7 @@ function BOQView({ project }) {
         items.wallBoxesDrywall[wbKey].qty++;
       } else {
         items.wallBoxesMasonry[wbKey] = items.wallBoxesMasonry[wbKey] || { 
-          name: `Doza Zidarie / Wall Box Masonry ${assembly.size}M`, 
+          name: `${t.wallBoxMasonryItem} ${assembly.size}M`, 
           sku: wbSku,
           color: '—',
           qty: 0 
@@ -2959,7 +3038,7 @@ function BOQView({ project }) {
       const ifKey = `${assembly.size}M`;
       const ifSku = getInstallFaceSku(assembly.size, library);
       items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `Rama Montaj / Support ${assembly.size}M`, 
+        name: `${t.supportItem} ${assembly.size}M`, 
         sku: ifSku,
         color: '—',
         qty: 0 
@@ -2970,7 +3049,7 @@ function BOQView({ project }) {
       const dfKey = `${assembly.size}M-${assembly.color}`;
       const dfSku = getDecorFaceSku(assembly.size, assembly.color, library);
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `Rama Decor / Cover Plate ${assembly.size}M`, 
+        name: `${t.coverPlateItem} ${assembly.size}M`, 
         sku: dfSku,
         color: colorName,
         qty: 0 
@@ -2995,7 +3074,7 @@ function BOQView({ project }) {
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
           const mfSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
-            name: `${translatedName} - Fata / Face`, 
+            name: `${translatedName} - ${t.face}`, 
             sku: mfSku,
             color: colorName,
             qty: 0 
@@ -3027,28 +3106,36 @@ function BOQView({ project }) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Function to remove diacritics - defined first
+    // Function to remove diacritics - handles both comma and cedilla variants
     const removeDiacritics = (str) => {
       if (!str) return str;
       return str
-        .replace(/ă/g, 'a').replace(/Ă/g, 'A')
-        .replace(/â/g, 'a').replace(/Â/g, 'A')
-        .replace(/î/g, 'i').replace(/Î/g, 'I')
-        .replace(/ș/g, 's').replace(/Ș/g, 'S')
-        .replace(/ț/g, 't').replace(/Ț/g, 'T');
+        .replace(/[ăÄƒ]/g, 'a').replace(/[ĂÄ‚]/g, 'A')
+        .replace(/[âÃ¢]/g, 'a').replace(/[ÂÃ‚]/g, 'A')
+        .replace(/[îÃ®]/g, 'i').replace(/[ÎÃŽ]/g, 'I')
+        .replace(/[șşÈ™]/g, 's').replace(/[ȘŞÈ˜]/g, 'S')
+        .replace(/[țţÈ›]/g, 't').replace(/[ȚŢÈš]/g, 'T');
     };
     
     doc.setFont('helvetica');
     
+    // Localized labels
+    const pdfTitle = lang === 'ro' ? 'Lista de Cantitati' : 'Bill of Quantities';
+    const pdfSubtitle = lang === 'ro' ? 'Pentru Furnizor' : 'For Supplier';
+    const pdfProject = lang === 'ro' ? 'Proiect:' : 'Project:';
+    const pdfClient = lang === 'ro' ? 'Client:' : 'Client:';
+    const pdfDate = lang === 'ro' ? 'Data:' : 'Date:';
+    const pdfTotalItems = lang === 'ro' ? 'Total articole:' : 'Total items:';
+    
     // Title
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Bill of Quantities / Lista de Cantitati', pageWidth / 2, 20, { align: 'center' });
+    doc.text(pdfTitle, pageWidth / 2, 20, { align: 'center' });
     
     // Subtitle
     doc.setFontSize(12);
     doc.setFont('helvetica', 'normal');
-    doc.text('For Supplier / Pentru Furnizor', pageWidth / 2, 28, { align: 'center' });
+    doc.text(pdfSubtitle, pageWidth / 2, 28, { align: 'center' });
     
     // Line separator
     doc.setDrawColor(200, 200, 200);
@@ -3062,42 +3149,46 @@ function BOQView({ project }) {
     
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Project / Proiect:', 18, 47);
+    doc.text(pdfProject, 18, 47);
     doc.setFont('helvetica', 'normal');
-    doc.text(removeDiacritics(project.name) || '—', 60, 47);
+    doc.text(removeDiacritics(project.name) || '—', 50, 47);
     
     doc.setFont('helvetica', 'bold');
-    doc.text('Client:', 18, 55);
+    doc.text(pdfClient, 18, 55);
     doc.setFont('helvetica', 'normal');
-    doc.text(removeDiacritics(project.clientName) || '—', 60, 55);
+    doc.text(removeDiacritics(project.clientName) || '—', 50, 55);
     
     doc.setFont('helvetica', 'bold');
-    doc.text('Date / Data:', 120, 47);
+    doc.text(pdfDate, 120, 47);
     doc.setFont('helvetica', 'normal');
-    doc.text(new Date().toLocaleDateString('ro-RO'), 155, 47);
+    doc.text(new Date().toLocaleDateString('ro-RO'), 145, 47);
     
     doc.setFont('helvetica', 'bold');
-    doc.text('Total items / Articole:', 120, 55);
+    doc.text(pdfTotalItems, 120, 55);
     doc.setFont('helvetica', 'normal');
-    doc.text(totalItems.toString(), 170, 55);
+    doc.text(totalItems.toString(), 160, 55);
     
     let yPos = 78;
     
+    // Section titles from translations
     const sectionTitles = {
-      wallBoxesMasonry: 'Wall Boxes Masonry / Doze Zidarie',
-      wallBoxesDrywall: 'Wall Boxes Drywall / Doze Gips-carton',
-      installFaces: 'Supports / Rame Montaj', 
-      decorFaces: 'Cover Plates / Rame Decor',
-      modules: 'Modules / Module',
-      moduleFaces: 'Module Faces / Fete Module',
+      wallBoxesMasonry: t.wallBoxesMasonry,
+      wallBoxesDrywall: t.wallBoxesDrywall,
+      installFaces: t.supports || t.installFaces,
+      decorFaces: t.coverPlates || t.decorFaces,
+      modules: t.modules,
+      moduleFaces: t.moduleFaces,
     };
     
     sections.forEach(({ key, title }) => {
       const items = Object.values(boqData[key]);
       if (items.length === 0) return;
       
-      // Estimate space needed: header (12) + table header (10) + rows (8 each) + padding (15)
-      const estimatedHeight = 12 + 10 + (items.length * 8) + 15;
+      // Calculate section total qty
+      const sectionTotalQty = items.reduce((sum, item) => sum + item.qty, 0);
+      
+      // Estimate space needed: header (12) + table header (10) + rows (8 each) + subtotal (10) + padding (15)
+      const estimatedHeight = 12 + 10 + (items.length * 8) + 10 + 15;
       
       if (yPos + estimatedHeight > 280) {
         doc.addPage();
@@ -3113,26 +3204,50 @@ function BOQView({ project }) {
       
       // Section header with gray background - same width as table
       doc.setFillColor(80, 80, 80);
-      doc.rect(14, yPos, totalTableWidth, 8, 'F');
+      doc.rect(10, yPos, totalTableWidth, 8, 'F');
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text(sectionTitles[key] || title, 18, yPos + 6);
+      doc.text(removeDiacritics(sectionTitles[key] || title), 14, yPos + 6);
       doc.setTextColor(0, 0, 0);
       
       // Move position AFTER the header
       yPos += 8;
       
-      // Table with fixed column widths
+      // Localized table headers
+      const tableHeaders = lang === 'ro' 
+        ? [
+            { content: 'Articol', styles: { halign: 'left' } },
+            { content: 'Culoare', styles: { halign: 'right' } },
+            { content: 'Cod', styles: { halign: 'right' } },
+            { content: 'Cant.', styles: { halign: 'center' } }
+          ]
+        : [
+            { content: 'Item', styles: { halign: 'left' } },
+            { content: 'Color', styles: { halign: 'right' } },
+            { content: 'SKU', styles: { halign: 'right' } },
+            { content: 'Qty', styles: { halign: 'center' } }
+          ];
+      
+      // Build table body with subtotal row
+      const tableBody = items.map(item => [
+        removeDiacritics(item.name) || '—', 
+        removeDiacritics(item.color) || '—', 
+        item.sku || '—', 
+        item.qty.toString()
+      ]);
+      
+      // Add subtotal row
+      tableBody.push([
+        { content: 'Subtotal:', colSpan: 3, styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } },
+        { content: sectionTotalQty.toString(), styles: { halign: 'center', fontStyle: 'bold', fillColor: [245, 245, 245] } }
+      ]);
+      
+      // Create independent table for this section
       autoTable(doc, {
         startY: yPos,
-        head: [['Item / Articol', 'Color / Culoare', 'SKU / Cod', 'Qty / Cant.']],
-        body: items.map(item => [
-          removeDiacritics(item.name) || '—', 
-          removeDiacritics(item.color) || '—', 
-          item.sku || '—', 
-          item.qty.toString()
-        ]),
+        head: [tableHeaders],
+        body: tableBody,
         theme: 'grid',
         styles: {
           fontSize: 9,
@@ -3144,42 +3259,45 @@ function BOQView({ project }) {
         },
         columnStyles: {
           0: { cellWidth: col1Width, halign: 'left' },
-          1: { cellWidth: col2Width, halign: 'left' },
-          2: { cellWidth: col3Width, halign: 'left', fontStyle: 'italic', textColor: [100, 100, 100] },
+          1: { cellWidth: col2Width, halign: 'right' },
+          2: { cellWidth: col3Width, halign: 'right', fontStyle: 'italic', textColor: [100, 100, 100] },
           3: { cellWidth: col4Width, halign: 'center', fontStyle: 'bold' },
         },
-        margin: { left: 14, right: 14 },
+        margin: { left: 10, right: 10 },
+        tableId: key, // Unique ID for each table
       });
       
-      // Update position for next section - more padding between tables
-      if (doc.previousAutoTable) {
-        yPos = doc.previousAutoTable.finalY + 18; // Increased from 12 to 18
-      } else {
-        yPos += 30;
-      }
+      // Get the final Y position immediately after this table
+      const thisTableFinalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : (doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos + 50);
+      
+      // Set position for next section with minimal padding
+      yPos = thisTableFinalY + 5;
     });
     
     // Total needs consistent spacing from last table's finalY
-    const lastTableEndY = doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos;
-    yPos = lastTableEndY + 25; // Reduced since we already have good spacing
+    const lastTableEndY = doc.lastAutoTable ? doc.lastAutoTable.finalY : (doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos);
+    yPos = lastTableEndY + 15; // 15px padding after last table
     
     if (yPos > 270) {
       doc.addPage();
       yPos = 20;
     }
     
+    const totalLabel = lang === 'ro' ? `TOTAL: ${totalItems} articole` : `TOTAL: ${totalItems} items`;
     doc.setFontSize(12);
     doc.setFont('helvetica', 'bold');
-    doc.text(`TOTAL: ${totalItems} items / articole`, pageWidth - 14, yPos, { align: 'right' });
+    doc.text(totalLabel, pageWidth - 14, yPos, { align: 'right' });
     
     const pageCount = doc.internal.getNumberOfPages();
+    const pageLabel = lang === 'ro' ? 'Pagina' : 'Page';
+    const ofLabel = lang === 'ro' ? 'din' : 'of';
     for (let i = 1; i <= pageCount; i++) {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(150, 150, 150);
       doc.text(
-        `BTicino Living Now Configurator - Page ${i} of ${pageCount}`,
+        `BTicino Living Now Configurator - ${pageLabel} ${i} ${ofLabel} ${pageCount}`,
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 10,
         { align: 'center' }
@@ -3187,7 +3305,10 @@ function BOQView({ project }) {
     }
     
     doc.setTextColor(0, 0, 0);
-    doc.save(`BOQ_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+    const filePrefix = lang === 'ro' ? 'BOQ_Furnizor' : 'BOQ_Supplier';
+    const clientName = project.clientName ? removeDiacritics(project.clientName).replace(/\s+/g, '_') : 'Client';
+    const dateStr = new Date().toLocaleDateString('ro-RO').replace(/\./g, '-');
+    doc.save(`${filePrefix}_${clientName}_${dateStr}.pdf`);
   };
 
   return (
@@ -3274,7 +3395,7 @@ function QuoteView({ project }) {
       
       if (wallBoxType === 'drywall') {
         items.wallBoxesDrywall[wbKey] = items.wallBoxesDrywall[wbKey] || { 
-          name: `Doza Gips-carton / Wall Box Drywall ${assembly.size}M`, 
+          name: `${t.wallBoxDrywallItem} ${assembly.size}M`, 
           color: '—',
           unitPrice: wbPrice,
           qty: 0 
@@ -3282,7 +3403,7 @@ function QuoteView({ project }) {
         items.wallBoxesDrywall[wbKey].qty++;
       } else {
         items.wallBoxesMasonry[wbKey] = items.wallBoxesMasonry[wbKey] || { 
-          name: `Doza Zidarie / Wall Box Masonry ${assembly.size}M`, 
+          name: `${t.wallBoxMasonryItem} ${assembly.size}M`, 
           color: '—',
           unitPrice: wbPrice,
           qty: 0 
@@ -3294,7 +3415,7 @@ function QuoteView({ project }) {
       const ifKey = `${assembly.size}M`;
       const ifPrice = getInstallFacePrice(assembly.size, library);
       items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `Rama Montaj / Support ${assembly.size}M`, 
+        name: `${t.supportItem} ${assembly.size}M`, 
         color: '—',
         unitPrice: ifPrice,
         qty: 0 
@@ -3305,7 +3426,7 @@ function QuoteView({ project }) {
       const dfKey = `${assembly.size}M-${assembly.color}`;
       const dfPrice = getDecorFacePrice(assembly.size, assembly.color, library);
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `Rama Decor / Cover Plate ${assembly.size}M`, 
+        name: `${t.coverPlateItem} ${assembly.size}M`, 
         color: colorName,
         unitPrice: dfPrice,
         qty: 0 
@@ -3332,7 +3453,7 @@ function QuoteView({ project }) {
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
           const mfPrice = getModuleFacePrice(mod.moduleId, assembly.color, library);
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
-            name: `${translatedName} - Fata / Face`, 
+            name: `${translatedName} - ${t.face}`, 
             color: colorName,
             unitPrice: mfPrice,
             qty: 0 
@@ -3387,28 +3508,36 @@ function QuoteView({ project }) {
     const doc = new jsPDF();
     const pageWidth = doc.internal.pageSize.getWidth();
     
-    // Function to remove diacritics - defined first
+    // Function to remove diacritics - handles both comma and cedilla variants
     const removeDiacritics = (str) => {
       if (!str) return str;
       return str
-        .replace(/ă/g, 'a').replace(/Ă/g, 'A')
-        .replace(/â/g, 'a').replace(/Â/g, 'A')
-        .replace(/î/g, 'i').replace(/Î/g, 'I')
-        .replace(/ș/g, 's').replace(/Ș/g, 'S')
-        .replace(/ț/g, 't').replace(/Ț/g, 'T');
+        .replace(/[ăÄƒ]/g, 'a').replace(/[ĂÄ‚]/g, 'A')
+        .replace(/[âÃ¢]/g, 'a').replace(/[ÂÃ‚]/g, 'A')
+        .replace(/[îÃ®]/g, 'i').replace(/[ÎÃŽ]/g, 'I')
+        .replace(/[șşÈ™]/g, 's').replace(/[ȘŞÈ˜]/g, 'S')
+        .replace(/[țţÈ›]/g, 't').replace(/[ȚŢÈš]/g, 'T');
     };
     
     doc.setFont('helvetica');
     
+    // Localized labels
+    const pdfTitle = lang === 'ro' ? 'Oferta Client' : 'Client Quote';
+    const pdfSubtitle = lang === 'ro' ? 'Toate preturile includ TVA 21%' : 'All prices include VAT 21%';
+    const pdfProject = lang === 'ro' ? 'Proiect:' : 'Project:';
+    const pdfClient = lang === 'ro' ? 'Client:' : 'Client:';
+    const pdfDate = lang === 'ro' ? 'Data:' : 'Date:';
+    const pdfItems = lang === 'ro' ? 'Articole:' : 'Items:';
+    
     // Title
     doc.setFontSize(20);
     doc.setFont('helvetica', 'bold');
-    doc.text('Client Quote / Oferta Client', pageWidth / 2, 20, { align: 'center' });
+    doc.text(pdfTitle, pageWidth / 2, 20, { align: 'center' });
     
     // Subtitle
     doc.setFontSize(10);
     doc.setFont('helvetica', 'normal');
-    doc.text('All prices include VAT 21% / Toate preturile includ TVA 21%', pageWidth / 2, 28, { align: 'center' });
+    doc.text(pdfSubtitle, pageWidth / 2, 28, { align: 'center' });
     
     // Line separator
     doc.setDrawColor(200, 200, 200);
@@ -3422,43 +3551,44 @@ function QuoteView({ project }) {
     
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
-    doc.text('Project / Proiect:', 18, 47);
+    doc.text(pdfProject, 18, 47);
     doc.setFont('helvetica', 'normal');
-    doc.text(removeDiacritics(project.name) || '—', 55, 47);
+    doc.text(removeDiacritics(project.name) || '—', 50, 47);
     
     doc.setFont('helvetica', 'bold');
-    doc.text('Client:', 18, 55);
+    doc.text(pdfClient, 18, 55);
     doc.setFont('helvetica', 'normal');
-    doc.text(removeDiacritics(project.clientName) || '—', 55, 55);
+    doc.text(removeDiacritics(project.clientName) || '—', 50, 55);
     
     doc.setFont('helvetica', 'bold');
-    doc.text('Date / Data:', 110, 47);
+    doc.text(pdfDate, 110, 47);
     doc.setFont('helvetica', 'normal');
-    doc.text(new Date().toLocaleDateString('ro-RO'), 145, 47);
+    doc.text(new Date().toLocaleDateString('ro-RO'), 135, 47);
     
     doc.setFont('helvetica', 'bold');
-    doc.text('Items / Articole:', 110, 55);
+    doc.text(pdfItems, 110, 55);
     doc.setFont('helvetica', 'normal');
-    doc.text(totalItems.toString(), 145, 55);
+    doc.text(totalItems.toString(), 135, 55);
     
     let yPos = 78;
     
+    // Section titles from translations
     const sectionTitles = {
-      wallBoxesMasonry: 'Wall Boxes Masonry / Doze Zidarie',
-      wallBoxesDrywall: 'Wall Boxes Drywall / Doze Gips-carton',
-      installFaces: 'Supports / Rame Montaj', 
-      decorFaces: 'Cover Plates / Rame Decor',
-      modules: 'Modules / Module',
-      moduleFaces: 'Module Faces / Fete Module',
+      wallBoxesMasonry: t.wallBoxesMasonry,
+      wallBoxesDrywall: t.wallBoxesDrywall,
+      installFaces: t.supports || t.installFaces,
+      decorFaces: t.coverPlates || t.decorFaces,
+      modules: t.modules,
+      moduleFaces: t.moduleFaces,
     };
     
-    // Fixed column widths for quote (6 columns)
-    const col1Width = 55;  // Item / Articol
+    // Fixed column widths for quote (6 columns) - adjusted for smaller margins
+    const col1Width = 60;  // Item / Articol
     const col2Width = 25;  // Color / Culoare
     const col3Width = 28;  // Unit (excl. VAT)
     const col4Width = 28;  // Unit (incl. VAT)
     const col5Width = 18;  // Qty
-    const col6Width = 28;  // Total
+    const col6Width = 30;  // Total (with "lei")
     const totalTableWidth = col1Width + col2Width + col3Width + col4Width + col5Width + col6Width;
     
     sections.forEach(({ key, title }) => {
@@ -3466,22 +3596,23 @@ function QuoteView({ project }) {
       if (items.length === 0) return;
       
       const sectionTotalWithVat = calculateSectionTotal(quoteData[key]);
+      const sectionTotalQty = items.reduce((sum, item) => sum + item.qty, 0);
       
       // Estimate space needed
       const estimatedHeight = 12 + 10 + (items.length * 8) + 10 + 15;
       
-      if (yPos + estimatedHeight > 280) {
+      if (yPos + estimatedHeight > 285) {
         doc.addPage();
-        yPos = 20;
+        yPos = 12;
       }
       
       // Section header with gray background
       doc.setFillColor(80, 80, 80);
-      doc.rect(14, yPos, totalTableWidth, 8, 'F');
+      doc.rect(10, yPos, totalTableWidth, 8, 'F');
       doc.setFontSize(10);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(255, 255, 255);
-      doc.text(sectionTitles[key] || title, 18, yPos + 6);
+      doc.text(removeDiacritics(sectionTitles[key] || title), 14, yPos + 6);
       doc.setTextColor(0, 0, 0);
       
       // Move position AFTER the header
@@ -3497,20 +3628,38 @@ function QuoteView({ project }) {
           formatPrice(unitWithoutVat),
           formatPrice(item.unitPrice),
           item.qty.toString(),
-          formatPrice(totalWithVat)
+          formatPrice(totalWithVat) + ' lei'
         ];
       });
       
-      // Add subtotal row
+      // Add subtotal row to table body with qty and price
       tableBody.push([
-        { content: 'Subtotal:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } },
-        { content: formatPrice(sectionTotalWithVat), styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } }
+        { content: 'Subtotal:', colSpan: 4, styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } },
+        { content: sectionTotalQty.toString(), styles: { halign: 'center', fontStyle: 'bold', fillColor: [245, 245, 245] } },
+        { content: formatPrice(sectionTotalWithVat) + ' lei', styles: { halign: 'right', fontStyle: 'bold', fillColor: [245, 245, 245] } }
       ]);
       
-      // Table with fixed column widths
+      // Localized table headers
+      const tableHeaders = lang === 'ro' ? [
+        { content: 'Articol', styles: { halign: 'left' } },
+        { content: 'Culoare', styles: { halign: 'right' } },
+        { content: 'Unitar (fara TVA)', styles: { halign: 'right' } },
+        { content: 'Unitar (cu TVA)', styles: { halign: 'right' } },
+        { content: 'Cant.', styles: { halign: 'center' } },
+        { content: 'Total', styles: { halign: 'right' } }
+      ] : [
+        { content: 'Item', styles: { halign: 'left' } },
+        { content: 'Color', styles: { halign: 'right' } },
+        { content: 'Unit (excl. VAT)', styles: { halign: 'right' } },
+        { content: 'Unit (incl. VAT)', styles: { halign: 'right' } },
+        { content: 'Qty', styles: { halign: 'center' } },
+        { content: 'Total', styles: { halign: 'right' } }
+      ];
+      
+      // Create independent table for this section
       autoTable(doc, {
         startY: yPos,
-        head: [['Item / Articol', 'Color', 'Unit (fara TVA)', 'Unit (cu TVA)', 'Cant.', 'Total']],
+        head: [tableHeaders],
         body: tableBody,
         theme: 'grid',
         styles: {
@@ -3523,27 +3672,26 @@ function QuoteView({ project }) {
         },
         columnStyles: {
           0: { cellWidth: col1Width, halign: 'left' },
-          1: { cellWidth: col2Width, halign: 'left' },
+          1: { cellWidth: col2Width, halign: 'right' },
           2: { cellWidth: col3Width, halign: 'right', textColor: [100, 100, 100] },
           3: { cellWidth: col4Width, halign: 'right' },
           4: { cellWidth: col5Width, halign: 'center' },
           5: { cellWidth: col6Width, halign: 'right', fontStyle: 'bold' },
         },
-        margin: { left: 14, right: 14 },
+        margin: { left: 10, right: 10 },
+        tableId: key, // Unique ID for each table
       });
       
-      // Update position for next section - more padding to show subtotal
-      if (doc.previousAutoTable) {
-        yPos = doc.previousAutoTable.finalY + 20; // Increased from 15 to 20
-      } else {
-        yPos += 35;
-      }
+      // Get the final Y position immediately after this table
+      const thisTableFinalY = doc.lastAutoTable ? doc.lastAutoTable.finalY : (doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos + 50);
+      
+      // Set position for next section with padding
+      yPos = thisTableFinalY + 10;
     });
     
-    // Grand total box needs consistent spacing from last table's finalY
-    // Get the actual final position after all tables
-    const lastTableEndY = doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos;
-    yPos = lastTableEndY + 25; // Reduced since we already have good spacing
+    // Grand total box - use last table's final position
+    const lastY = doc.lastAutoTable ? doc.lastAutoTable.finalY : (doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos);
+    yPos = lastY + 15;
     
     if (yPos > 220) {
       doc.addPage();
@@ -3561,11 +3709,11 @@ function QuoteView({ project }) {
     
     // Total without VAT
     doc.text('Total (fara TVA):', pageWidth - 96, yPos + 10);
-    doc.text(formatPrice(grandTotalWithoutVat) + ' RON', pageWidth - 18, yPos + 10, { align: 'right' });
+    doc.text(formatPrice(grandTotalWithoutVat) + ' lei', pageWidth - 18, yPos + 10, { align: 'right' });
     
     // VAT Amount
     doc.text('TVA (21%):', pageWidth - 96, yPos + 20);
-    doc.text(formatPrice(vatAmount) + ' RON', pageWidth - 18, yPos + 20, { align: 'right' });
+    doc.text(formatPrice(vatAmount) + ' lei', pageWidth - 18, yPos + 20, { align: 'right' });
     
     // Total with VAT
     doc.setDrawColor(150, 150, 150);
@@ -3573,7 +3721,7 @@ function QuoteView({ project }) {
     doc.setFontSize(11);
     doc.setFont('helvetica', 'bold');
     doc.text('TOTAL:', pageWidth - 96, yPos + 35);
-    doc.text(formatPrice(grandTotalWithVat) + ' RON', pageWidth - 18, yPos + 35, { align: 'right' });
+    doc.text(formatPrice(grandTotalWithVat) + ' lei', pageWidth - 18, yPos + 35, { align: 'right' });
     
     // Footer
     const pageCount = doc.internal.getNumberOfPages();
@@ -3592,7 +3740,10 @@ function QuoteView({ project }) {
     
     // Reset text color and save
     doc.setTextColor(0, 0, 0);
-    doc.save(`Quote_${project.name.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`);
+    const filePrefix = lang === 'ro' ? 'Oferta' : 'Quote';
+    const clientName = project.clientName ? removeDiacritics(project.clientName).replace(/\s+/g, '_') : 'Client';
+    const dateStr = new Date().toLocaleDateString('ro-RO').replace(/\./g, '-');
+    doc.save(`${filePrefix}_${clientName}_${dateStr}.pdf`);
   };
 
   return (
@@ -3740,8 +3891,8 @@ function ProfitView({ project }) {
       
       const wbCategory = wallBoxType === 'drywall' ? 'wallBoxesDrywall' : 'wallBoxesMasonry';
       const wbName = wallBoxType === 'drywall' 
-        ? `Doza Gips-carton / Wall Box Drywall ${assembly.size}M`
-        : `Doza Zidarie / Wall Box Masonry ${assembly.size}M`;
+        ? `${t.wallBoxDrywallItem} ${assembly.size}M`
+        : `${t.wallBoxMasonryItem} ${assembly.size}M`;
       
       items[wbCategory][wbKey] = items[wbCategory][wbKey] || { 
         name: wbName,
@@ -3760,7 +3911,7 @@ function ProfitView({ project }) {
       const ifSellingWithoutVat = ifPrice / (1 + VAT_RATE);
       
       items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `Rama Montaj / Support ${assembly.size}M`,
+        name: `${t.supportItem} ${assembly.size}M`,
         color: '—',
         purchasePrice: ifPurchase,
         sellingPrice: ifSellingWithoutVat,
@@ -3776,7 +3927,7 @@ function ProfitView({ project }) {
       const dfSellingWithoutVat = dfPrice / (1 + VAT_RATE);
       
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `Rama Decor / Cover Plate ${assembly.size}M`,
+        name: `${t.coverPlateItem} ${assembly.size}M`,
         color: colorName,
         purchasePrice: dfPurchase,
         sellingPrice: dfSellingWithoutVat,
@@ -3816,7 +3967,7 @@ function ProfitView({ project }) {
           const mfSellingWithoutVat = mfPrice / (1 + VAT_RATE);
           
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
-            name: `${translatedName} - Fata / Face`,
+            name: `${translatedName} - ${t.face}`,
             color: colorName,
             purchasePrice: mfPurchase,
             sellingPrice: mfSellingWithoutVat,
@@ -3914,23 +4065,26 @@ function ProfitView({ project }) {
                   <table className="w-full text-sm border border-gray-200">
                     <thead>
                       <tr className="bg-gray-100 text-left text-gray-600">
-                        <th className="p-2 border-b w-[30%]">{t.item}</th>
-                        <th className="p-2 border-b w-[12%]">{t.color}</th>
-                        <th className="p-2 border-b text-right w-[15%]">{t.unitPurchase}</th>
-                        <th className="p-2 border-b text-right w-[15%]">{t.unitSelling}</th>
-                        <th className="p-2 border-b text-center w-[10%]">{t.qty}</th>
-                        <th className="p-2 border-b text-right w-[18%]">{t.unitProfit}</th>
+                        <th className="p-2 border-b w-[26%]">{t.item}</th>
+                        <th className="p-2 border-b w-[10%]">{t.color}</th>
+                        <th className="p-2 border-b text-right w-[12%]">{t.unitPurchase}</th>
+                        <th className="p-2 border-b text-right w-[12%]">{t.unitSelling}</th>
+                        <th className="p-2 border-b text-right w-[10%]">{t.unitDifference}</th>
+                        <th className="p-2 border-b text-center w-[8%]">{t.qty}</th>
+                        <th className="p-2 border-b text-right w-[14%]">{t.unitProfit}</th>
                       </tr>
                     </thead>
                     <tbody>
                       {items.map((item, idx) => {
-                        const lineProfit = (item.sellingPrice - item.purchasePrice) * item.qty;
+                        const unitDiff = item.sellingPrice - item.purchasePrice;
+                        const lineProfit = unitDiff * item.qty;
                         return (
                           <tr key={idx} className="border-b hover:bg-gray-50">
                             <td className="p-2">{item.name}</td>
                             <td className="p-2 text-gray-600">{item.color}</td>
                             <td className="p-2 text-right font-mono text-gray-500">{formatPrice(item.purchasePrice)}</td>
                             <td className="p-2 text-right font-mono">{formatPrice(item.sellingPrice)}</td>
+                            <td className={`p-2 text-right font-mono ${unitDiff >= 0 ? 'text-green-600' : 'text-red-600'}`}>{formatPrice(unitDiff)}</td>
                             <td className="p-2 text-center font-mono">{item.qty}</td>
                             <td className={`p-2 text-right font-mono font-bold ${lineProfit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                               {formatPrice(lineProfit)}
@@ -3939,7 +4093,7 @@ function ProfitView({ project }) {
                         );
                       })}
                       <tr className="bg-gray-100">
-                        <td colSpan={5} className="p-2 text-right font-bold">{t.subtotal}:</td>
+                        <td colSpan={6} className="p-2 text-right font-bold">{t.subtotal}:</td>
                         <td className={`p-2 text-right font-mono font-bold ${sectionTotals.profit >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                           {formatPrice(sectionTotals.profit)}
                         </td>
