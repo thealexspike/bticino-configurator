@@ -48,6 +48,9 @@ const TRANSLATIONS = {
     noRoom: 'No room',
     used: 'used',
     overCapacity: 'OVER CAPACITY!',
+    editProject: 'Edit Project',
+    projectName: 'Project Name',
+    clientName: 'Client Name',
     
     // Assembly Editor
     backToList: 'Back to List',
@@ -107,6 +110,7 @@ const TRANSLATIONS = {
     wallBoxes: 'Wall Boxes',
     installFaces: 'Install Faces',
     decorFaces: 'Decor Faces',
+    decorFacesTab: 'Decor Frames',
     moduleFaces: 'Module Faces',
     noAssemblies: 'No assemblies to generate',
     allPricesIncludeVat: 'All prices include VAT',
@@ -232,6 +236,9 @@ const TRANSLATIONS = {
     noRoom: 'Fără cameră',
     used: 'folosit',
     overCapacity: 'CAPACITATE DEPĂȘITĂ!',
+    editProject: 'Editează Proiect',
+    projectName: 'Nume Proiect',
+    clientName: 'Nume Client',
     
     // Assembly Editor
     backToList: 'Înapoi la Listă',
@@ -291,6 +298,7 @@ const TRANSLATIONS = {
     wallBoxes: 'Doze',
     installFaces: 'Suporturi',
     decorFaces: 'Rame',
+    decorFacesTab: 'Rame Decor',
     moduleFaces: 'Fețe Module',
     noAssemblies: 'Nu există ansambluri pentru generare',
     allPricesIncludeVat: 'Toate prețurile includ TVA',
@@ -574,6 +582,80 @@ const ModuleGraphicsByType = {
       </svg>
     );
   },
+  // COAX-TV outlet - 1M with coaxial connector
+  coax: ({ color = 'white', width = 30, height = 80 }) => {
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const connector = color === 'black' ? '#666' : '#999';
+    const center = color === 'black' ? '#1a1a1a' : '#333';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
+    return (
+      <svg width={width} height={height} viewBox="0 0 30 80">
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* Outer ring */}
+        <circle cx="15" cy="38" r="10" fill={connector}/>
+        {/* Inner circle */}
+        <circle cx="15" cy="38" r="6" fill={bg}/>
+        {/* Center pin */}
+        <circle cx="15" cy="38" r="2.5" fill={center}/>
+        {/* TV text */}
+        <text x="15" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">TV</text>
+      </svg>
+    );
+  },
+  // UTP/RJ45 outlet - 1M with network connector
+  utp: ({ color = 'white', width = 30, height = 80 }) => {
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const port = color === 'black' ? '#1a1a1a' : '#333';
+    const contacts = color === 'black' ? '#888' : '#666';
+    const symbol = color === 'black' ? '#ffffff' : '#333333';
+    return (
+      <svg width={width} height={height} viewBox="0 0 30 80">
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* RJ45 port outline */}
+        <rect x="6" y="28" width="18" height="22" rx="1" fill={port}/>
+        {/* Port opening */}
+        <rect x="8" y="32" width="14" height="14" rx="0.5" fill={bg}/>
+        {/* 8 contact pins */}
+        {[0,1,2,3,4,5,6,7].map(i => (
+          <rect key={i} x={9 + i * 1.5} y="33" width="1" height="8" fill={contacts}/>
+        ))}
+        {/* Clip notch */}
+        <rect x="12" y="46" width="6" height="3" fill={bg}/>
+        {/* UTP text */}
+        <text x="15" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">UTP</text>
+      </svg>
+    );
+  },
+  // Generic 1M module - placeholder for unknown modules
+  generic1m: ({ color = 'white', width = 30, height = 80 }) => {
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#666' : '#bbb';
+    return (
+      <svg width={width} height={height} viewBox="0 0 30 80">
+        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        {/* Question mark or generic symbol */}
+        <circle cx="15" cy="36" r="12" fill="none" stroke={symbol} strokeWidth="2" strokeDasharray="4 2"/>
+        <text x="15" y="42" fontSize="14" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">?</text>
+        {/* 1M indicator */}
+        <text x="15" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial">1M</text>
+      </svg>
+    );
+  },
+  // Generic 2M module - placeholder for unknown 2M modules
+  generic2m: ({ color = 'white', width = 60, height = 80 }) => {
+    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const symbol = color === 'black' ? '#666' : '#bbb';
+    return (
+      <svg width={width} height={height} viewBox="0 0 60 80">
+        <rect x="0" y="0" width="60" height="80" fill={bg}/>
+        {/* Question mark or generic symbol */}
+        <circle cx="30" cy="36" r="14" fill="none" stroke={symbol} strokeWidth="2" strokeDasharray="4 2"/>
+        <text x="30" y="44" fontSize="16" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">?</text>
+        {/* 2M indicator */}
+        <text x="30" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial">2M</text>
+      </svg>
+    );
+  },
   blank: ({ color = 'white', width = 30, height = 80 }) => {
     const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
     return (
@@ -585,8 +667,8 @@ const ModuleGraphicsByType = {
 };
 
 // Map module ID to graphic types
-const getGraphicTypeFromId = (moduleId) => {
-  if (!moduleId) return 'blank';
+const getGraphicTypeFromId = (moduleId, moduleSize = 1) => {
+  if (!moduleId) return moduleSize === 2 ? 'generic2m' : 'generic1m';
   const idLower = moduleId.toLowerCase();
   if (idLower.includes('schuko')) return 'schuko';
   if (idLower.includes('italian')) return 'italian';
@@ -595,20 +677,23 @@ const getGraphicTypeFromId = (moduleId) => {
   if (idLower.includes('switch')) return 'switch';
   if (idLower.includes('dimmer')) return 'dimmer';
   if (idLower.includes('usb')) return 'usb';
+  if (idLower.includes('coax') || idLower.includes('tv')) return 'coax';
+  if (idLower.includes('utp') || idLower.includes('rj45') || idLower.includes('ethernet') || idLower.includes('network')) return 'utp';
   if (idLower.includes('blank')) return 'blank';
-  return 'blank';
+  // Return generic placeholder based on size for unknown modules
+  return moduleSize === 2 ? 'generic2m' : 'generic1m';
 };
 
 // Get graphic component for a module ID
-const getModuleGraphic = (moduleId) => {
-  const type = getGraphicTypeFromId(moduleId);
-  return ModuleGraphicsByType[type] || ModuleGraphicsByType.blank;
+const getModuleGraphic = (moduleId, moduleSize = 1) => {
+  const type = getGraphicTypeFromId(moduleId, moduleSize);
+  return ModuleGraphicsByType[type] || ModuleGraphicsByType.generic1m;
 };
 
 // Module image component
-const ModuleImage = ({ moduleId, color, width = 60, height = 80, className = '' }) => {
-  const graphicType = getGraphicTypeFromId(moduleId);
-  const SvgComponent = ModuleGraphicsByType[graphicType] || ModuleGraphicsByType.blank;
+const ModuleImage = ({ moduleId, color, width = 60, height = 80, className = '', moduleSize = 1 }) => {
+  const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
+  const SvgComponent = ModuleGraphicsByType[graphicType] || ModuleGraphicsByType.generic1m;
   
   return (
     <div className={className} style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -673,16 +758,30 @@ const FacePlateFrame = ({ size, color, children, width, height }) => {
   );
 };
 
-// Thumbnail for module list
-const ModuleThumbnail = ({ moduleId, size = 32 }) => {
-  const scale = size / 80;
-  const graphicType = getGraphicTypeFromId(moduleId);
-  const width = graphicType === 'schuko' || graphicType === 'dimmer' ? 60 * scale : 30 * scale;
-  const Component = getModuleGraphic(moduleId);
+// Thumbnail for module list in Library
+const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
+  const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
+  // Real BTicino proportions: 1M = 8.5 x 31, 2M = 17 x 31
+  const is2M = graphicType === 'schuko' || graphicType === 'dimmer' || graphicType === 'generic2m' || moduleSize === 2;
+  const aspectRatio = is2M ? (17 / 31) : (8.5 / 31);
+  const height = size;
+  const width = height * aspectRatio;
+  
+  const Component = getModuleGraphic(moduleId, moduleSize);
   if (!Component) return null;
+  
   return (
-    <div style={{ transform: `scale(${scale})`, transformOrigin: 'top left', width, height: size }}>
-      <Component color="white" />
+    <div 
+      className="border border-gray-400 bg-gray-100"
+      style={{ 
+        width: width, 
+        height: height,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+      }}
+    >
+      <Component color="white" width={width} height={height} />
     </div>
   );
 };
@@ -750,7 +849,7 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
         }}
       >
         {moduleSlots.map((slot, idx) => {
-          const ModuleGraphic = slot.catalogItem ? getModuleGraphic(slot.catalogItem.id) : null;
+          const ModuleGraphic = slot.catalogItem ? getModuleGraphic(slot.catalogItem.id, slot.size) : null;
           
           return (
             <div
@@ -1410,11 +1509,29 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   const [activeTab, setActiveTab] = useState('outlets');
   const [editingAssembly, setEditingAssembly] = useState(null);
   const [showPresetDialog, setShowPresetDialog] = useState(null); // 'outlet' or 'switch' or null
+  const [editingProject, setEditingProject] = useState(false);
+  const [editProjectName, setEditProjectName] = useState(project.name);
+  const [editClientName, setEditClientName] = useState(project.clientName || '');
   const t = useTranslation();
   const library = React.useContext(LibraryContext);
 
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
   const switches = project.assemblies.filter(a => a.type === 'switch');
+
+  const saveProjectDetails = () => {
+    onUpdate({
+      ...project,
+      name: editProjectName.trim() || project.name,
+      clientName: editClientName.trim(),
+    });
+    setEditingProject(false);
+  };
+
+  const cancelProjectEdit = () => {
+    setEditProjectName(project.name);
+    setEditClientName(project.clientName || '');
+    setEditingProject(false);
+  };
 
   const addAssembly = (type, presetId = null) => {
     const code = generateAssemblyCode(project.assemblies, type);
@@ -1556,8 +1673,60 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       </button>
 
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h1 className="text-2xl font-bold">{project.name}</h1>
-        <p className="text-gray-600">{project.clientName || t.noClient}</p>
+        {editingProject ? (
+          // Edit mode
+          <div className="space-y-3">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.projectName}</label>
+              <input
+                type="text"
+                value={editProjectName}
+                onChange={(e) => setEditProjectName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                autoFocus
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.clientName}</label>
+              <input
+                type="text"
+                value={editClientName}
+                onChange={(e) => setEditClientName(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+                placeholder={t.noClient}
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <button
+                onClick={saveProjectDetails}
+                className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+              >
+                {t.save}
+              </button>
+              <button
+                onClick={cancelProjectEdit}
+                className="bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300"
+              >
+                {t.cancel}
+              </button>
+            </div>
+          </div>
+        ) : (
+          // View mode
+          <div className="flex justify-between items-start">
+            <div>
+              <h1 className="text-2xl font-bold">{project.name}</h1>
+              <p className="text-gray-600">{project.clientName || t.noClient}</p>
+            </div>
+            <button
+              onClick={() => setEditingProject(true)}
+              className="text-gray-500 hover:text-blue-600 p-2"
+              title={t.editProject}
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -2990,8 +3159,9 @@ function BOQView({ project }) {
       }
     });
     
-    // Add padding after last table
-    yPos += 20;
+    // Total needs consistent spacing from last table's finalY
+    const lastTableEndY = doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos;
+    yPos = lastTableEndY + 45; // 45px padding to clear any overlap
     
     if (yPos > 270) {
       doc.addPage();
@@ -3362,16 +3532,18 @@ function QuoteView({ project }) {
         margin: { left: 14, right: 14 },
       });
       
-      // Update position for next section - more padding
+      // Update position for next section - get exact end position of table
       if (doc.previousAutoTable) {
-        yPos = doc.previousAutoTable.finalY + 18;
+        yPos = doc.previousAutoTable.finalY + 15;
       } else {
         yPos += 35;
       }
     });
     
-    // Add more padding after last table before grand total
-    yPos += 20;
+    // Grand total box needs consistent spacing from last table's finalY
+    // Get the actual final position after all tables
+    const lastTableEndY = doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos;
+    yPos = lastTableEndY + 45; // 45px padding to clear the subtotal row
     
     if (yPos > 220) {
       doc.addPage();
@@ -3507,7 +3679,7 @@ function QuoteView({ project }) {
           </div>
 
           {/* Grand Total with VAT breakdown */}
-          <div className="p-6 bg-gray-100 border-t">
+          <div className="p-6 bg-gray-100 border-t mt-8">
             <div className="flex justify-between items-start">
               <div className="text-sm text-gray-600">
                 <p className="mb-1">{t.vatRate}</p>
@@ -4046,12 +4218,6 @@ function LibraryPage({ library, onUpdate, onBack }) {
           {t.modules}
         </button>
         <button
-          onClick={() => setActiveTab('presets')}
-          className={`px-4 py-2 rounded ${activeTab === 'presets' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
-        >
-          {t.presets}
-        </button>
-        <button
           onClick={() => setActiveTab('wallboxes')}
           className={`px-4 py-2 rounded ${activeTab === 'wallboxes' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
         >
@@ -4067,7 +4233,13 @@ function LibraryPage({ library, onUpdate, onBack }) {
           onClick={() => setActiveTab('decorfaces')}
           className={`px-4 py-2 rounded ${activeTab === 'decorfaces' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
         >
-          {t.decorFaces}
+          {t.decorFacesTab}
+        </button>
+        <button
+          onClick={() => setActiveTab('presets')}
+          className={`px-4 py-2 rounded ${activeTab === 'presets' ? 'bg-purple-600 text-white' : 'bg-gray-200'}`}
+        >
+          {t.presets}
         </button>
       </div>
 
@@ -4590,17 +4762,28 @@ function LibraryPage({ library, onUpdate, onBack }) {
           <div className="divide-y">
             {library.modules.map((mod) => {
               const displayName = getModuleName(mod, lang);
-              const GraphicComponent = getModuleGraphic(mod.id);
+              const GraphicComponent = getModuleGraphic(mod.id, mod.size);
               return (
               <div key={mod.id} className="p-4">
                 {editingModule === mod.id ? (
                   // Edit mode - Table format
                   <div>
                     <div className="flex items-center gap-4 mb-4">
-                      <div className="w-12 h-14 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                      <div 
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 56, // Fixed width for alignment
+                          height: 56,
+                        }}
+                      >
                         {GraphicComponent && (
-                          <div style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }}>
-                            {React.createElement(GraphicComponent, { color: 'white' })}
+                          <div className="border border-gray-300" style={{ lineHeight: 0 }}>
+                            {React.createElement(GraphicComponent, { 
+                              color: 'white', 
+                              // BTicino proportions: 1M = 8.5x31, 2M = 17x31
+                              width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31), 
+                              height: 52 
+                            })}
                           </div>
                         )}
                       </div>
@@ -5106,10 +5289,21 @@ function LibraryPage({ library, onUpdate, onBack }) {
                   // View mode
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-14 bg-gray-100 rounded flex items-center justify-center overflow-hidden">
+                      <div 
+                        className="flex items-center justify-center"
+                        style={{
+                          width: 56, // Fixed width for alignment
+                          height: 56,
+                        }}
+                      >
                         {GraphicComponent && (
-                          <div style={{ transform: 'scale(0.5)', transformOrigin: 'center center' }}>
-                            {React.createElement(GraphicComponent, { color: 'white' })}
+                          <div className="border border-gray-300" style={{ lineHeight: 0 }}>
+                            {React.createElement(GraphicComponent, { 
+                              color: 'white', 
+                              // BTicino proportions: 1M = 8.5x31, 2M = 17x31
+                              width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31), 
+                              height: 52 
+                            })}
                           </div>
                         )}
                       </div>
@@ -5937,10 +6131,11 @@ const deleteProject = async (id) => {
     <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b px-4 py-2 flex justify-between items-center">
       <div className="text-lg font-semibold text-gray-700 flex items-center gap-2">
         <Package className="w-5 h-5" />
-        BTicino Living Now
+        <span className="hidden sm:inline">BTicino Living Now</span>
+        <span className="sm:hidden">BTicino</span>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-sm text-gray-500">{session.user.email}</span>
+        <span className="text-sm text-gray-500 hidden sm:inline">{session.user.email}</span>
         <LanguageSwitcher />
         <button
           onClick={handleLogout}
@@ -5959,7 +6154,7 @@ const deleteProject = async (id) => {
         <LibraryContext.Provider value={library}>
           <div className="min-h-screen bg-gray-100">
             <GlobalHeader />
-            <div className="pt-14">
+            <div className="pt-16">
               <LibraryPage
                 library={library}
                 onUpdate={setLibrary}
@@ -5980,7 +6175,7 @@ const deleteProject = async (id) => {
         <LibraryContext.Provider value={library}>
           <div className="min-h-screen bg-gray-100">
             <GlobalHeader />
-            <div className="pt-14">
+            <div className="pt-16">
               <ProjectDetail
                 project={currentProject || selectedProject}
                 onBack={() => setSelectedProject(null)}
@@ -5999,7 +6194,7 @@ const deleteProject = async (id) => {
       <LibraryContext.Provider value={library}>
         <div className="min-h-screen bg-gray-100">
           <GlobalHeader />
-          <div className="pt-14">
+          <div className="pt-16">
             <ProjectList
               projects={data.projects}
               onSelect={setSelectedProject}
