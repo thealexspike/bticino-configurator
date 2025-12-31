@@ -3151,9 +3151,9 @@ function BOQView({ project }) {
         margin: { left: 14, right: 14 },
       });
       
-      // Update position for next section
+      // Update position for next section - more padding between tables
       if (doc.previousAutoTable) {
-        yPos = doc.previousAutoTable.finalY + 12;
+        yPos = doc.previousAutoTable.finalY + 18; // Increased from 12 to 18
       } else {
         yPos += 30;
       }
@@ -3161,7 +3161,7 @@ function BOQView({ project }) {
     
     // Total needs consistent spacing from last table's finalY
     const lastTableEndY = doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos;
-    yPos = lastTableEndY + 45; // 45px padding to clear any overlap
+    yPos = lastTableEndY + 25; // Reduced since we already have good spacing
     
     if (yPos > 270) {
       doc.addPage();
@@ -3532,9 +3532,9 @@ function QuoteView({ project }) {
         margin: { left: 14, right: 14 },
       });
       
-      // Update position for next section - get exact end position of table
+      // Update position for next section - more padding to show subtotal
       if (doc.previousAutoTable) {
-        yPos = doc.previousAutoTable.finalY + 15;
+        yPos = doc.previousAutoTable.finalY + 20; // Increased from 15 to 20
       } else {
         yPos += 35;
       }
@@ -3543,7 +3543,7 @@ function QuoteView({ project }) {
     // Grand total box needs consistent spacing from last table's finalY
     // Get the actual final position after all tables
     const lastTableEndY = doc.previousAutoTable ? doc.previousAutoTable.finalY : yPos;
-    yPos = lastTableEndY + 45; // 45px padding to clear the subtotal row
+    yPos = lastTableEndY + 25; // Reduced since we already have good spacing
     
     if (yPos > 220) {
       doc.addPage();
