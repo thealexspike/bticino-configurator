@@ -1794,6 +1794,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         <AssemblyList
           assemblies={outlets}
           type="outlet"
+          project={project}
           onAdd={() => handleAddClick('outlet')}
           onEdit={setEditingAssembly}
           onDelete={deleteAssembly}
@@ -1806,6 +1807,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         <AssemblyList
           assemblies={switches}
           type="switch"
+          project={project}
           onAdd={() => handleAddClick('switch')}
           onEdit={setEditingAssembly}
           onDelete={deleteAssembly}
@@ -1831,7 +1833,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
 }
 
 // --- Assembly List ---
-function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, onUpdate, existingRooms = [] }) {
+function AssemblyList({ assemblies, type, project, onAdd, onEdit, onDelete, onReorder, onUpdate, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [dragOverRoom, setDragOverRoom] = useState(null);
@@ -2237,6 +2239,312 @@ function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, on
     );
   };
 
+  // Export PDF for electrician
+  const exportElectricianPDF = async () => {
+    const doc = new jsPDF();
+    const pageWidth = doc.internal.pageSize.getWidth();
+    
+    // Function to remove diacritics
+    const removeDiacritics = (str) => {
+      if (!str) return str;
+      return str
+        .replace(/[ăÄƒ]/g, 'a').replace(/[ĂÄ‚]/g, 'A')
+        .replace(/[âÃ¢]/g, 'a').replace(/[ÂÃ‚]/g, 'A')
+        .replace(/[îÃ®]/g, 'i').replace(/[ÎÃŽ]/g, 'I')
+        .replace(/[șşÈ™]/g, 's').replace(/[ȘŞÈ˜]/g, 'S')
+        .replace(/[țţÈ›]/g, 't').replace(/[ȚŢÈš]/g, 'T');
+    };
+    
+    // Function to generate SVG string for an assembly
+    const generateAssemblySVG = (assembly, scale = 1.5) => {
+      const moduleWidth1M = 8.5 * scale;
+      const faceHeight = 31 * scale;
+      const sideMargin = 10.5 * scale;
+      const supportBarHeight = 5 * scale;
+      const supportBarOffset = 4 * scale;
+      
+      const moduleAreaWidth = assembly.size * moduleWidth1M;
+      const totalWidth = moduleAreaWidth + (sideMargin * 2);
+      
+      const isBlack = assembly.color === 'black';
+      const frameBg = isBlack ? '#3a3a3a' : '#f5f5f5';
+      const supportBarColor = '#4a4a4a';
+      const moduleBg = isBlack ? '#3a3a3a' : '#ffffff';
+      const moduleBorder = isBlack ? '#555' : '#ddd';
+      const frameBorderOuter = isBlack ? '#555' : '#ddd';
+      
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${faceHeight}" viewBox="0 0 ${totalWidth} ${faceHeight}">`;
+      
+      // Outer border for visibility
+      svg += `<rect x="0" y="0" width="${totalWidth}" height="${faceHeight}" fill="${frameBg}" stroke="${frameBorderOuter}" stroke-width="0.5"/>`;
+      
+      // Support bars
+      svg += `<rect x="${sideMargin}" y="${supportBarOffset}" width="${moduleAreaWidth}" height="${supportBarHeight}" fill="${supportBarColor}"/>`;
+      svg += `<rect x="${sideMargin}" y="${faceHeight - supportBarOffset - supportBarHeight}" width="${moduleAreaWidth}" height="${supportBarHeight}" fill="${supportBarColor}"/>`;
+      
+      // Modules
+      let moduleX = sideMargin;
+      (assembly.modules || []).forEach((mod) => {
+        const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+        const size = catalogItem?.size || 1;
+        const modWidth = size * moduleWidth1M;
+        const centerX = moduleX + modWidth / 2;
+        const centerY = faceHeight / 2;
+        
+        // Module background with border
+        svg += `<rect x="${moduleX}" y="0" width="${modWidth}" height="${faceHeight}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
+        
+        if (catalogItem) {
+          const modId = catalogItem.id.toLowerCase();
+          const symbolColor = isBlack ? '#ffffff' : '#333333';
+          const accentColor = isBlack ? '#4a4a4a' : '#e8e8e8';
+          const holeColor = isBlack ? '#1a1a1a' : '#333';
+          
+          if (modId.includes('schuko')) {
+            // Schuko outlet
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${8 * scale}" fill="${accentColor}"/>`;
+            svg += `<circle cx="${centerX - 3.5 * scale}" cy="${centerY}" r="${1.8 * scale}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX + 3.5 * scale}" cy="${centerY}" r="${1.8 * scale}" fill="${holeColor}"/>`;
+          } else if (modId.includes('italian')) {
+            // Italian outlet
+            svg += `<ellipse cx="${centerX}" cy="${centerY}" rx="${3.5 * scale}" ry="${8 * scale}" fill="${accentColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY - 4 * scale}" r="${1.2 * scale}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.2 * scale}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY + 4 * scale}" r="${1.2 * scale}" fill="${holeColor}"/>`;
+          } else if (modId.includes('usb')) {
+            // USB ports
+            svg += `<rect x="${centerX - 4 * scale}" y="${centerY - 7 * scale}" width="${8 * scale}" height="${4 * scale}" rx="0.5" fill="${holeColor}"/>`;
+            svg += `<rect x="${centerX - 4 * scale}" y="${centerY + 1 * scale}" width="${8 * scale}" height="${4 * scale}" rx="0.5" fill="${holeColor}"/>`;
+          } else if (modId.includes('switch') || modId.includes('intrerupator')) {
+            // Switch with + and LED
+            svg += `<line x1="${centerX - 4 * scale}" y1="${centerY}" x2="${centerX + 4 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX}" y1="${centerY - 4 * scale}" x2="${centerX}" y2="${centerY + 4 * scale}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY + 10 * scale}" r="${1.5 * scale}" fill="#4ade80"/>`;
+          } else if (modId.includes('dimmer') || modId.includes('potentiometru')) {
+            // Dimmer +/-
+            svg += `<line x1="${centerX - 8 * scale}" y1="${centerY - 3 * scale}" x2="${centerX - 2 * scale}" y2="${centerY - 3 * scale}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX - 5 * scale}" y1="${centerY - 6 * scale}" x2="${centerX - 5 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX + 2 * scale}" y1="${centerY + 3 * scale}" x2="${centerX + 8 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+          } else if (modId.includes('coax') || modId.includes('tv')) {
+            // COAX
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${5 * scale}" fill="none" stroke="${holeColor}" stroke-width="2"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * scale}" fill="${holeColor}"/>`;
+          } else if (modId.includes('utp') || modId.includes('rj45') || modId.includes('data')) {
+            // UTP/RJ45
+            svg += `<rect x="${centerX - 4 * scale}" y="${centerY - 3 * scale}" width="${8 * scale}" height="${6 * scale}" rx="1" fill="${holeColor}"/>`;
+          } else if (modId.includes('blank') || modId.includes('tasta')) {
+            // Blank - just the background, no symbol
+          } else {
+            // Generic module
+            svg += `<rect x="${centerX - 3 * scale}" y="${centerY - 3 * scale}" width="${6 * scale}" height="${6 * scale}" fill="${holeColor}"/>`;
+          }
+        }
+        
+        moduleX += modWidth;
+      });
+      
+      // Empty slots
+      const usedSize = (assembly.modules || []).reduce((sum, mod) => {
+        const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+        return sum + (catalogItem?.size || 1);
+      }, 0);
+      
+      if (usedSize < assembly.size) {
+        const emptyWidth = (assembly.size - usedSize) * moduleWidth1M;
+        svg += `<rect x="${moduleX}" y="0" width="${emptyWidth}" height="${faceHeight}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+      }
+      
+      svg += '</svg>';
+      return { svg, width: totalWidth, height: faceHeight };
+    };
+    
+    // Convert SVG to image data URL
+    const svgToImage = (svgString, width, height) => {
+      return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const img = new Image();
+        
+        canvas.width = width * 2; // 2x for better quality
+        canvas.height = height * 2;
+        ctx.scale(2, 2);
+        
+        img.onload = () => {
+          ctx.drawImage(img, 0, 0);
+          resolve(canvas.toDataURL('image/png'));
+        };
+        
+        img.onerror = () => {
+          resolve(null);
+        };
+        
+        const svgBlob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+        img.src = URL.createObjectURL(svgBlob);
+      });
+    };
+    
+    const typeTitle = type === 'outlet' 
+      ? (lang === 'ro' ? 'Lista Prize' : 'Outlets List')
+      : (lang === 'ro' ? 'Lista Intrerupatoare' : 'Switches List');
+    const projectName = project?.name || (lang === 'ro' ? 'Proiect' : 'Project');
+    const clientName = project?.clientName || (lang === 'ro' ? 'Client' : 'Client');
+    const dateStr = new Date().toLocaleDateString('ro-RO');
+    
+    doc.setFont('helvetica');
+    
+    // Title
+    doc.setFontSize(16);
+    doc.setFont('helvetica', 'bold');
+    doc.text(typeTitle, pageWidth / 2, 14, { align: 'center' });
+    
+    // Project name
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(removeDiacritics(projectName), pageWidth / 2, 21, { align: 'center' });
+    
+    // Client name
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+    doc.text(removeDiacritics(clientName), pageWidth / 2, 27, { align: 'center' });
+    
+    // Line separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(10, 31, pageWidth - 10, 31);
+    
+    // Date on the right
+    doc.setFontSize(9);
+    doc.text(dateStr, pageWidth - 10, 38, { align: 'right' });
+    
+    let yPos = 44;
+    
+    // Group by room for better organization
+    const groupedData = {};
+    sortedAssemblies.forEach(assembly => {
+      const room = assembly.room || (lang === 'ro' ? 'Fara camera' : 'No room');
+      if (!groupedData[room]) {
+        groupedData[room] = [];
+      }
+      groupedData[room].push(assembly);
+    });
+    
+    const rooms = Object.keys(groupedData).sort((a, b) => {
+      const noRoom = lang === 'ro' ? 'Fara camera' : 'No room';
+      if (a === noRoom) return 1;
+      if (b === noRoom) return -1;
+      return a.localeCompare(b);
+    });
+    
+    const cardHeight = 28; // Reduced height
+    const roomHeaderHeight = 7;
+    
+    for (const room of rooms) {
+      const roomAssemblies = groupedData[room];
+      
+      // Check if room header + at least one card fits on current page
+      if (yPos + roomHeaderHeight + cardHeight > 280) {
+        doc.addPage();
+        yPos = 20;
+      }
+      
+      // Room header
+      doc.setFillColor(70, 70, 70);
+      doc.rect(10, yPos, pageWidth - 20, 6, 'F');
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(255, 255, 255);
+      doc.text(removeDiacritics(room), 13, yPos + 4.5);
+      doc.setTextColor(0, 0, 0);
+      yPos += roomHeaderHeight;
+      
+      for (const assembly of roomAssemblies) {
+        if (yPos + cardHeight > 280) {
+          doc.addPage();
+          yPos = 20;
+        }
+        
+        const wallBoxType = assembly.wallBoxType || 'masonry';
+        const wallBoxLabel = wallBoxType === 'drywall' 
+          ? (lang === 'ro' ? 'Gips-carton' : 'Drywall')
+          : (lang === 'ro' ? 'Zidarie' : 'Masonry');
+        const colorLabel = assembly.color === 'white' 
+          ? (lang === 'ro' ? 'Alb' : 'White')
+          : (lang === 'ro' ? 'Negru' : 'Black');
+        
+        // Card background
+        doc.setFillColor(252, 252, 252);
+        doc.setDrawColor(230, 230, 230);
+        doc.rect(10, yPos, pageWidth - 20, cardHeight - 1, 'FD');
+        
+        // Code
+        doc.setFontSize(11);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(50, 50, 50);
+        doc.text(assembly.code, 13, yPos + 6);
+        
+        // Info line 1
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(90, 90, 90);
+        doc.text(`${assembly.size}M | ${wallBoxLabel} | ${colorLabel}`, 13, yPos + 12);
+        
+        // Info line 2: Modules
+        const moduleNames = assembly.modules.map(mod => {
+          const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+          return catalogItem ? removeDiacritics(getModuleName(catalogItem, lang)) : mod.moduleId;
+        }).join(', ') || (lang === 'ro' ? 'Gol' : 'Empty');
+        
+        doc.setFontSize(8);
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(120, 120, 120);
+        const truncatedModules = moduleNames.length > 60 ? moduleNames.substring(0, 57) + '...' : moduleNames;
+        doc.text(truncatedModules, 13, yPos + 18);
+        
+        // Generate and add SVG sketch (smaller)
+        const { svg, width, height } = generateAssemblySVG(assembly, 0.8);
+        const imageData = await svgToImage(svg, width, height);
+        
+        if (imageData) {
+          const imgWidth = width * 0.5;
+          const imgHeight = height * 0.5;
+          const imgX = pageWidth - 12 - imgWidth;
+          const imgY = yPos + (cardHeight - 1 - imgHeight) / 2;
+          doc.addImage(imageData, 'PNG', imgX, imgY, imgWidth, imgHeight);
+        }
+        
+        yPos += cardHeight;
+      }
+      
+      yPos += 2;
+    }
+    
+    // Footer
+    const pageCount = doc.internal.getNumberOfPages();
+    const pageLabel = lang === 'ro' ? 'Pagina' : 'Page';
+    const ofLabel = lang === 'ro' ? 'din' : 'of';
+    const footerInfo = `${removeDiacritics(projectName)} - ${removeDiacritics(clientName)}`;
+    for (let i = 1; i <= pageCount; i++) {
+      doc.setPage(i);
+      doc.setFontSize(8);
+      doc.setFont('helvetica', 'normal');
+      doc.setTextColor(150, 150, 150);
+      // Client info on left
+      doc.text(footerInfo, 10, doc.internal.pageSize.getHeight() - 10);
+      // Page number on right
+      doc.text(
+        `${pageLabel} ${i} ${ofLabel} ${pageCount}`,
+        pageWidth - 10,
+        doc.internal.pageSize.getHeight() - 10,
+        { align: 'right' }
+      );
+    }
+    
+    doc.setTextColor(0, 0, 0);
+    const fileType = type === 'outlet' ? (lang === 'ro' ? 'Lista_Prize' : 'Outlets_List') : (lang === 'ro' ? 'Lista_Intrerupatoare' : 'Switches_List');
+    const fileClientName = removeDiacritics(project?.clientName || 'Client').replace(/\s+/g, '_');
+    const fileDateStr = new Date().toLocaleDateString('ro-RO').replace(/\./g, '-');
+    doc.save(`${fileType}_${fileClientName}_${fileDateStr}.pdf`);
+  };
+
   return (
     <div className="bg-white rounded-lg shadow">
       <div className="flex justify-between items-center p-4 border-b">
@@ -2254,12 +2562,23 @@ function AssemblyList({ assemblies, type, onAdd, onEdit, onDelete, onReorder, on
             {t.groupByRoom}
           </label>
         </div>
-        <button
-          onClick={onAdd}
-          className="bg-green-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-green-700"
-        >
-          <Plus className="w-4 h-4" /> {addLabel}
-        </button>
+        <div className="flex items-center gap-2">
+          {sortedAssemblies.length > 0 && (
+            <button
+              onClick={exportElectricianPDF}
+              className="bg-gray-100 text-gray-700 px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-gray-200 border"
+              title={lang === 'ro' ? 'Export pentru electrician' : 'Export for electrician'}
+            >
+              <FileText className="w-4 h-4" /> PDF
+            </button>
+          )}
+          <button
+            onClick={onAdd}
+            className="bg-green-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-green-700"
+          >
+            <Plus className="w-4 h-4" /> {addLabel}
+          </button>
+        </div>
       </div>
 
       {sortedAssemblies.length === 0 ? (
