@@ -1689,12 +1689,18 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         category: m.category,
       }));
       
-      // Get session token
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        setAiImportResult({ error: 'Not authenticated' });
-        setAiImportLoading(false);
-        return;
+      // Get fresh session token
+      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.refreshSession();
+      if (sessionError || !freshSession) {
+        const { data: { session: fallbackSession } } = await supabase.auth.getSession();
+        if (!fallbackSession) {
+          setAiImportResult({ error: 'Not authenticated' });
+          setAiImportLoading(false);
+          return;
+        }
+        var accessToken = fallbackSession.access_token;
+      } else {
+        var accessToken = freshSession.access_token;
       }
       
       // Call Edge Function
@@ -1704,7 +1710,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${session.access_token}`,
+            'Authorization': `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
             pdfBase64,
