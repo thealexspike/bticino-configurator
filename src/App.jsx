@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy } from 'lucide-react';
 import { supabase } from './supabase';
 import Auth from './Auth';
 import jsPDF from 'jspdf';
@@ -22,6 +22,7 @@ const TRANSLATIONS = {
     add: 'Add',
     done: 'Done',
     create: 'Create',
+    duplicate: 'Duplicate',
     yes: 'Yes',
     no: 'No',
     
@@ -40,8 +41,9 @@ const TRANSLATIONS = {
     switches: 'Switches',
     outlet: 'Outlet',
     switch: 'Switch',
-    addOutlet: 'Add Outlet',
-    addSwitch: 'Add Switch',
+    addOutlet: 'Add Preset',
+    addSwitch: 'Add Preset',
+    addEmpty: 'Add Empty',
     noOutlets: 'No outlets yet.',
     noSwitches: 'No switches yet.',
     modules: 'modules',
@@ -217,6 +219,7 @@ const TRANSLATIONS = {
     add: 'Adaugă',
     done: 'Gata',
     create: 'Creează',
+    duplicate: 'Duplică',
     yes: 'Da',
     no: 'Nu',
     
@@ -235,8 +238,9 @@ const TRANSLATIONS = {
     switches: 'Întrerupătoare',
     outlet: 'Priză',
     switch: 'Întrerupător',
-    addOutlet: 'Adaugă Priză',
-    addSwitch: 'Adaugă Întrerupător',
+    addOutlet: 'Adaugă Preset',
+    addSwitch: 'Adaugă Preset',
+    addEmpty: 'Adaugă Gol',
     noOutlets: 'Nu există prize încă.',
     noSwitches: 'Nu există întrerupătoare încă.',
     modules: 'module',
@@ -1526,6 +1530,8 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   const [editingProject, setEditingProject] = useState(false);
   const [editProjectName, setEditProjectName] = useState(project.name);
   const [editClientName, setEditClientName] = useState(project.clientName || '');
+  const [confirmDuplicateId, setConfirmDuplicateId] = useState(null);
+  const [duplicateTimestamps, setDuplicateTimestamps] = useState([]);
   const t = useTranslation();
   const library = React.useContext(LibraryContext);
 
@@ -1568,12 +1574,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   };
 
   const handleAddClick = (type) => {
-    const typePresets = library?.presets?.filter(p => p.type === type) || [];
-    if (typePresets.length > 0) {
-      setShowPresetDialog(type);
-    } else {
-      addAssembly(type);
-    }
+    setShowPresetDialog(type);
   };
 
   const updateAssembly = (updated) => {
@@ -1588,6 +1589,45 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       ...project,
       assemblies: project.assemblies.filter(a => a.id !== id),
     });
+  };
+
+  const duplicateAssembly = (assemblyId) => {
+    // Rate limit: max 5 duplicates in 30 seconds
+    const now = Date.now();
+    const recent = duplicateTimestamps.filter(ts => now - ts < 30000);
+    if (recent.length >= 5) {
+      return; // silently block
+    }
+
+    const source = project.assemblies.find(a => a.id === assemblyId);
+    if (!source) return;
+    
+    const code = generateAssemblyCode(project.assemblies, source.type);
+    const duplicate = {
+      ...source,
+      id: generateId(),
+      code,
+      modules: source.modules.map(m => ({
+        ...m,
+        id: generateId(),
+      })),
+    };
+    
+    setDuplicateTimestamps([...recent, now]);
+    setConfirmDuplicateId(null);
+    
+    onUpdate({
+      ...project,
+      assemblies: [...project.assemblies, duplicate],
+    });
+  };
+
+  const requestDuplicate = (assemblyId) => {
+    setConfirmDuplicateId(assemblyId);
+  };
+
+  const cancelDuplicate = () => {
+    setConfirmDuplicateId(null);
   };
 
   const handleReorder = (assemblyId, newIndex, type) => {
@@ -1796,8 +1836,13 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           type="outlet"
           project={project}
           onAdd={() => handleAddClick('outlet')}
+          onAddEmpty={() => addAssembly('outlet')}
           onEdit={setEditingAssembly}
           onDelete={deleteAssembly}
+          onDuplicate={requestDuplicate}
+          onConfirmDuplicate={duplicateAssembly}
+          onCancelDuplicate={cancelDuplicate}
+          confirmDuplicateId={confirmDuplicateId}
           onReorder={handleReorder}
           onUpdate={updateAssembly}
           existingRooms={existingRooms}
@@ -1809,8 +1854,13 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           type="switch"
           project={project}
           onAdd={() => handleAddClick('switch')}
+          onAddEmpty={() => addAssembly('switch')}
           onEdit={setEditingAssembly}
           onDelete={deleteAssembly}
+          onDuplicate={requestDuplicate}
+          onConfirmDuplicate={duplicateAssembly}
+          onCancelDuplicate={cancelDuplicate}
+          confirmDuplicateId={confirmDuplicateId}
           onReorder={handleReorder}
           onUpdate={updateAssembly}
           existingRooms={existingRooms}
@@ -1833,7 +1883,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
 }
 
 // --- Assembly List ---
-function AssemblyList({ assemblies, type, project, onAdd, onEdit, onDelete, onReorder, onUpdate, existingRooms = [] }) {
+function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [dragOverRoom, setDragOverRoom] = useState(null);
@@ -2227,6 +2277,33 @@ function AssemblyList({ assemblies, type, project, onAdd, onEdit, onDelete, onRe
             >
               <Settings className="w-4 h-4" />
             </button>
+            {confirmDuplicateId === assembly.id ? (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => onConfirmDuplicate(assembly.id)}
+                  className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600"
+                >
+                  {t.duplicate}?
+                </button>
+                <button
+                  onClick={() => onCancelDuplicate()}
+                  className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDuplicate(assembly.id);
+                }}
+                className="text-green-500 hover:text-green-700 p-2"
+                title={t.duplicate}
+              >
+                <Copy className="w-4 h-4" />
+              </button>
+            )}
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(assembly.id); }}
               className="text-red-500 hover:text-red-700 p-2"
@@ -2572,6 +2649,12 @@ function AssemblyList({ assemblies, type, project, onAdd, onEdit, onDelete, onRe
               <FileText className="w-4 h-4" /> PDF
             </button>
           )}
+          <button
+            onClick={onAddEmpty}
+            className="bg-gray-500 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-gray-600"
+          >
+            <Plus className="w-4 h-4" /> {t.addEmpty}
+          </button>
           <button
             onClick={onAdd}
             className="bg-green-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-green-700"
