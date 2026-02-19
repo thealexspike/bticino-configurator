@@ -2374,8 +2374,9 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         if (catalogItem) {
           const modId = catalogItem.id.toLowerCase();
           const symbolColor = isBlack ? '#ffffff' : '#333333';
-          const accentColor = isBlack ? '#4a4a4a' : '#e8e8e8';
-          const holeColor = isBlack ? '#1a1a1a' : '#333';
+          const accentColor = isBlack ? '#555555' : '#e8e8e8';
+          const holeColor = isBlack ? '#ffffff' : '#333333';
+          const sw = 0.95; // stroke-width for PDF clarity
           
           if (modId.includes('schuko')) {
             // Schuko outlet
@@ -2389,26 +2390,28 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
             svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.2 * scale}" fill="${holeColor}"/>`;
             svg += `<circle cx="${centerX}" cy="${centerY + 4 * scale}" r="${1.2 * scale}" fill="${holeColor}"/>`;
           } else if (modId.includes('usb')) {
-            // USB ports
-            svg += `<rect x="${centerX - 4 * scale}" y="${centerY - 7 * scale}" width="${8 * scale}" height="${4 * scale}" rx="0.5" fill="${holeColor}"/>`;
-            svg += `<rect x="${centerX - 4 * scale}" y="${centerY + 1 * scale}" width="${8 * scale}" height="${4 * scale}" rx="0.5" fill="${holeColor}"/>`;
+            // USB ports - scaled smaller to fit inside key
+            svg += `<rect x="${centerX - 3 * scale}" y="${centerY - 5.5 * scale}" width="${6 * scale}" height="${3.2 * scale}" rx="0.5" fill="${holeColor}"/>`;
+            svg += `<rect x="${centerX - 3 * scale}" y="${centerY + 0.8 * scale}" width="${6 * scale}" height="${3.2 * scale}" rx="0.5" fill="${holeColor}"/>`;
           } else if (modId.includes('switch') || modId.includes('intrerupator')) {
             // Switch with + and LED
-            svg += `<line x1="${centerX - 4 * scale}" y1="${centerY}" x2="${centerX + 4 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
-            svg += `<line x1="${centerX}" y1="${centerY - 4 * scale}" x2="${centerX}" y2="${centerY + 4 * scale}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX - 4 * scale}" y1="${centerY}" x2="${centerX + 4 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX}" y1="${centerY - 4 * scale}" x2="${centerX}" y2="${centerY + 4 * scale}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
             svg += `<circle cx="${centerX}" cy="${centerY + 10 * scale}" r="${1.5 * scale}" fill="#4ade80"/>`;
           } else if (modId.includes('dimmer') || modId.includes('potentiometru')) {
             // Dimmer +/-
-            svg += `<line x1="${centerX - 8 * scale}" y1="${centerY - 3 * scale}" x2="${centerX - 2 * scale}" y2="${centerY - 3 * scale}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
-            svg += `<line x1="${centerX - 5 * scale}" y1="${centerY - 6 * scale}" x2="${centerX - 5 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
-            svg += `<line x1="${centerX + 2 * scale}" y1="${centerY + 3 * scale}" x2="${centerX + 8 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="2" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX - 8 * scale}" y1="${centerY - 3 * scale}" x2="${centerX - 2 * scale}" y2="${centerY - 3 * scale}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX - 5 * scale}" y1="${centerY - 6 * scale}" x2="${centerX - 5 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX + 2 * scale}" y1="${centerY + 3 * scale}" x2="${centerX + 8 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           } else if (modId.includes('coax') || modId.includes('tv')) {
             // COAX
-            svg += `<circle cx="${centerX}" cy="${centerY}" r="${5 * scale}" fill="none" stroke="${holeColor}" stroke-width="2"/>`;
-            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * scale}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${5 * scale}" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * scale}" fill="${symbolColor}"/>`;
           } else if (modId.includes('utp') || modId.includes('rj45') || modId.includes('data')) {
             // UTP/RJ45
-            svg += `<rect x="${centerX - 4 * scale}" y="${centerY - 3 * scale}" width="${8 * scale}" height="${6 * scale}" rx="1" fill="${holeColor}"/>`;
+            svg += `<rect x="${centerX - 4 * scale}" y="${centerY - 3 * scale}" width="${8 * scale}" height="${6 * scale}" rx="1" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
+            svg += `<line x1="${centerX - 2 * scale}" y1="${centerY - 3 * scale}" x2="${centerX - 2 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
+            svg += `<line x1="${centerX + 2 * scale}" y1="${centerY - 3 * scale}" x2="${centerX + 2 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
           } else if (modId.includes('blank') || modId.includes('tasta')) {
             // Blank - just the background, no symbol
           } else {
