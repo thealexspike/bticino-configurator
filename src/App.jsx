@@ -4484,7 +4484,7 @@ function ProfitView({ project }) {
 // LIBRARY PAGE
 // ============================================================================
 
-function LibraryPage({ library, onUpdate, onBack }) {
+function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
   const [activeTab, setActiveTab] = useState('modules');
   const [editingModule, setEditingModule] = useState(null);
   const [showAddModule, setShowAddModule] = useState(false);
@@ -4493,6 +4493,9 @@ function LibraryPage({ library, onUpdate, onBack }) {
   const [editingPreset, setEditingPreset] = useState(null);
   const t = useTranslation();
   const lang = useLanguage();
+
+  // Protect updates - non-admins cannot modify
+  const safeOnUpdate = isAdmin ? onUpdate : () => {};
 
   // New module form state
   const [newModule, setNewModule] = useState({
@@ -4504,7 +4507,11 @@ function LibraryPage({ library, onUpdate, onBack }) {
     size: 1,
     category: 'outlet',
     faceSku: { white: '', black: '' },
+    modulePurchasePrice: 0,
+    moduleMarkup: 25,
     modulePrice: 0,
+    facePurchasePrice: { white: 0, black: 0 },
+    faceMarkup: { white: 25, black: 25 },
     facePrice: { white: 0, black: 0 },
   });
 
@@ -4520,7 +4527,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
 
   const updateWallBoxMasonry = (size, field, value) => {
     const currentItem = library.wallBoxesMasonry?.[size] || {};
-    onUpdate({
+    safeOnUpdate({
       ...library,
       wallBoxesMasonry: {
         ...library.wallBoxesMasonry,
@@ -4534,7 +4541,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
 
   const updateWallBoxDrywall = (size, field, value) => {
     const currentItem = library.wallBoxesDrywall?.[size] || {};
-    onUpdate({
+    safeOnUpdate({
       ...library,
       wallBoxesDrywall: {
         ...library.wallBoxesDrywall,
@@ -4547,7 +4554,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
   };
 
   const updateInstallFace = (size, field, value) => {
-    onUpdate({
+    safeOnUpdate({
       ...library,
       installFaces: {
         ...library.installFaces,
@@ -4560,7 +4567,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
   };
 
   const updateDecorFace = (key, field, value) => {
-    onUpdate({
+    safeOnUpdate({
       ...library,
       decorFaces: {
         ...library.decorFaces,
@@ -4573,7 +4580,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
   };
 
   const updateModule = (moduleId, updates) => {
-    onUpdate({
+    safeOnUpdate({
       ...library,
       modules: library.modules.map(m => 
         m.id === moduleId ? { ...m, ...updates } : m
@@ -4590,7 +4597,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
       alert(t.moduleIdExists);
       return;
     }
-    onUpdate({
+    safeOnUpdate({
       ...library,
       modules: [...library.modules, { ...newModule }],
     });
@@ -4603,14 +4610,18 @@ function LibraryPage({ library, onUpdate, onBack }) {
       size: 1,
       category: 'outlet',
       faceSku: { white: '', black: '' },
+      modulePurchasePrice: 0,
+      moduleMarkup: 25,
       modulePrice: 0,
+      facePurchasePrice: { white: 0, black: 0 },
+      faceMarkup: { white: 25, black: 25 },
       facePrice: { white: 0, black: 0 },
     });
     setShowAddModule(false);
   };
 
   const deleteModule = (moduleId) => {
-    onUpdate({
+    safeOnUpdate({
       ...library,
       modules: library.modules.filter(m => m.id !== moduleId),
     });
@@ -4627,7 +4638,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
       alert('A preset with this ID already exists');
       return;
     }
-    onUpdate({
+    safeOnUpdate({
       ...library,
       presets: [...(library.presets || []), { ...newPreset }],
     });
@@ -4643,7 +4654,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
   };
 
   const updatePreset = (presetId, updates) => {
-    onUpdate({
+    safeOnUpdate({
       ...library,
       presets: (library.presets || []).map(p => 
         p.id === presetId ? { ...p, ...updates } : p
@@ -4652,7 +4663,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
   };
 
   const deletePreset = (presetId) => {
-    onUpdate({
+    safeOnUpdate({
       ...library,
       presets: (library.presets || []).filter(p => p.id !== presetId),
     });
@@ -4680,6 +4691,11 @@ function LibraryPage({ library, onUpdate, onBack }) {
           <Settings className="w-6 h-6" /> {t.componentLibrary}
         </h1>
         <p className="text-gray-600">{t.manageSKUs}</p>
+        {!isAdmin && (
+          <div className="mt-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded text-sm">
+            🔒 {lang === 'ro' ? 'Vizualizare doar. Doar conturile @atelierazimut.com pot edita biblioteca.' : 'View only. Only @atelierazimut.com accounts can edit the library.'}
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
@@ -4724,12 +4740,14 @@ function LibraryPage({ library, onUpdate, onBack }) {
               <h2 className="font-semibold">{t.presets}</h2>
               <p className="text-sm text-gray-500">{t.presetsDescription}</p>
             </div>
+            {isAdmin && (
             <button
               onClick={() => setShowAddPreset(true)}
               className="bg-purple-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-purple-700"
             >
               <Plus className="w-4 h-4" /> {t.addPreset}
             </button>
+            )}
           </div>
 
           {/* Add Preset Form */}
@@ -4871,6 +4889,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           {preset.size}M · {preset.modules.map(m => getModuleNameById(m)).join(' + ')}
                         </div>
                       </div>
+                      {isAdmin && (
                       <div className="flex items-center gap-2">
                         {confirmDeleteId === preset.id ? (
                           <div className="flex items-center gap-1">
@@ -4896,6 +4915,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           </button>
                         )}
                       </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -4919,6 +4939,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           {preset.size}M · {preset.modules.map(m => getModuleNameById(m)).join(' + ')}
                         </div>
                       </div>
+                      {isAdmin && (
                       <div className="flex items-center gap-2">
                         {confirmDeleteId === preset.id ? (
                           <div className="flex items-center gap-1">
@@ -4944,6 +4965,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           </button>
                         )}
                       </div>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -4958,12 +4980,14 @@ function LibraryPage({ library, onUpdate, onBack }) {
         <div className="bg-white rounded-lg shadow">
           <div className="flex justify-between items-center p-4 border-b">
             <h2 className="font-semibold">{t.modules}</h2>
+            {isAdmin && (
             <button
               onClick={() => setShowAddModule(true)}
               className="bg-green-600 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-green-700"
             >
               <Plus className="w-4 h-4" /> {t.addModule}
             </button>
+            )}
           </div>
 
           {/* Add Module Form */}
@@ -5041,6 +5065,8 @@ function LibraryPage({ library, onUpdate, onBack }) {
                         ...newModule,
                         hasColorVariants: hasVariants,
                         moduleSku: hasVariants ? { white: '', black: '' } : '',
+                        modulePurchasePrice: hasVariants ? { white: 0, black: 0 } : 0,
+                        moduleMarkup: hasVariants ? { white: 25, black: 25 } : 25,
                         modulePrice: hasVariants ? { white: 0, black: 0 } : 0,
                       });
                     }}
@@ -5051,13 +5077,16 @@ function LibraryPage({ library, onUpdate, onBack }) {
               </div>
               
               {/* SKU & Price Table */}
+              <div className="overflow-x-auto">
               <table className="w-full text-sm mb-4 border rounded bg-white">
                 <thead>
                   <tr className="bg-gray-50 text-left text-gray-600">
                     <th className="p-2 border-b">{t.item}</th>
                     <th className="p-2 border-b">{t.sku}</th>
-                    <th className="p-2 border-b">{t.priceInclVat}</th>
-                    <th className="p-2 border-b text-gray-400">{t.priceExclVat}</th>
+                    <th className="p-2 border-b">{t.purchasePrice}</th>
+                    <th className="p-2 border-b">{t.markup}</th>
+                    <th className="p-2 border-b">{t.sellingPrice}</th>
+                    <th className="p-2 border-b">{t.sellingPriceVat}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -5084,13 +5113,51 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           <input
                             type="number"
                             step="0.01"
-                            value={newModule.modulePrice?.white || 0}
-                            onChange={(e) => setNewModule({ ...newModule, modulePrice: { ...newModule.modulePrice, white: parseFloat(e.target.value) || 0 } })}
-                            className="w-24 border rounded px-2 py-1 text-sm"
+                            value={newModule.modulePurchasePrice?.white || 0}
+                            onChange={(e) => {
+                              const newPurchase = parseFloat(e.target.value) || 0;
+                              const currentMarkup = newModule.moduleMarkup?.white || 25;
+                              const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                              setNewModule({ ...newModule, 
+                                modulePurchasePrice: { ...newModule.modulePurchasePrice, white: newPurchase },
+                                modulePrice: { ...newModule.modulePrice, white: newPrice }
+                              });
+                            }}
+                            className="w-20 border rounded px-2 py-1 text-sm"
                           />
                         </td>
-                        <td className="p-2 text-gray-400 font-mono">
-                          {((newModule.modulePrice?.white || 0) / 1.21).toFixed(2)}
+                        <td className="p-2">
+                          <PriceInput
+                            value={newModule.moduleMarkup?.white || 25}
+                            onChange={(newMarkup) => {
+                              const currentPurchase = newModule.modulePurchasePrice?.white || 0;
+                              const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                              setNewModule({ ...newModule,
+                                moduleMarkup: { ...newModule.moduleMarkup, white: newMarkup },
+                                modulePrice: { ...newModule.modulePrice, white: newPrice }
+                              });
+                            }}
+                            step="1"
+                            decimals={0}
+                            className="w-16 border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2 text-gray-500 font-mono text-sm">
+                          {((newModule.modulePrice?.white || 0) / (1 + VAT_RATE)).toFixed(2)}
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={newModule.modulePrice?.white || 0}
+                            onChange={(newPrice) => {
+                              const currentPurchase = newModule.modulePurchasePrice?.white || 0;
+                              const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                              setNewModule({ ...newModule,
+                                moduleMarkup: { ...newModule.moduleMarkup, white: newMarkup },
+                                modulePrice: { ...newModule.modulePrice, white: newPrice }
+                              });
+                            }}
+                            className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                          />
                         </td>
                       </tr>
                       {/* Module Black Row */}
@@ -5114,13 +5181,51 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           <input
                             type="number"
                             step="0.01"
-                            value={newModule.modulePrice?.black || 0}
-                            onChange={(e) => setNewModule({ ...newModule, modulePrice: { ...newModule.modulePrice, black: parseFloat(e.target.value) || 0 } })}
-                            className="w-24 border rounded px-2 py-1 text-sm"
+                            value={newModule.modulePurchasePrice?.black || 0}
+                            onChange={(e) => {
+                              const newPurchase = parseFloat(e.target.value) || 0;
+                              const currentMarkup = newModule.moduleMarkup?.black || 25;
+                              const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                              setNewModule({ ...newModule,
+                                modulePurchasePrice: { ...newModule.modulePurchasePrice, black: newPurchase },
+                                modulePrice: { ...newModule.modulePrice, black: newPrice }
+                              });
+                            }}
+                            className="w-20 border rounded px-2 py-1 text-sm"
                           />
                         </td>
-                        <td className="p-2 text-gray-400 font-mono">
-                          {((newModule.modulePrice?.black || 0) / 1.21).toFixed(2)}
+                        <td className="p-2">
+                          <PriceInput
+                            value={newModule.moduleMarkup?.black || 25}
+                            onChange={(newMarkup) => {
+                              const currentPurchase = newModule.modulePurchasePrice?.black || 0;
+                              const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                              setNewModule({ ...newModule,
+                                moduleMarkup: { ...newModule.moduleMarkup, black: newMarkup },
+                                modulePrice: { ...newModule.modulePrice, black: newPrice }
+                              });
+                            }}
+                            step="1"
+                            decimals={0}
+                            className="w-16 border rounded px-2 py-1 text-sm"
+                          />
+                        </td>
+                        <td className="p-2 text-gray-500 font-mono text-sm">
+                          {((newModule.modulePrice?.black || 0) / (1 + VAT_RATE)).toFixed(2)}
+                        </td>
+                        <td className="p-2">
+                          <PriceInput
+                            value={newModule.modulePrice?.black || 0}
+                            onChange={(newPrice) => {
+                              const currentPurchase = newModule.modulePurchasePrice?.black || 0;
+                              const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                              setNewModule({ ...newModule,
+                                moduleMarkup: { ...newModule.moduleMarkup, black: newMarkup },
+                                modulePrice: { ...newModule.modulePrice, black: newPrice }
+                              });
+                            }}
+                            className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                          />
                         </td>
                       </tr>
                     </>
@@ -5141,13 +5246,42 @@ function LibraryPage({ library, onUpdate, onBack }) {
                         <input
                           type="number"
                           step="0.01"
-                          value={typeof newModule.modulePrice === 'number' ? newModule.modulePrice : 0}
-                          onChange={(e) => setNewModule({ ...newModule, modulePrice: parseFloat(e.target.value) || 0 })}
-                          className="w-24 border rounded px-2 py-1 text-sm"
+                          value={typeof newModule.modulePurchasePrice === 'number' ? newModule.modulePurchasePrice : 0}
+                          onChange={(e) => {
+                            const newPurchase = parseFloat(e.target.value) || 0;
+                            const currentMarkup = typeof newModule.moduleMarkup === 'number' ? newModule.moduleMarkup : 25;
+                            const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                            setNewModule({ ...newModule, modulePurchasePrice: newPurchase, modulePrice: newPrice });
+                          }}
+                          className="w-20 border rounded px-2 py-1 text-sm"
                         />
                       </td>
-                      <td className="p-2 text-gray-400 font-mono">
-                        {((typeof newModule.modulePrice === 'number' ? newModule.modulePrice : 0) / 1.21).toFixed(2)}
+                      <td className="p-2">
+                        <PriceInput
+                          value={typeof newModule.moduleMarkup === 'number' ? newModule.moduleMarkup : 25}
+                          onChange={(newMarkup) => {
+                            const currentPurchase = typeof newModule.modulePurchasePrice === 'number' ? newModule.modulePurchasePrice : 0;
+                            const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                            setNewModule({ ...newModule, moduleMarkup: newMarkup, modulePrice: newPrice });
+                          }}
+                          step="1"
+                          decimals={0}
+                          className="w-16 border rounded px-2 py-1 text-sm"
+                        />
+                      </td>
+                      <td className="p-2 text-gray-500 font-mono text-sm">
+                        {((typeof newModule.modulePrice === 'number' ? newModule.modulePrice : 0) / (1 + VAT_RATE)).toFixed(2)}
+                      </td>
+                      <td className="p-2">
+                        <PriceInput
+                          value={typeof newModule.modulePrice === 'number' ? newModule.modulePrice : 0}
+                          onChange={(newPrice) => {
+                            const currentPurchase = typeof newModule.modulePurchasePrice === 'number' ? newModule.modulePurchasePrice : 0;
+                            const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                            setNewModule({ ...newModule, moduleMarkup: newMarkup, modulePrice: newPrice });
+                          }}
+                          className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                        />
                       </td>
                     </tr>
                   )}
@@ -5172,13 +5306,51 @@ function LibraryPage({ library, onUpdate, onBack }) {
                       <input
                         type="number"
                         step="0.01"
-                        value={newModule.facePrice?.white || 0}
-                        onChange={(e) => setNewModule({ ...newModule, facePrice: { ...newModule.facePrice, white: parseFloat(e.target.value) || 0 } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
+                        value={newModule.facePurchasePrice?.white || 0}
+                        onChange={(e) => {
+                          const newPurchase = parseFloat(e.target.value) || 0;
+                          const currentMarkup = newModule.faceMarkup?.white || 25;
+                          const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                          setNewModule({ ...newModule,
+                            facePurchasePrice: { ...newModule.facePurchasePrice, white: newPurchase },
+                            facePrice: { ...newModule.facePrice, white: newPrice }
+                          });
+                        }}
+                        className="w-20 border rounded px-2 py-1 text-sm"
                       />
                     </td>
-                    <td className="p-2 text-gray-400 font-mono">
-                      {((newModule.facePrice?.white || 0) / 1.21).toFixed(2)}
+                    <td className="p-2">
+                      <PriceInput
+                        value={newModule.faceMarkup?.white || 25}
+                        onChange={(newMarkup) => {
+                          const currentPurchase = newModule.facePurchasePrice?.white || 0;
+                          const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                          setNewModule({ ...newModule,
+                            faceMarkup: { ...newModule.faceMarkup, white: newMarkup },
+                            facePrice: { ...newModule.facePrice, white: newPrice }
+                          });
+                        }}
+                        step="1"
+                        decimals={0}
+                        className="w-16 border rounded px-2 py-1 text-sm"
+                      />
+                    </td>
+                    <td className="p-2 text-gray-500 font-mono text-sm">
+                      {((newModule.facePrice?.white || 0) / (1 + VAT_RATE)).toFixed(2)}
+                    </td>
+                    <td className="p-2">
+                      <PriceInput
+                        value={newModule.facePrice?.white || 0}
+                        onChange={(newPrice) => {
+                          const currentPurchase = newModule.facePurchasePrice?.white || 0;
+                          const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                          setNewModule({ ...newModule,
+                            faceMarkup: { ...newModule.faceMarkup, white: newMarkup },
+                            facePrice: { ...newModule.facePrice, white: newPrice }
+                          });
+                        }}
+                        className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                      />
                     </td>
                   </tr>
                   {/* Face Black Row */}
@@ -5202,17 +5374,56 @@ function LibraryPage({ library, onUpdate, onBack }) {
                       <input
                         type="number"
                         step="0.01"
-                        value={newModule.facePrice?.black || 0}
-                        onChange={(e) => setNewModule({ ...newModule, facePrice: { ...newModule.facePrice, black: parseFloat(e.target.value) || 0 } })}
-                        className="w-24 border rounded px-2 py-1 text-sm"
+                        value={newModule.facePurchasePrice?.black || 0}
+                        onChange={(e) => {
+                          const newPurchase = parseFloat(e.target.value) || 0;
+                          const currentMarkup = newModule.faceMarkup?.black || 25;
+                          const newPrice = calcPriceWithVat(newPurchase, currentMarkup);
+                          setNewModule({ ...newModule,
+                            facePurchasePrice: { ...newModule.facePurchasePrice, black: newPurchase },
+                            facePrice: { ...newModule.facePrice, black: newPrice }
+                          });
+                        }}
+                        className="w-20 border rounded px-2 py-1 text-sm"
                       />
                     </td>
-                    <td className="p-2 text-gray-400 font-mono">
-                      {((newModule.facePrice?.black || 0) / 1.21).toFixed(2)}
+                    <td className="p-2">
+                      <PriceInput
+                        value={newModule.faceMarkup?.black || 25}
+                        onChange={(newMarkup) => {
+                          const currentPurchase = newModule.facePurchasePrice?.black || 0;
+                          const newPrice = calcPriceWithVat(currentPurchase, newMarkup);
+                          setNewModule({ ...newModule,
+                            faceMarkup: { ...newModule.faceMarkup, black: newMarkup },
+                            facePrice: { ...newModule.facePrice, black: newPrice }
+                          });
+                        }}
+                        step="1"
+                        decimals={0}
+                        className="w-16 border rounded px-2 py-1 text-sm"
+                      />
+                    </td>
+                    <td className="p-2 text-gray-500 font-mono text-sm">
+                      {((newModule.facePrice?.black || 0) / (1 + VAT_RATE)).toFixed(2)}
+                    </td>
+                    <td className="p-2">
+                      <PriceInput
+                        value={newModule.facePrice?.black || 0}
+                        onChange={(newPrice) => {
+                          const currentPurchase = newModule.facePurchasePrice?.black || 0;
+                          const newMarkup = calcMarkupFromPriceWithVat(currentPurchase, newPrice);
+                          setNewModule({ ...newModule,
+                            faceMarkup: { ...newModule.faceMarkup, black: newMarkup },
+                            facePrice: { ...newModule.facePrice, black: newPrice }
+                          });
+                        }}
+                        className="w-20 border rounded px-2 py-1 text-sm font-medium"
+                      />
                     </td>
                   </tr>
                 </tbody>
               </table>
+              </div>
               
               <div className="flex gap-2">
                 <button
@@ -5792,6 +6003,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                         </div>
                       </div>
                     </div>
+                    {isAdmin && (
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => setEditingModule(mod.id)}
@@ -5823,6 +6035,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                         </button>
                       )}
                     </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -5881,7 +6094,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             onChange={(e) => {
                               const newPurchase = parseFloat(e.target.value) || 0;
                               const newPrice = calcPriceWithVat(newPurchase, markup);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesMasonry: {
                                   ...library.wallBoxesMasonry,
@@ -5897,7 +6110,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             value={markup}
                             onChange={(newMarkup) => {
                               const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesMasonry: {
                                   ...library.wallBoxesMasonry,
@@ -5916,7 +6129,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             onChange={(newSellingWithoutVat) => {
                               const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
                               const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesMasonry: {
                                   ...library.wallBoxesMasonry,
@@ -5932,7 +6145,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             value={priceWithVat}
                             onChange={(newPrice) => {
                               const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesMasonry: {
                                   ...library.wallBoxesMasonry,
@@ -5997,7 +6210,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             onChange={(e) => {
                               const newPurchase = parseFloat(e.target.value) || 0;
                               const newPrice = calcPriceWithVat(newPurchase, markup);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesDrywall: {
                                   ...library.wallBoxesDrywall,
@@ -6013,7 +6226,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             value={markup}
                             onChange={(newMarkup) => {
                               const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesDrywall: {
                                   ...library.wallBoxesDrywall,
@@ -6032,7 +6245,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             onChange={(newSellingWithoutVat) => {
                               const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
                               const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesDrywall: {
                                   ...library.wallBoxesDrywall,
@@ -6048,7 +6261,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             value={priceWithVat}
                             onChange={(newPrice) => {
                               const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 wallBoxesDrywall: {
                                   ...library.wallBoxesDrywall,
@@ -6116,7 +6329,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           onChange={(e) => {
                             const newPurchase = parseFloat(e.target.value) || 0;
                             const newPrice = calcPriceWithVat(newPurchase, markup);
-                            onUpdate({
+                            safeOnUpdate({
                               ...library,
                               installFaces: {
                                 ...library.installFaces,
@@ -6132,7 +6345,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           value={markup}
                           onChange={(newMarkup) => {
                             const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
-                            onUpdate({
+                            safeOnUpdate({
                               ...library,
                               installFaces: {
                                 ...library.installFaces,
@@ -6151,7 +6364,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           onChange={(newSellingWithoutVat) => {
                             const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
                             const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
-                            onUpdate({
+                            safeOnUpdate({
                               ...library,
                               installFaces: {
                                 ...library.installFaces,
@@ -6167,7 +6380,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                           value={priceWithVat}
                           onChange={(newPrice) => {
                             const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
-                            onUpdate({
+                            safeOnUpdate({
                               ...library,
                               installFaces: {
                                 ...library.installFaces,
@@ -6248,7 +6461,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             onChange={(e) => {
                               const newPurchase = parseFloat(e.target.value) || 0;
                               const newPrice = calcPriceWithVat(newPurchase, markup);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 decorFaces: {
                                   ...library.decorFaces,
@@ -6264,7 +6477,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             value={markup}
                             onChange={(newMarkup) => {
                               const newPrice = calcPriceWithVat(purchasePrice, newMarkup);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 decorFaces: {
                                   ...library.decorFaces,
@@ -6283,7 +6496,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             onChange={(newSellingWithoutVat) => {
                               const newPrice = calcPriceWithVatFromWithout(newSellingWithoutVat);
                               const newMarkup = calcMarkupFromPriceWithoutVat(purchasePrice, newSellingWithoutVat);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 decorFaces: {
                                   ...library.decorFaces,
@@ -6299,7 +6512,7 @@ function LibraryPage({ library, onUpdate, onBack }) {
                             value={priceWithVat}
                             onChange={(newPrice) => {
                               const newMarkup = calcMarkupFromPriceWithVat(purchasePrice, newPrice);
-                              onUpdate({
+                              safeOnUpdate({
                                 ...library,
                                 decorFaces: {
                                   ...library.decorFaces,
@@ -6344,6 +6557,9 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
   });
 
   const t = TRANSLATIONS[lang] || TRANSLATIONS.en;
+
+  // Admin check - @atelierazimut.com emails are admins
+  const isAdmin = session?.user?.email?.endsWith('@atelierazimut.com') || false;
 
   // Verifică sesiunea la start
   useEffect(() => {
@@ -6404,13 +6620,13 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
 
   const loadLibraryFromSupabase = async () => {
     const { data, error } = await supabase
-      .from('user_library')
+      .from('global_library')
       .select('library_data')
-      .eq('user_id', session.user.id)
+      .eq('id', 'main')
       .single();
 
     if (error) {
-      console.log('No library in Supabase, using default/local');
+      console.log('No global library in Supabase, using default/local');
       const localLib = loadLibrary();
       setLibrary(localLib);
     } else if (data?.library_data) {
@@ -6420,18 +6636,24 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
   };
 
   const saveLibraryToSupabase = async (libraryData) => {
+    if (!isAdmin) {
+      console.log('Non-admin user, skipping library save to Supabase');
+      return;
+    }
+
     const { error } = await supabase
-      .from('user_library')
+      .from('global_library')
       .upsert({
-        user_id: session.user.id,
+        id: 'main',
         library_data: libraryData,
         updated_at: new Date().toISOString(),
+        updated_by: session.user.email,
       }, {
-        onConflict: 'user_id'
+        onConflict: 'id'
       });
 
     if (error) {
-      console.error('Error saving library:', error);
+      console.error('Error saving global library:', error);
     }
   };
 
@@ -6632,6 +6854,7 @@ const deleteProject = async (id) => {
                 library={library}
                 onUpdate={setLibrary}
                 onBack={() => setShowLibrary(false)}
+                isAdmin={isAdmin}
               />
             </div>
           </div>
