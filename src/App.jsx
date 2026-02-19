@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy, Upload } from 'lucide-react';
-import { supabase, supabaseUrl, supabaseAnonKey } from './supabase';
+import { supabase, supabaseUrl, supabaseAnonKeyLegacy } from './supabase';
 import Auth from './Auth';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
@@ -1711,7 +1711,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${accessToken}`,
-            'apikey': supabaseAnonKey,
+            'apikey': supabaseAnonKeyLegacy,
           },
           body: JSON.stringify({
             pdfBase64,
