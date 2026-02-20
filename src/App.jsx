@@ -846,72 +846,70 @@ const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
 };
 
 // Assembly Thumbnail - static preview of an assembly
-// Real BTicino proportions: 1M module = 8.5 x 31, side parts = 10.5 x 31
+// Assembly Thumbnail - adapts to system proportions
 const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
   if (!assembly) return null;
   
   const MODULE_CATALOG = library?.modules || [];
+  const props = getSystemProportions(library);
   
-  // Base unit for scaling (1M width = 8.5, height = 31)
-  const baseScale = 3 * scale; // Multiplier to get reasonable pixel sizes
-  const moduleWidth1M = 8.5 * baseScale;  // Width of 1M module
-  const faceHeight = 31 * baseScale;       // Height (same for all)
-  const sideMargin = 10.5 * baseScale;     // Fixed side parts width
+  // Normalize scale: we want thumbnails roughly similar pixel size across systems
+  // BTicino base total height ~31, Gewiss ~170 — normalize to ~31 equivalent
+  const normalizedScale = 31 / (props.topMargin + props.moduleHeight + props.bottomMargin);
+  const baseScale = 3 * scale * normalizedScale;
+  
+  const moduleWidth1M = props.moduleWidth1M * baseScale;
+  const moduleHeight = props.moduleHeight * baseScale;
+  const sideMargin = props.sideMargin * baseScale;
+  const topMargin = props.topMargin * baseScale;
+  const bottomMargin = props.bottomMargin * baseScale;
+  const totalHeight = topMargin + moduleHeight + bottomMargin;
+  const cornerRadius = props.cornerRadius * baseScale;
+  const moduleCornerRadius = props.moduleCornerRadius * baseScale;
   
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const totalWidth = moduleAreaWidth + (sideMargin * 2);
   
-  // Colors - dynamic based on assembly color hex
+  // Colors
   const _dark = isDarkColor(assembly.color, library);
   const colorHex = (library?.availableColors || []).find(c => c.id === assembly.color)?.hex;
   const faceBgColor = colorHex || (_dark ? '#3a3a3a' : '#f5f5f5');
   const frameBorderColor = _dark ? '#888' : '#999';
   const moduleBorderColor = _dark ? '#666' : '#aaa';
   
-  // Calculate module slots
-  const getModuleSlots = () => {
-    const slots = [];
-    let currentPos = 0;
-    (assembly.modules || []).forEach((mod, index) => {
-      const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
-      const size = catalogItem?.size || 1;
-      slots.push({
-        ...mod,
-        index,
-        startPos: currentPos,
-        size,
-        catalogItem,
-      });
-      currentPos += size;
-    });
-    return slots;
-  };
-  
-  const moduleSlots = getModuleSlots();
+  // Module slots
+  const moduleSlots = [];
+  let currentPos = 0;
+  (assembly.modules || []).forEach((mod, index) => {
+    const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
+    const size = catalogItem?.size || 1;
+    moduleSlots.push({ ...mod, index, startPos: currentPos, size, catalogItem });
+    currentPos += size;
+  });
   
   return (
     <div
-      className="relative"
+      className="relative overflow-hidden"
       style={{
         width: totalWidth,
-        height: faceHeight,
+        height: totalHeight,
         backgroundColor: faceBgColor,
         border: `1px solid ${frameBorderColor}`,
+        borderRadius: cornerRadius,
       }}
     >
-      {/* Installed modules */}
+      {/* Module area */}
       <div 
         className="absolute flex"
         style={{ 
           left: sideMargin,
-          top: 0,
+          top: topMargin,
           width: moduleAreaWidth,
-          height: faceHeight,
+          height: moduleHeight,
         }}
       >
         {moduleSlots.map((slot, idx) => {
           const ModuleGraphic = slot.catalogItem ? getModuleGraphic(slot.catalogItem.id, slot.size) : null;
-          
           return (
             <div
               key={slot.id || idx}
@@ -921,10 +919,11 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
                 height: '100%',
                 borderLeft: idx === 0 ? `1px solid ${moduleBorderColor}` : 'none',
                 borderRight: `1px solid ${moduleBorderColor}`,
+                borderRadius: moduleCornerRadius,
               }}
             >
               {ModuleGraphic && (
-                <ModuleGraphic color={colorHex || assembly.color} width={slot.size * moduleWidth1M - 2} height={faceHeight} />
+                <ModuleGraphic color={colorHex || assembly.color} width={slot.size * moduleWidth1M - 2} height={moduleHeight} />
               )}
             </div>
           );
@@ -1358,6 +1357,60 @@ const DEFAULT_LIBRARIES = {
   bticino: DEFAULT_LIBRARY,
   gewiss: DEFAULT_LIBRARY_GEWISS,
   schneider: DEFAULT_LIBRARY_SCHNEIDER,
+};
+
+// ============================================================================
+// SYSTEM VISUAL PROPORTIONS
+// ============================================================================
+// Each system has different physical proportions for frames and modules.
+// Units are abstract but proportional to real products.
+//
+// BTicino Living Now: tall narrow modules, thin side margins, support bars
+// Gewiss Chorus: wide short modules, thick side/top/bottom margins, no support bars
+// Schneider Unica: similar to BTicino proportions with slight differences
+
+const SYSTEM_PROPORTIONS = {
+  bticino: {
+    moduleWidth1M: 8.5,   // Width of 1 module slot
+    moduleHeight: 31,      // Height of module area
+    sideMargin: 10.5,      // Left/right frame margin
+    topMargin: 0,          // Top margin above modules (BTicino has support bars instead)
+    bottomMargin: 0,       // Bottom margin below modules
+    cornerRadius: 0,       // Frame corner radius
+    hasSupportBars: true,  // BTicino has metal support bars top/bottom
+    supportBarHeight: 5,
+    supportBarOffset: 4,
+    moduleCornerRadius: 0, // Square module corners
+  },
+  gewiss: {
+    moduleWidth1M: 57,     // From photo: 170px / 3 modules
+    moduleHeight: 80,      // From photo: 170 - 45 - 45
+    sideMargin: 50,        // From photo: 50px each side
+    topMargin: 45,         // From photo: 45px top
+    bottomMargin: 45,      // From photo: 45px bottom
+    cornerRadius: 4,       // Slight rounded corners on frame
+    hasSupportBars: false,  // Gewiss has no visible support bars
+    supportBarHeight: 0,
+    supportBarOffset: 0,
+    moduleCornerRadius: 2, // Slightly rounded module corners
+  },
+  schneider: {
+    moduleWidth1M: 8.5,   // Similar to BTicino for now
+    moduleHeight: 31,
+    sideMargin: 10.5,
+    topMargin: 0,
+    bottomMargin: 0,
+    cornerRadius: 2,
+    hasSupportBars: true,
+    supportBarHeight: 5,
+    supportBarOffset: 4,
+    moduleCornerRadius: 1,
+  },
+};
+
+const getSystemProportions = (library) => {
+  const sysId = library?.systemId || 'bticino';
+  return SYSTEM_PROPORTIONS[sysId] || SYSTEM_PROPORTIONS.bticino;
 };
 
 // Library storage functions
@@ -2888,11 +2941,19 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     
     // Function to generate SVG string for an assembly
     const generateAssemblySVG = (assembly, scale = 1.5) => {
-      const moduleWidth1M = 8.5 * scale;
-      const faceHeight = 31 * scale;
-      const sideMargin = 10.5 * scale;
-      const supportBarHeight = 5 * scale;
-      const supportBarOffset = 4 * scale;
+      const sysProps = getSystemProportions(library);
+      // Normalize so all systems produce similar pixel size in PDF
+      const normalizedScale = 31 / (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin);
+      const s = scale * normalizedScale;
+      
+      const moduleWidth1M = sysProps.moduleWidth1M * s;
+      const modHeight = sysProps.moduleHeight * s;
+      const sideMargin = sysProps.sideMargin * s;
+      const topMargin = sysProps.topMargin * s;
+      const bottomMargin = sysProps.bottomMargin * s;
+      const totalHeight = topMargin + modHeight + bottomMargin;
+      const cr = sysProps.cornerRadius * s;
+      const mcr = sysProps.moduleCornerRadius * s;
       
       const moduleAreaWidth = assembly.size * moduleWidth1M;
       const totalWidth = moduleAreaWidth + (sideMargin * 2);
@@ -2904,73 +2965,70 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
       const moduleBorder = isDark ? '#555' : '#ddd';
       const frameBorderOuter = isDark ? '#555' : '#ddd';
       
-      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${faceHeight}" viewBox="0 0 ${totalWidth} ${faceHeight}">`;
+      let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">`;
       
-      // Outer border for visibility
-      svg += `<rect x="0" y="0" width="${totalWidth}" height="${faceHeight}" fill="${frameBg}" stroke="${frameBorderOuter}" stroke-width="0.5"/>`;
+      // Outer frame
+      svg += `<rect x="0" y="0" width="${totalWidth}" height="${totalHeight}" rx="${cr}" fill="${frameBg}" stroke="${frameBorderOuter}" stroke-width="0.5"/>`;
       
-      // Support bars
-      svg += `<rect x="${sideMargin}" y="${supportBarOffset}" width="${moduleAreaWidth}" height="${supportBarHeight}" fill="${supportBarColor}"/>`;
-      svg += `<rect x="${sideMargin}" y="${faceHeight - supportBarOffset - supportBarHeight}" width="${moduleAreaWidth}" height="${supportBarHeight}" fill="${supportBarColor}"/>`;
+      // Support bars (BTicino only)
+      if (sysProps.hasSupportBars) {
+        const sbh = sysProps.supportBarHeight * s;
+        const sbo = sysProps.supportBarOffset * s;
+        svg += `<rect x="${sideMargin}" y="${topMargin + sbo}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
+        svg += `<rect x="${sideMargin}" y="${topMargin + modHeight - sbo - sbh}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
+      }
       
       // Modules
       let moduleX = sideMargin;
+      const centerYAbs = topMargin + modHeight / 2;
       (assembly.modules || []).forEach((mod) => {
         const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
         const size = catalogItem?.size || 1;
         const modWidth = size * moduleWidth1M;
         const centerX = moduleX + modWidth / 2;
-        const centerY = faceHeight / 2;
+        const centerY = centerYAbs;
         
-        // Module background with border
-        svg += `<rect x="${moduleX}" y="0" width="${modWidth}" height="${faceHeight}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
+        // Module background
+        svg += `<rect x="${moduleX}" y="${topMargin}" width="${modWidth}" height="${modHeight}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
         
         if (catalogItem) {
           const modId = catalogItem.id.toLowerCase();
-          const symbolColor = isBlack ? '#ffffff' : '#333333';
-          const accentColor = isBlack ? '#555555' : '#e8e8e8';
-          const holeColor = isBlack ? '#ffffff' : '#333333';
-          const sw = 0.95; // stroke-width for PDF clarity
+          const symbolColor = isDark ? '#ffffff' : '#333333';
+          const accentColor = isDark ? '#555555' : '#e8e8e8';
+          const holeColor = isDark ? '#ffffff' : '#333333';
+          const sw = 0.95;
           
           if (modId.includes('schuko')) {
-            // Schuko outlet
-            svg += `<circle cx="${centerX}" cy="${centerY}" r="${8 * scale}" fill="${accentColor}"/>`;
-            svg += `<circle cx="${centerX - 3.5 * scale}" cy="${centerY}" r="${1.8 * scale}" fill="${holeColor}"/>`;
-            svg += `<circle cx="${centerX + 3.5 * scale}" cy="${centerY}" r="${1.8 * scale}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${8 * s}" fill="${accentColor}"/>`;
+            svg += `<circle cx="${centerX - 3.5 * s}" cy="${centerY}" r="${1.8 * s}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX + 3.5 * s}" cy="${centerY}" r="${1.8 * s}" fill="${holeColor}"/>`;
           } else if (modId.includes('italian')) {
-            // Italian outlet
-            svg += `<ellipse cx="${centerX}" cy="${centerY}" rx="${3.5 * scale}" ry="${8 * scale}" fill="${accentColor}"/>`;
-            svg += `<circle cx="${centerX}" cy="${centerY - 4 * scale}" r="${1.2 * scale}" fill="${holeColor}"/>`;
-            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.2 * scale}" fill="${holeColor}"/>`;
-            svg += `<circle cx="${centerX}" cy="${centerY + 4 * scale}" r="${1.2 * scale}" fill="${holeColor}"/>`;
+            svg += `<ellipse cx="${centerX}" cy="${centerY}" rx="${3.5 * s}" ry="${8 * s}" fill="${accentColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY - 4 * s}" r="${1.2 * s}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.2 * s}" fill="${holeColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY + 4 * s}" r="${1.2 * s}" fill="${holeColor}"/>`;
           } else if (modId.includes('usb')) {
-            // USB ports - scaled smaller to fit inside key
-            svg += `<rect x="${centerX - 3 * scale}" y="${centerY - 5.5 * scale}" width="${6 * scale}" height="${3.2 * scale}" rx="0.5" fill="${holeColor}"/>`;
-            svg += `<rect x="${centerX - 3 * scale}" y="${centerY + 0.8 * scale}" width="${6 * scale}" height="${3.2 * scale}" rx="0.5" fill="${holeColor}"/>`;
+            svg += `<rect x="${centerX - 3 * s}" y="${centerY - 5.5 * s}" width="${6 * s}" height="${3.2 * s}" rx="0.5" fill="${holeColor}"/>`;
+            svg += `<rect x="${centerX - 3 * s}" y="${centerY + 0.8 * s}" width="${6 * s}" height="${3.2 * s}" rx="0.5" fill="${holeColor}"/>`;
           } else if (modId.includes('switch') || modId.includes('intrerupator')) {
-            // Switch with + and LED
-            svg += `<line x1="${centerX - 4 * scale}" y1="${centerY}" x2="${centerX + 4 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
-            svg += `<line x1="${centerX}" y1="${centerY - 4 * scale}" x2="${centerX}" y2="${centerY + 4 * scale}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
-            svg += `<circle cx="${centerX}" cy="${centerY + 10 * scale}" r="${1.5 * scale}" fill="#4ade80"/>`;
+            svg += `<line x1="${centerX - 4 * s}" y1="${centerY}" x2="${centerX + 4 * s}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX}" y1="${centerY - 4 * s}" x2="${centerX}" y2="${centerY + 4 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY + 10 * s}" r="${1.5 * s}" fill="#4ade80"/>`;
           } else if (modId.includes('dimmer') || modId.includes('potentiometru')) {
-            // Dimmer +/-
-            svg += `<line x1="${centerX - 8 * scale}" y1="${centerY - 3 * scale}" x2="${centerX - 2 * scale}" y2="${centerY - 3 * scale}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
-            svg += `<line x1="${centerX - 5 * scale}" y1="${centerY - 6 * scale}" x2="${centerX - 5 * scale}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
-            svg += `<line x1="${centerX + 2 * scale}" y1="${centerY + 3 * scale}" x2="${centerX + 8 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX - 8 * s}" y1="${centerY - 3 * s}" x2="${centerX - 2 * s}" y2="${centerY - 3 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX - 5 * s}" y1="${centerY - 6 * s}" x2="${centerX - 5 * s}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX + 2 * s}" y1="${centerY + 3 * s}" x2="${centerX + 8 * s}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           } else if (modId.includes('coax') || modId.includes('tv')) {
-            // COAX
-            svg += `<circle cx="${centerX}" cy="${centerY}" r="${5 * scale}" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
-            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * scale}" fill="${symbolColor}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${5 * s}" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
+            svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * s}" fill="${symbolColor}"/>`;
           } else if (modId.includes('utp') || modId.includes('rj45') || modId.includes('data')) {
-            // UTP/RJ45
-            svg += `<rect x="${centerX - 4 * scale}" y="${centerY - 3 * scale}" width="${8 * scale}" height="${6 * scale}" rx="1" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
-            svg += `<line x1="${centerX - 2 * scale}" y1="${centerY - 3 * scale}" x2="${centerX - 2 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
-            svg += `<line x1="${centerX + 2 * scale}" y1="${centerY - 3 * scale}" x2="${centerX + 2 * scale}" y2="${centerY + 3 * scale}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
+            svg += `<rect x="${centerX - 4 * s}" y="${centerY - 3 * s}" width="${8 * s}" height="${6 * s}" rx="1" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
+            svg += `<line x1="${centerX - 2 * s}" y1="${centerY - 3 * s}" x2="${centerX - 2 * s}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
+            svg += `<line x1="${centerX + 2 * s}" y1="${centerY - 3 * s}" x2="${centerX + 2 * s}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
           } else if (modId.includes('blank') || modId.includes('tasta')) {
-            // Blank - just the background, no symbol
+            // Blank
           } else {
-            // Generic module
-            svg += `<rect x="${centerX - 3 * scale}" y="${centerY - 3 * scale}" width="${6 * scale}" height="${6 * scale}" fill="${holeColor}"/>`;
+            svg += `<rect x="${centerX - 3 * s}" y="${centerY - 3 * s}" width="${6 * s}" height="${6 * s}" fill="${holeColor}"/>`;
           }
         }
         
@@ -2985,11 +3043,11 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
       
       if (usedSize < assembly.size) {
         const emptyWidth = (assembly.size - usedSize) * moduleWidth1M;
-        svg += `<rect x="${moduleX}" y="0" width="${emptyWidth}" height="${faceHeight}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+        svg += `<rect x="${moduleX}" y="${topMargin}" width="${emptyWidth}" height="${modHeight}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
       }
       
       svg += '</svg>';
-      return { svg, width: totalWidth, height: faceHeight };
+      return { svg, width: totalWidth, height: totalHeight };
     };
     
     // Convert SVG to image data URL
@@ -3535,11 +3593,21 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const decorFaceSku = getDecorFaceSku(assembly.size, assembly.color, library);
   const wallBoxTypeLabel = (assembly.wallBoxType || 'masonry') === 'drywall' ? t.drywall : t.masonry;
 
-  // Visual dimensions - Real BTicino proportions: 1M = 8.5 x 31, side parts = 10.5 x 31
-  const baseScale = 4; // Multiplier for reasonable pixel sizes in editor
-  const moduleWidth1M = 8.5 * baseScale;  // Width of 1M module (34px)
-  const sideMargin = 10.5 * baseScale;     // Fixed side parts width (42px)
-  const faceHeight = 31 * baseScale;       // Height (124px)
+  // Visual dimensions - from system proportions
+  const props = getSystemProportions(library);
+  const baseScale = 4;
+  // Normalize so all systems render at similar pixel size
+  const normalizedScale = 31 / (props.topMargin + props.moduleHeight + props.bottomMargin);
+  const effectiveScale = baseScale * normalizedScale;
+  
+  const moduleWidth1M = props.moduleWidth1M * effectiveScale;
+  const moduleHeight = props.moduleHeight * effectiveScale;
+  const sideMargin = props.sideMargin * effectiveScale;
+  const topMargin = props.topMargin * effectiveScale;
+  const bottomMargin = props.bottomMargin * effectiveScale;
+  const faceHeight = topMargin + moduleHeight + bottomMargin;
+  const cornerRadius = props.cornerRadius * effectiveScale;
+  const moduleCornerRadius = props.moduleCornerRadius * effectiveScale;
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const faceWidth = moduleAreaWidth + (sideMargin * 2);
 
@@ -3662,70 +3730,44 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           >
             {/* Face plate container - with padding for delete buttons */}
             <div
-              className={`relative transition-all ${
+              className={`relative transition-all overflow-hidden ${
                 dragOverFace ? 'ring-2 ring-blue-400 ring-offset-2' : ''
               }`}
               style={{
                 width: faceWidth,
                 height: faceHeight,
-                backgroundColor: 'transparent',
-                margin: '10px', // Space for delete buttons
+                backgroundColor: faceBgColor,
+                borderRadius: cornerRadius,
+                margin: '10px',
               }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
               onDrop={(e) => handleDrop(e, null)}
             >
+              {/* Top/bottom margins (frame edges) - only if system has them */}
+              {topMargin > 0 && (
+                <>
+                  <div className="absolute left-0 right-0 top-0" style={{ height: topMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+                  <div className="absolute left-0 right-0 bottom-0" style={{ height: bottomMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+                </>
+              )}
+              
               {/* Side margins (face plate edges) */}
-              <div 
-                className="absolute top-0 bottom-0 left-0"
-                style={{ 
-                  width: sideMargin,
-                  backgroundColor: faceBgColor,
-                }}
-              />
-              <div 
-                className="absolute top-0 bottom-0 right-0"
-                style={{ 
-                  width: sideMargin,
-                  backgroundColor: faceBgColor,
-                }}
-              />
+              <div className="absolute top-0 bottom-0 left-0" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+              <div className="absolute top-0 bottom-0 right-0" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
               
-              {/* Support frame bars - top and bottom connecting side margins (in background) */}
-              <div 
-                className="absolute"
-                style={{ 
-                  left: sideMargin,
-                  right: sideMargin,
-                  top: 10,
-                  height: 16,
-                  backgroundColor: '#4a4a4a',
-                  zIndex: 0,
-                }}
-              />
-              <div 
-                className="absolute"
-                style={{ 
-                  left: sideMargin,
-                  right: sideMargin,
-                  bottom: 10,
-                  height: 16,
-                  backgroundColor: '#4a4a4a',
-                  zIndex: 0,
-                }}
-              />
+              {/* Support frame bars - only for systems that have them (BTicino) */}
+              {props.hasSupportBars && (
+                <>
+                  <div className="absolute" style={{ left: sideMargin, right: sideMargin, top: topMargin + 10, height: 16, backgroundColor: '#4a4a4a', zIndex: 0 }} />
+                  <div className="absolute" style={{ left: sideMargin, right: sideMargin, bottom: bottomMargin + 10, height: 16, backgroundColor: '#4a4a4a', zIndex: 0 }} />
+                </>
+              )}
               
-              {/* Slot grid background - centered between side margins */}
+              {/* Slot grid background */}
               <div 
                 className="absolute flex"
-                style={{ 
-                  left: sideMargin,
-                  right: sideMargin,
-                  top: 0,
-                  bottom: 0,
-                  gap: 0,
-                  zIndex: 1,
-                }}
+                style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, gap: 0, zIndex: 1 }}
               >
                 {Array.from({ length: assembly.size }).map((_, i) => (
                   <div
@@ -3733,23 +3775,18 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                     className="border border-dashed flex-shrink-0"
                     style={{
                       width: moduleWidth1M,
-                      height: faceHeight,
+                      height: moduleHeight,
                       borderColor: _detailDark ? '#555' : '#ccc',
+                      borderRadius: moduleCornerRadius,
                     }}
                   />
                 ))}
               </div>
 
-              {/* Installed modules - centered between side margins */}
+              {/* Installed modules */}
               <div 
                 className="absolute flex"
-                style={{ 
-                  left: sideMargin,
-                  right: sideMargin,
-                  top: 0,
-                  bottom: 0,
-                  zIndex: 2,
-                }}
+                style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, zIndex: 2 }}
               >
                 {moduleSlots.map((slot, idx) => {
                   const isDragging = draggedModule?.type === 'installed' && draggedModule?.index === idx;
@@ -3768,9 +3805,10 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                       } ${isDragOver ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
                       style={{
                         width: slot.size * moduleWidth1M,
-                        height: faceHeight,
+                        height: moduleHeight,
                         backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
                         border: `2px solid ${_detailDark ? '#555' : '#bbb'}`,
+                        borderRadius: moduleCornerRadius,
                       }}
                     >
                       {/* Module image with real Bticino graphics - fills entire module */}
@@ -3780,7 +3818,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                           color={assembly.color}
                           colorHex={colorInfo?.hex}
                           width={slot.size * moduleWidth1M}
-                          height={faceHeight}
+                          height={moduleHeight}
                         />
                       </div>
                       
@@ -3910,15 +3948,14 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                       <div 
                         className="module-drag-preview rounded bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-300"
                         style={{
-                          // BTicino proportions: 1M = 8.5x31, 2M = 17x31
-                          width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31),
+                          width: (() => { const p = getSystemProportions(library); const ar = mod.size === 2 ? (p.moduleWidth1M * 2 / p.moduleHeight) : (p.moduleWidth1M / p.moduleHeight); return Math.round(52 * ar); })(),
                           height: 52,
                         }}
                       >
                         <ModuleImage 
                           moduleId={mod.id} 
                           color="white"
-                          width={mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31)}
+                          width={(() => { const p = getSystemProportions(library); const ar = mod.size === 2 ? (p.moduleWidth1M * 2 / p.moduleHeight) : (p.moduleWidth1M / p.moduleHeight); return Math.round(52 * ar); })()}
                           height={52}
                         />
                       </div>
@@ -6849,29 +6886,9 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       rows.forEach(row => {
         const libData = row.library_data || {};
         const systemId = row.id === 'main' ? 'bticino' : row.id;
-        const defaults = DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
-        // Only overlay if Supabase has actual data (modules present)
-        // Otherwise keep the full default library
         if (libData.modules && libData.modules.length > 0) {
-          if (!libData.availableColors) libData.availableColors = defaults.availableColors;
-          if (!libData.availableSizes) libData.availableSizes = defaults.availableSizes;
           if (!libData.systemId) libData.systemId = systemId;
-          if (!libData.systemName) libData.systemName = defaults.systemName;
           libs[systemId] = libData;
-        } else {
-          // Supabase row exists but is empty/incomplete — keep defaults
-          // but merge any non-empty fields from Supabase
-          const merged = { ...defaults };
-          if (libData.availableColors?.length) merged.availableColors = libData.availableColors;
-          if (libData.availableSizes?.length) merged.availableSizes = libData.availableSizes;
-          if (libData.wallBoxesMasonry && Object.keys(libData.wallBoxesMasonry).length) merged.wallBoxesMasonry = libData.wallBoxesMasonry;
-          if (libData.wallBoxesDrywall && Object.keys(libData.wallBoxesDrywall).length) merged.wallBoxesDrywall = libData.wallBoxesDrywall;
-          if (libData.installFaces && Object.keys(libData.installFaces).length) merged.installFaces = libData.installFaces;
-          if (libData.decorFaces && Object.keys(libData.decorFaces).length) merged.decorFaces = libData.decorFaces;
-          if (libData.presets?.length) merged.presets = libData.presets;
-          merged.systemId = systemId;
-          merged.systemName = libData.systemName || defaults.systemName;
-          libs[systemId] = merged;
         }
       });
     }
@@ -6879,32 +6896,6 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     setLibraries(libs);
     setLibrary(libs.bticino);
     setLibraryLoaded(true);
-
-    // Seed Supabase with defaults for systems that have empty/missing rows
-    if (isAdmin) {
-      const existingIds = (rows || []).map(r => r.id);
-      const systemsToSeed = [];
-      // Check gewiss
-      const gewissRow = (rows || []).find(r => r.id === 'gewiss');
-      if (!gewissRow || !gewissRow.library_data?.modules?.length) {
-        systemsToSeed.push({ id: 'gewiss', data: libs.gewiss });
-      }
-      // Check schneider
-      const schneiderRow = (rows || []).find(r => r.id === 'schneider');
-      if (!schneiderRow || !schneiderRow.library_data?.modules?.length) {
-        systemsToSeed.push({ id: 'schneider', data: libs.schneider });
-      }
-      // Seed
-      for (const sys of systemsToSeed) {
-        console.log(`Seeding Supabase with default library for ${sys.id}`);
-        await supabase.from('global_library').upsert({
-          id: sys.id,
-          library_data: sys.data,
-          updated_at: new Date().toISOString(),
-          updated_by: session?.user?.email || 'system',
-        }, { onConflict: 'id' });
-      }
-    }
   };
 
   const getLibraryForSystem = (systemId) => {
