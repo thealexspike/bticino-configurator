@@ -852,9 +852,8 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
   const MODULE_CATALOG = library?.modules || [];
   const props = getSystemProportions(library);
   
-  // Normalize scale: we want thumbnails roughly similar pixel size across systems
-  // BTicino base total height ~31, Gewiss ~170 — normalize to ~31 equivalent
-  const normalizedScale = 31 / (props.topMargin + props.moduleHeight + props.bottomMargin);
+  // Normalize scale: modules should be similar pixel size across systems
+  const normalizedScale = 31 / props.moduleHeight;
   const baseScale = 3 * scale * normalizedScale;
   
   const moduleWidth1M = props.moduleWidth1M * baseScale;
@@ -2942,7 +2941,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     const generateAssemblySVG = (assembly, scale = 1.5) => {
       const sysProps = getSystemProportions(library);
       // Normalize so all systems produce similar pixel size in PDF
-      const normalizedScale = 31 / (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin);
+      const normalizedScale = 31 / sysProps.moduleHeight;
       const s = scale * normalizedScale;
       
       const moduleWidth1M = sysProps.moduleWidth1M * s;
@@ -3596,8 +3595,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   // Visual dimensions - from system proportions
   const props = getSystemProportions(library);
   const baseScale = 4;
-  // Normalize so all systems render at similar pixel size
-  const normalizedScale = 31 / (props.topMargin + props.moduleHeight + props.bottomMargin);
+  // Normalize so modules are similar pixel size across systems (match BTicino module height of 31)
+  const normalizedScale = 31 / props.moduleHeight;
   const effectiveScale = baseScale * normalizedScale;
   
   const moduleWidth1M = props.moduleWidth1M * effectiveScale;
