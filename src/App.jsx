@@ -2623,9 +2623,6 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     const isDragging = draggedId === assembly.id;
     const isDragOver = !groupByRoom && dragOverIndex === index && draggedId !== assembly.id;
 
-    const wbIsMasonry = (assembly.wallBoxType || 'masonry') === 'masonry';
-    const wbBg = wbIsMasonry ? '#fde8e8' : '#fdf6ec';
-
     return (
       <li
         key={assembly.id}
@@ -2635,10 +2632,9 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         onDragLeave={!groupByRoom ? handleDragLeave : undefined}
         onDrop={(e) => !groupByRoom && handleDrop(e, index)}
         onDragEnd={handleDragEnd}
-        className={`flex items-center justify-between p-4 border-b last:border-b-0 cursor-grab active:cursor-grabbing transition-all ${
+        className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-all ${
           isDragging ? 'opacity-50 bg-blue-50' : ''
         } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
-        style={{ backgroundColor: isDragging ? undefined : wbBg }}
       >
         <div className="flex items-center gap-3 mr-3">
           <div className="text-gray-300 hover:text-gray-500">
@@ -3554,7 +3550,6 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const faceTextColor = _detailDark ? '#ffffff' : '#333333';
 
   const _wbMasonry = (assembly.wallBoxType || 'masonry') === 'masonry';
-  const _wbCardBg = _wbMasonry ? 'rgba(254, 226, 226, 0.3)' : 'rgba(253, 246, 236, 0.35)';
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -3616,10 +3611,6 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               value={assembly.wallBoxType || 'masonry'}
               onChange={(e) => updateField('wallBoxType', e.target.value)}
               className="w-full border rounded px-3 py-2"
-              style={{
-                backgroundColor: _wbMasonry ? '#fee2e2' : '#fef3c7',
-                color: _wbMasonry ? '#991b1b' : '#92400e',
-              }}
             >
               <option value="masonry">{t.masonry}</option>
               <option value="drywall">{t.drywall}</option>
@@ -3660,12 +3651,12 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           <div 
             className="flex justify-center mb-4 p-6 rounded-lg"
             style={_wbMasonry ? { 
-              backgroundColor: '#e8e4e0',
-              backgroundImage: 'linear-gradient(45deg, #e0dcd8 25%, transparent 25%), linear-gradient(-45deg, #e0dcd8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0dcd8 75%), linear-gradient(-45deg, transparent 75%, #e0dcd8 75%)',
+              backgroundColor: '#f0d4d0',
+              backgroundImage: 'linear-gradient(45deg, #e8ccc8 25%, transparent 25%), linear-gradient(-45deg, #e8ccc8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e8ccc8 75%), linear-gradient(-45deg, transparent 75%, #e8ccc8 75%)',
               backgroundSize: '4px 4px',
               backgroundPosition: '0 0, 0 2px, 2px -2px, -2px 0px',
             } : {
-              backgroundColor: '#f5f0e8',
+              backgroundColor: '#f7f0e0',
               backgroundImage: 'none',
             }}
           >
