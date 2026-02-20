@@ -3789,9 +3789,14 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               backgroundImage: 'none',
             }}
           >
-            {/* Face plate container - scales down responsively if wider than available space */}
+            {/* Face plate container - wrapper handles layout size, inner div handles visual scale */}
+            <div style={{
+              width: faceWidth * facePlateScale,
+              height: faceHeight * facePlateScale,
+              margin: '10px',
+            }}>
             <div
-              className={`relative transition-all origin-top ${
+              className={`relative transition-all origin-top-left ${
                 dragOverFace ? 'ring-2 ring-blue-400 ring-offset-2' : ''
               }`}
               style={{
@@ -3799,9 +3804,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                 height: faceHeight,
                 backgroundColor: faceBgColor,
                 borderRadius: cornerRadius,
-                margin: '10px',
                 transform: facePlateScale < 1 ? `scale(${facePlateScale})` : undefined,
-                marginBottom: facePlateScale < 1 ? (faceHeight * (facePlateScale - 1)) + 10 : 10,
               }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -3923,6 +3926,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                   </div>
                 )}
               </div>
+            </div>
             </div>
           </div>
 
