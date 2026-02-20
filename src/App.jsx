@@ -6850,17 +6850,61 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
         const libData = row.library_data || {};
         const systemId = row.id === 'main' ? 'bticino' : row.id;
         const defaults = DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
-        if (!libData.availableColors) libData.availableColors = defaults.availableColors;
-        if (!libData.availableSizes) libData.availableSizes = defaults.availableSizes;
-        if (!libData.systemId) libData.systemId = systemId;
-        if (!libData.systemName) libData.systemName = defaults.systemName;
-        libs[systemId] = libData;
+        // Only overlay if Supabase has actual data (modules present)
+        // Otherwise keep the full default library
+        if (libData.modules && libData.modules.length > 0) {
+          if (!libData.availableColors) libData.availableColors = defaults.availableColors;
+          if (!libData.availableSizes) libData.availableSizes = defaults.availableSizes;
+          if (!libData.systemId) libData.systemId = systemId;
+          if (!libData.systemName) libData.systemName = defaults.systemName;
+          libs[systemId] = libData;
+        } else {
+          // Supabase row exists but is empty/incomplete — keep defaults
+          // but merge any non-empty fields from Supabase
+          const merged = { ...defaults };
+          if (libData.availableColors?.length) merged.availableColors = libData.availableColors;
+          if (libData.availableSizes?.length) merged.availableSizes = libData.availableSizes;
+          if (libData.wallBoxesMasonry && Object.keys(libData.wallBoxesMasonry).length) merged.wallBoxesMasonry = libData.wallBoxesMasonry;
+          if (libData.wallBoxesDrywall && Object.keys(libData.wallBoxesDrywall).length) merged.wallBoxesDrywall = libData.wallBoxesDrywall;
+          if (libData.installFaces && Object.keys(libData.installFaces).length) merged.installFaces = libData.installFaces;
+          if (libData.decorFaces && Object.keys(libData.decorFaces).length) merged.decorFaces = libData.decorFaces;
+          if (libData.presets?.length) merged.presets = libData.presets;
+          merged.systemId = systemId;
+          merged.systemName = libData.systemName || defaults.systemName;
+          libs[systemId] = merged;
+        }
       });
     }
 
     setLibraries(libs);
     setLibrary(libs.bticino);
     setLibraryLoaded(true);
+
+    // Seed Supabase with defaults for systems that have empty/missing rows
+    if (isAdmin) {
+      const existingIds = (rows || []).map(r => r.id);
+      const systemsToSeed = [];
+      // Check gewiss
+      const gewissRow = (rows || []).find(r => r.id === 'gewiss');
+      if (!gewissRow || !gewissRow.library_data?.modules?.length) {
+        systemsToSeed.push({ id: 'gewiss', data: libs.gewiss });
+      }
+      // Check schneider
+      const schneiderRow = (rows || []).find(r => r.id === 'schneider');
+      if (!schneiderRow || !schneiderRow.library_data?.modules?.length) {
+        systemsToSeed.push({ id: 'schneider', data: libs.schneider });
+      }
+      // Seed
+      for (const sys of systemsToSeed) {
+        console.log(`Seeding Supabase with default library for ${sys.id}`);
+        await supabase.from('global_library').upsert({
+          id: sys.id,
+          library_data: sys.data,
+          updated_at: new Date().toISOString(),
+          updated_by: session?.user?.email || 'system',
+        }, { onConflict: 'id' });
+      }
+    }
   };
 
   const getLibraryForSystem = (systemId) => {
