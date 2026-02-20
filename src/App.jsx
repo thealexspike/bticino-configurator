@@ -2623,6 +2623,9 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     const isDragging = draggedId === assembly.id;
     const isDragOver = !groupByRoom && dragOverIndex === index && draggedId !== assembly.id;
 
+    const wbIsMasonry = (assembly.wallBoxType || 'masonry') === 'masonry';
+    const wbBg = wbIsMasonry ? 'rgba(254, 226, 226, 0.45)' : 'rgba(253, 246, 236, 0.5)'; // soft red vs soft cream
+
     return (
       <li
         key={assembly.id}
@@ -2632,9 +2635,10 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         onDragLeave={!groupByRoom ? handleDragLeave : undefined}
         onDrop={(e) => !groupByRoom && handleDrop(e, index)}
         onDragEnd={handleDragEnd}
-        className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-all ${
+        className={`flex items-center justify-between p-4 border-b last:border-b-0 cursor-grab active:cursor-grabbing transition-all ${
           isDragging ? 'opacity-50 bg-blue-50' : ''
         } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
+        style={{ backgroundColor: isDragging ? undefined : wbBg }}
       >
         <div className="flex items-center gap-3 mr-3">
           <div className="text-gray-300 hover:text-gray-500">
@@ -2707,6 +2711,27 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
               {availableColors.map(c => (
                 <option key={c.id} value={c.id}>{c.nameEn || c.name}</option>
               ))}
+            </select>
+
+            {/* Wall box type selector */}
+            <select
+              value={assembly.wallBoxType || 'masonry'}
+              onChange={(e) => {
+                e.stopPropagation();
+                if (onUpdate) {
+                  onUpdate({ ...assembly, wallBoxType: e.target.value });
+                }
+              }}
+              onClick={(e) => e.stopPropagation()}
+              className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
+              style={{
+                backgroundColor: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#fee2e2' : '#fef3c7',
+                color: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#991b1b' : '#92400e',
+              }}
+              title={t.wallBoxType}
+            >
+              <option value="masonry">{t.masonry}</option>
+              <option value="drywall">{t.drywall}</option>
             </select>
 
             {/* Capacity indicator */}
@@ -3528,6 +3553,9 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const faceBgColor = colorInfo?.hex || (_detailDark ? '#454545' : '#f0f0f0');
   const faceTextColor = _detailDark ? '#ffffff' : '#333333';
 
+  const _wbMasonry = (assembly.wallBoxType || 'masonry') === 'masonry';
+  const _wbCardBg = _wbMasonry ? 'rgba(254, 226, 226, 0.3)' : 'rgba(253, 246, 236, 0.35)';
+
   return (
     <div className="p-6 max-w-5xl mx-auto">
       <button
@@ -3537,7 +3565,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
         <ChevronLeft className="w-4 h-4" /> {t.backToList}
       </button>
 
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="rounded-lg shadow p-4 mb-6" style={{ backgroundColor: _wbCardBg }}>
         <div className="flex items-center gap-4 mb-4">
           <h1 className="text-2xl font-bold font-mono">{assembly.code}</h1>
           <span className={`px-3 py-1 rounded text-sm font-medium ${
@@ -3588,6 +3616,10 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               value={assembly.wallBoxType || 'masonry'}
               onChange={(e) => updateField('wallBoxType', e.target.value)}
               className="w-full border rounded px-3 py-2"
+              style={{
+                backgroundColor: _wbMasonry ? '#fee2e2' : '#fef3c7',
+                color: _wbMasonry ? '#991b1b' : '#92400e',
+              }}
             >
               <option value="masonry">{t.masonry}</option>
               <option value="drywall">{t.drywall}</option>
