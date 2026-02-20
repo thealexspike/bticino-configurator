@@ -1383,7 +1383,7 @@ const SYSTEM_PROPORTIONS = {
     moduleCornerRadius: 0, // Square module corners
   },
   gewiss: {
-    moduleWidth1M: 57,     // From photo: 170px / 3 modules
+    moduleWidth1M: 40,     // From photo: 120px / 3 modules
     moduleHeight: 80,      // From photo: 170 - 45 - 45
     sideMargin: 50,        // From photo: 50px each side
     topMargin: 45,         // From photo: 45px top
