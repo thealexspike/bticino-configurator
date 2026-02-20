@@ -6238,7 +6238,23 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
           <div className="space-y-2 mb-4">
             {getAvailableColors(library).map((color, idx) => (
               <div key={color.id} className="flex items-center gap-3 p-2 border rounded">
-                <span className="w-8 h-8 rounded border" style={{ backgroundColor: color.hex }}></span>
+                {isAdmin ? (
+                  <input
+                    type="color"
+                    value={color.hex}
+                    onChange={(e) => {
+                      const newHex = e.target.value;
+                      const newColors = library.availableColors.map(c =>
+                        c.id === color.id ? { ...c, hex: newHex } : c
+                      );
+                      safeOnUpdate({ ...library, availableColors: newColors });
+                    }}
+                    className="w-8 h-8 rounded border cursor-pointer p-0"
+                    title={t.editColorHex || 'Edit color'}
+                  />
+                ) : (
+                  <span className="w-8 h-8 rounded border" style={{ backgroundColor: color.hex }}></span>
+                )}
                 <span className="font-medium w-24">{color.id}</span>
                 <span className="text-sm text-gray-600 w-32">{color.nameEn}</span>
                 <span className="text-sm text-gray-600 w-32">{color.nameRo}</span>
