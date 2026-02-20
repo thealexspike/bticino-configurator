@@ -5241,6 +5241,9 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [showAddPreset, setShowAddPreset] = useState(false);
   const [editingPreset, setEditingPreset] = useState(null);
+  const [editingColorId, setEditingColorId] = useState(null);
+  const [pendingColorHex, setPendingColorHex] = useState('');
+  const [originalColorHex, setOriginalColorHex] = useState('');
   const t = useTranslation();
   const lang = useLanguage();
 
@@ -6236,18 +6239,20 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
         <div className="bg-white rounded-lg shadow p-4">
           <h2 className="text-lg font-bold mb-4">🎨 {t.manageColors}</h2>
           <div className="space-y-2 mb-4">
-            {getAvailableColors(library).map((color, idx) => (
+            {getAvailableColors(library).map((color, idx) => {
+              const isEditingThis = editingColorId === color.id;
+              return (
               <div key={color.id} className="flex items-center gap-3 p-2 border rounded">
                 {isAdmin ? (
                   <input
                     type="color"
-                    value={color.hex}
+                    value={isEditingThis ? pendingColorHex : color.hex}
                     onChange={(e) => {
-                      const newHex = e.target.value;
-                      const newColors = library.availableColors.map(c =>
-                        c.id === color.id ? { ...c, hex: newHex } : c
-                      );
-                      safeOnUpdate({ ...library, availableColors: newColors });
+                      if (!isEditingThis) {
+                        setEditingColorId(color.id);
+                        setOriginalColorHex(color.hex);
+                      }
+                      setPendingColorHex(e.target.value);
                     }}
                     className="w-8 h-8 rounded border cursor-pointer p-0"
                     title={t.editColorHex || 'Edit color'}
@@ -6258,7 +6263,42 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
                 <span className="font-medium w-24">{color.id}</span>
                 <span className="text-sm text-gray-600 w-32">{color.nameEn}</span>
                 <span className="text-sm text-gray-600 w-32">{color.nameRo}</span>
-                <span className="text-xs font-mono text-gray-400">{color.hex}</span>
+                <span className="text-xs font-mono text-gray-400">{isEditingThis ? pendingColorHex : color.hex}</span>
+                {isEditingThis && (
+                  <div className="flex items-center gap-1 ml-2">
+                    <span className="flex items-center gap-1 text-xs text-gray-500">
+                      <span className="w-4 h-4 rounded border" style={{ backgroundColor: originalColorHex }}></span>
+                      →
+                      <span className="w-4 h-4 rounded border" style={{ backgroundColor: pendingColorHex }}></span>
+                    </span>
+                    <button
+                      onClick={() => {
+                        const newColors = library.availableColors.map(c =>
+                          c.id === color.id ? { ...c, hex: pendingColorHex } : c
+                        );
+                        safeOnUpdate({ ...library, availableColors: newColors });
+                        setEditingColorId(null);
+                        setPendingColorHex('');
+                        setOriginalColorHex('');
+                      }}
+                      className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600"
+                      title={t.save}
+                    >
+                      ✓
+                    </button>
+                    <button
+                      onClick={() => {
+                        setEditingColorId(null);
+                        setPendingColorHex('');
+                        setOriginalColorHex('');
+                      }}
+                      className="bg-gray-400 text-white text-xs px-2 py-1 rounded hover:bg-gray-500"
+                      title={t.cancel}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
                 {isAdmin && getAvailableColors(library).length > 1 && (
                   <button
                     onClick={() => {
@@ -6297,7 +6337,8 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
                   </button>
                 )}
               </div>
-            ))}
+              );
+            })}
           </div>
           {isAdmin && (
             <div className="border-t pt-4">
