@@ -12,7 +12,7 @@ import autoTable from 'jspdf-autotable';
 const TRANSLATIONS = {
   en: {
     // General
-    configurator: 'Electrical Configurator',
+    configurator: 'Electrical Equipment Configurator',
     library: 'Library',
     back: 'Back',
     save: 'Save',
@@ -845,28 +845,38 @@ const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
 };
 
 // Assembly Thumbnail - static preview of an assembly
-// Assembly Thumbnail - adapts to system proportions
-const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
+// Uses fit-to-box scaling so all systems produce consistent-size thumbnails
+const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight = 70 }) => {
   if (!assembly) return null;
   
   const MODULE_CATALOG = library?.modules || [];
   const props = getSystemProportions(library);
   
-  // Normalize scale: modules should be similar pixel size across systems
-  const normalizedScale = 31 / props.moduleHeight;
-  const baseScale = 3 * scale * normalizedScale;
+  // Calculate natural (unscaled) dimensions from system proportions
+  const naturalModuleArea = assembly.size * props.moduleWidth1M;
+  const naturalWidth = naturalModuleArea + (props.sideMargin * 2);
+  // For systems without top/bottom margins (BTicino), use support bar area for effective height
+  const naturalHeight = (props.topMargin + props.moduleHeight + props.bottomMargin) 
+    || (props.moduleHeight + (props.supportBarHeight + props.supportBarOffset) * 2);
   
-  const moduleWidth1M = props.moduleWidth1M * baseScale;
-  const moduleHeight = props.moduleHeight * baseScale;
-  const sideMargin = props.sideMargin * baseScale;
-  const topMargin = props.topMargin * baseScale;
-  const bottomMargin = props.bottomMargin * baseScale;
-  const totalHeight = topMargin + moduleHeight + bottomMargin;
-  const cornerRadius = props.cornerRadius * baseScale;
-  const moduleCornerRadius = props.moduleCornerRadius * baseScale;
+  // Fit-to-box: scale to fit within maxWidth x maxHeight while preserving aspect ratio
+  const fitScale = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight);
+  
+  const moduleWidth1M = props.moduleWidth1M * fitScale;
+  const moduleHeight = props.moduleHeight * fitScale;
+  const sideMargin = props.sideMargin * fitScale;
+  const topMargin = props.topMargin * fitScale;
+  const bottomMargin = props.bottomMargin * fitScale;
+  const totalHeight = (props.topMargin + props.moduleHeight + props.bottomMargin) * fitScale
+    || (props.moduleHeight + (props.supportBarHeight + props.supportBarOffset) * 2) * fitScale;
+  const cornerRadius = props.cornerRadius * fitScale;
+  const moduleCornerRadius = props.moduleCornerRadius * fitScale;
   
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const totalWidth = moduleAreaWidth + (sideMargin * 2);
+  
+  // Vertical offset: center modules in totalHeight for systems without explicit margins
+  const moduleTop = props.topMargin > 0 ? topMargin : (totalHeight - moduleHeight) / 2;
   
   // Colors
   const _dark = isDarkColor(assembly.color, library);
@@ -901,7 +911,7 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
         className="absolute flex"
         style={{ 
           left: sideMargin,
-          top: topMargin,
+          top: moduleTop,
           width: moduleAreaWidth,
           height: moduleHeight,
         }}
@@ -1412,11 +1422,21 @@ const getSystemProportions = (library) => {
 };
 
 // Library storage functions
-const LIBRARY_KEY = 'bticino-library';
+const LIBRARY_KEY = 'configurator-aparataj-library';
+const LEGACY_LIBRARY_KEY = 'bticino-library';
 
 const loadLibrary = () => {
   try {
-    const stored = localStorage.getItem(LIBRARY_KEY);
+    // Try new key first, fall back to legacy key for migration
+    let stored = localStorage.getItem(LIBRARY_KEY);
+    if (!stored) {
+      stored = localStorage.getItem(LEGACY_LIBRARY_KEY);
+      if (stored) {
+        // Migrate: save under new key and remove old
+        localStorage.setItem(LIBRARY_KEY, stored);
+        localStorage.removeItem(LEGACY_LIBRARY_KEY);
+      }
+    }
     if (stored) {
       const parsed = JSON.parse(stored);
       // Migrate old wallBoxes to new structure if needed
@@ -1680,11 +1700,20 @@ const createModuleInstance = (moduleId) => ({
 // STORAGE
 // ============================================================================
 
-const STORAGE_KEY = 'bticino-configurator-data';
+const STORAGE_KEY = 'configurator-aparataj-data';
+const LEGACY_STORAGE_KEY = 'bticino-configurator-data';
 
 const loadData = () => {
   try {
-    const data = localStorage.getItem(STORAGE_KEY);
+    // Try new key first, fall back to legacy key for migration
+    let data = localStorage.getItem(STORAGE_KEY);
+    if (!data) {
+      data = localStorage.getItem(LEGACY_STORAGE_KEY);
+      if (data) {
+        localStorage.setItem(STORAGE_KEY, data);
+        localStorage.removeItem(LEGACY_STORAGE_KEY);
+      }
+    }
     return data ? JSON.parse(data) : { projects: [] };
   } catch {
     return { projects: [] };
@@ -2871,7 +2900,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         <div className="flex items-center gap-3">
           {/* Assembly Preview Thumbnail */}
           <div className="hidden sm:block">
-            <AssemblyThumbnail assembly={assembly} library={library} scale={0.5} />
+            <AssemblyThumbnail assembly={assembly} library={library} />
           </div>
           
           <div className="flex items-center gap-1">
@@ -2938,23 +2967,34 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     };
     
     // Function to generate SVG string for an assembly
-    const generateAssemblySVG = (assembly, scale = 1.5) => {
+    // Uses fit-to-box scaling: SVG fits within maxWidth x maxHeight (in PDF mm units)
+    const generateAssemblySVG = (assembly, maxWidth = 50, maxHeight = 22) => {
       const sysProps = getSystemProportions(library);
-      // Normalize so all systems produce similar pixel size in PDF
-      const normalizedScale = 31 / sysProps.moduleHeight;
-      const s = scale * normalizedScale;
+      
+      // Calculate natural (unscaled) dimensions
+      const naturalModuleArea = assembly.size * sysProps.moduleWidth1M;
+      const naturalWidth = naturalModuleArea + (sysProps.sideMargin * 2);
+      const naturalHeight = (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin) 
+        || (sysProps.moduleHeight + (sysProps.supportBarHeight + sysProps.supportBarOffset) * 2);
+      
+      // Fit-to-box: scale to fit within maxWidth x maxHeight
+      const s = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight);
       
       const moduleWidth1M = sysProps.moduleWidth1M * s;
       const modHeight = sysProps.moduleHeight * s;
       const sideMargin = sysProps.sideMargin * s;
       const topMargin = sysProps.topMargin * s;
       const bottomMargin = sysProps.bottomMargin * s;
-      const totalHeight = topMargin + modHeight + bottomMargin;
+      const totalHeight = (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin) * s
+        || (sysProps.moduleHeight + (sysProps.supportBarHeight + sysProps.supportBarOffset) * 2) * s;
       const cr = sysProps.cornerRadius * s;
       const mcr = sysProps.moduleCornerRadius * s;
       
       const moduleAreaWidth = assembly.size * moduleWidth1M;
       const totalWidth = moduleAreaWidth + (sideMargin * 2);
+      
+      // Vertical offset: center modules in totalHeight for systems without explicit margins
+      const moduleTop = sysProps.topMargin > 0 ? topMargin : (totalHeight - modHeight) / 2;
       
       const isDark = isDarkColor(assembly.color, library);
       const frameBg = isDark ? '#3a3a3a' : '#f5f5f5';
@@ -2973,13 +3013,13 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
       if (sysProps.hasSupportBars) {
         const sbh = sysProps.supportBarHeight * s;
         const sbo = sysProps.supportBarOffset * s;
-        svg += `<rect x="${sideMargin}" y="${topMargin + sbo}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
-        svg += `<rect x="${sideMargin}" y="${topMargin + modHeight - sbo - sbh}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
+        svg += `<rect x="${sideMargin}" y="${moduleTop + sbo}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
+        svg += `<rect x="${sideMargin}" y="${moduleTop + modHeight - sbo - sbh}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
       }
       
       // Modules
       let moduleX = sideMargin;
-      const centerYAbs = topMargin + modHeight / 2;
+      const centerYAbs = moduleTop + modHeight / 2;
       (assembly.modules || []).forEach((mod) => {
         const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
         const size = catalogItem?.size || 1;
@@ -2988,7 +3028,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         const centerY = centerYAbs;
         
         // Module background
-        svg += `<rect x="${moduleX}" y="${topMargin}" width="${modWidth}" height="${modHeight}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
+        svg += `<rect x="${moduleX}" y="${moduleTop}" width="${modWidth}" height="${modHeight}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
         
         if (catalogItem) {
           const modId = catalogItem.id.toLowerCase();
@@ -3042,7 +3082,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
       
       if (usedSize < assembly.size) {
         const emptyWidth = (assembly.size - usedSize) * moduleWidth1M;
-        svg += `<rect x="${moduleX}" y="${topMargin}" width="${emptyWidth}" height="${modHeight}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+        svg += `<rect x="${moduleX}" y="${moduleTop}" width="${emptyWidth}" height="${modHeight}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
       }
       
       svg += '</svg>';
@@ -3188,16 +3228,16 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         const truncatedModules = moduleNames.length > 60 ? moduleNames.substring(0, 57) + '...' : moduleNames;
         doc.text(truncatedModules, 13, yPos + 18);
         
-        // Generate and add SVG sketch (smaller)
-        const { svg, width, height } = generateAssemblySVG(assembly, 0.8);
+        // Generate and add SVG sketch — fit to card area
+        const maxImgWidth = 50; // mm in PDF
+        const maxImgHeight = cardHeight - 4; // mm, leave some padding
+        const { svg, width, height } = generateAssemblySVG(assembly, maxImgWidth, maxImgHeight);
         const imageData = await svgToImage(svg, width, height);
         
         if (imageData) {
-          const imgWidth = width * 0.5;
-          const imgHeight = height * 0.5;
-          const imgX = pageWidth - 12 - imgWidth;
-          const imgY = yPos + (cardHeight - 1 - imgHeight) / 2;
-          doc.addImage(imageData, 'PNG', imgX, imgY, imgWidth, imgHeight);
+          const imgX = pageWidth - 12 - width;
+          const imgY = yPos + (cardHeight - 1 - height) / 2;
+          doc.addImage(imageData, 'PNG', imgX, imgY, width, height);
         }
         
         yPos += cardHeight;
@@ -3428,6 +3468,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const [draggedModule, setDraggedModule] = useState(null);
   const [dragOverSlot, setDragOverSlot] = useState(null);
   const [dragOverFace, setDragOverFace] = useState(false);
+  const facePlateContainerRef = React.useRef(null);
+  const [facePlateScale, setFacePlateScale] = useState(1);
 
   // Get library and translations from context
   const library = React.useContext(LibraryContext);
@@ -3610,6 +3652,25 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const faceWidth = moduleAreaWidth + (sideMargin * 2);
 
+  // Scale face plate down if it's wider than the container
+  React.useEffect(() => {
+    const el = facePlateContainerRef.current;
+    if (!el) return;
+    const observer = new ResizeObserver((entries) => {
+      for (const entry of entries) {
+        // Available width = container width minus padding (p-6 = 24px each side) and face margin (10px each side)
+        const available = entry.contentRect.width - 20; // 10px margin each side
+        if (faceWidth > available && available > 0) {
+          setFacePlateScale(available / faceWidth);
+        } else {
+          setFacePlateScale(1);
+        }
+      }
+    });
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [faceWidth]);
+
   const availableColors = getAvailableColors(library);
   const colorInfo = availableColors.find(c => c.id === assembly.color);
   const _detailDark = isDarkColor(assembly.color, library);
@@ -3716,6 +3777,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           </h2>
           
           <div 
+            ref={facePlateContainerRef}
             className="flex justify-center mb-4 p-6 rounded-lg"
             style={_wbMasonry ? { 
               backgroundColor: '#f0d4d0',
@@ -3727,9 +3789,9 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               backgroundImage: 'none',
             }}
           >
-            {/* Face plate container - with padding for delete buttons */}
+            {/* Face plate container - scales down responsively if wider than available space */}
             <div
-              className={`relative transition-all ${
+              className={`relative transition-all origin-top ${
                 dragOverFace ? 'ring-2 ring-blue-400 ring-offset-2' : ''
               }`}
               style={{
@@ -3738,6 +3800,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                 backgroundColor: faceBgColor,
                 borderRadius: cornerRadius,
                 margin: '10px',
+                transform: facePlateScale < 1 ? `scale(${facePlateScale})` : undefined,
+                marginBottom: facePlateScale < 1 ? (faceHeight * (facePlateScale - 1)) + 10 : 10,
               }}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -6796,7 +6860,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [showLibrary, setShowLibrary] = useState(false);
   const [lang, setLang] = useState(() => {
     try {
-      return localStorage.getItem('bticino-lang') || 'en';
+      return localStorage.getItem('configurator-aparataj-lang') || localStorage.getItem('bticino-lang') || 'en';
     } catch {
       return 'en';
     }
@@ -7007,7 +7071,7 @@ useEffect(() => {
 
   useEffect(() => {
     try {
-      localStorage.setItem('bticino-lang', lang);
+      localStorage.setItem('configurator-aparataj-lang', lang);
     } catch {}
   }, [lang]);
 
