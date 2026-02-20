@@ -6173,7 +6173,10 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
                 </div>
                 <div>
                   <label className="block text-xs text-gray-600">{t.colorHex}</label>
-                  <input id="newColorHex" type="text" placeholder="#C2A878" className="border rounded px-2 py-1 text-sm w-24" />
+                  <div className="flex items-center gap-1">
+                    <input id="newColorHex" type="color" defaultValue="#C2A878" onInput={(e) => { const lbl = document.getElementById('newColorHexLabel'); if (lbl) lbl.textContent = e.target.value; }} className="w-10 h-8 rounded border cursor-pointer p-0" />
+                    <span id="newColorHexLabel" className="text-xs font-mono text-gray-400">#C2A878</span>
+                  </div>
                 </div>
                 <button
                   onClick={() => {
@@ -6215,7 +6218,8 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
                     document.getElementById('newColorId').value = '';
                     document.getElementById('newColorNameEn').value = '';
                     document.getElementById('newColorNameRo').value = '';
-                    document.getElementById('newColorHex').value = '';
+                    document.getElementById('newColorHex').value = '#C2A878';
+                    const lbl = document.getElementById('newColorHexLabel'); if (lbl) lbl.textContent = '#C2A878';
                   }}
                   className="bg-blue-600 text-white px-3 py-1 rounded text-sm hover:bg-blue-700"
                 >
