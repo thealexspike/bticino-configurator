@@ -12,7 +12,7 @@ import autoTable from 'jspdf-autotable';
 const TRANSLATIONS = {
   en: {
     // General
-    configurator: 'Bticino Living Now Configurator',
+    configurator: 'Electrical Configurator',
     library: 'Library',
     back: 'Back',
     save: 'Save',
@@ -220,10 +220,16 @@ const TRANSLATIONS = {
     drywall: 'Drywall (Gypsum)',
     wallBoxesMasonry: 'Wall Boxes (Masonry)',
     wallBoxesDrywall: 'Wall Boxes (Drywall)',
+    system: 'System',
+    selectSystem: 'Select system',
+    editingSystem: 'Editing system',
+    systemBticino: 'BTicino Living Now',
+    systemGewiss: 'Gewiss Chorus',
+    systemSchneider: 'Schneider Noua Unica',
   },
   ro: {
     // General
-    configurator: 'Configurator Bticino Living Now',
+    configurator: 'Configurator Aparataj Electric',
     library: 'Bibliotecă',
     back: 'Înapoi',
     save: 'Salvează',
@@ -431,6 +437,12 @@ const TRANSLATIONS = {
     drywall: 'Gips-carton',
     wallBoxesMasonry: 'Doze (Zidarie)',
     wallBoxesDrywall: 'Doze (Gips-carton)',
+    system: 'Sistem',
+    selectSystem: 'Alege sistemul',
+    editingSystem: 'Editează sistemul',
+    systemBticino: 'BTicino Living Now',
+    systemGewiss: 'Gewiss Chorus',
+    systemSchneider: 'Schneider Noua Unica',
   },
 };
 
@@ -927,12 +939,41 @@ const SIZES = [1, 2, 3, 4, 6];
 const FRAME_SIZES = [2, 3, 4, 6]; // For wall boxes, install faces, decor faces (min 2M)
 
 const COLORS = [
-  { id: 'white', name: 'White', hex: '#FFFFFF' },
-  { id: 'black', name: 'Black', hex: '#1a1a1a' },
+  { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+  { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#1a1a1a' },
 ];
+
+// Available systems registry
+const SYSTEMS = [
+  { id: 'bticino', nameEn: 'BTicino Living Now', nameRo: 'BTicino Living Now' },
+  { id: 'gewiss', nameEn: 'Gewiss Chorus', nameRo: 'Gewiss Chorus' },
+  { id: 'schneider', nameEn: 'Schneider Noua Unica', nameRo: 'Schneider Noua Unica' },
+];
+
+// Helpers for dynamic colors/sizes from library
+const getAvailableColors = (library) => library?.availableColors || COLORS;
+const getAvailableSizes = (library) => library?.availableSizes || FRAME_SIZES;
+const getSystemName = (systemId, lang) => {
+  const sys = SYSTEMS.find(s => s.id === systemId);
+  if (!sys) return systemId || 'BTicino Living Now';
+  return lang === 'ro' ? sys.nameRo : sys.nameEn;
+};
+const getColorName = (colorId, library, lang) => {
+  const colors = getAvailableColors(library);
+  const c = colors.find(col => col.id === colorId);
+  if (!c) return colorId;
+  return lang === 'ro' ? (c.nameRo || c.nameEn || c.name || colorId) : (c.nameEn || c.name || colorId);
+};
 
 // Default library data - will be overridden by localStorage
 const DEFAULT_LIBRARY = {
+  systemId: 'bticino',
+  systemName: 'BTicino Living Now',
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#1a1a1a' },
+  ],
+  availableSizes: [2, 3, 4, 6],
   wallBoxesMasonry: {
     2: { sku: '504E', purchasePrice: 10, markup: 25, price: 15.13 },
     3: { sku: '506E', purchasePrice: 12, markup: 25, price: 18.15 },
@@ -964,6 +1005,7 @@ const DEFAULT_LIBRARY = {
   modules: [
     { 
       id: 'schuko',
+      standardType: 'schuko',
       hasColorVariants: true,
       moduleSku: { white: 'K4802', black: 'KG4802' },
       nameEn: 'Schuko Outlet',
@@ -980,6 +1022,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'italian',
+      standardType: 'italian',
       hasColorVariants: false,
       moduleSku: 'K4801',
       nameEn: 'Italian Outlet',
@@ -996,6 +1039,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'usb',
+      standardType: 'usb',
       hasColorVariants: false,
       moduleSku: 'K4285C2',
       nameEn: 'USB Outlet',
@@ -1012,6 +1056,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'switch_simple',
+      standardType: 'switch_simple',
       hasColorVariants: false,
       moduleSku: 'K4001AS',
       nameEn: 'Simple Switch',
@@ -1028,6 +1073,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'switch_stair',
+      standardType: 'switch_stair',
       hasColorVariants: false,
       moduleSku: 'K4003AS',
       nameEn: 'Stair Switch',
@@ -1044,6 +1090,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'switch_cross',
+      standardType: 'switch_cross',
       hasColorVariants: false,
       moduleSku: 'K4004AS',
       nameEn: 'Cross Switch',
@@ -1060,6 +1107,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'dimmer',
+      standardType: 'dimmer',
       hasColorVariants: false,
       moduleSku: 'K4401',
       nameEn: 'Dimmer / Potentiometer',
@@ -1076,6 +1124,7 @@ const DEFAULT_LIBRARY = {
     },
     { 
       id: 'blank',
+      standardType: 'blank',
       hasColorVariants: false,
       moduleSku: 'KW01M',
       nameEn: 'Blank Cover',
@@ -1159,6 +1208,131 @@ const DEFAULT_LIBRARY = {
   ],
 };
 
+// Gewiss Chorus default library
+const DEFAULT_LIBRARY_GEWISS = {
+  systemId: 'gewiss',
+  systemName: 'Gewiss Chorus',
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#333333' },
+    { id: 'titanium', name: 'Titanium', nameEn: 'Titanium', nameRo: 'Titan', hex: '#8C8C8C' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: 'GW24402', purchasePrice: 8, markup: 25, price: 12.1 },
+    3: { sku: 'GW24403', purchasePrice: 10, markup: 25, price: 15.13 },
+    4: { sku: 'GW24404', purchasePrice: 13, markup: 25, price: 19.66 },
+    6: { sku: 'GW24406', purchasePrice: 17, markup: 25, price: 25.71 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: 'GW24402PM', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: 'GW24403PM', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: 'GW24404PM', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: 'GW24406PM', purchasePrice: 20, markup: 25, price: 30.25 },
+  },
+  installFaces: {
+    2: { sku: 'GW16822', purchasePrice: 5, markup: 25, price: 7.56 },
+    3: { sku: 'GW16823', purchasePrice: 6, markup: 25, price: 9.08 },
+    4: { sku: 'GW16824', purchasePrice: 8, markup: 25, price: 12.1 },
+    6: { sku: 'GW16826', purchasePrice: 11, markup: 25, price: 16.64 },
+  },
+  decorFaces: {
+    '2-white': { sku: 'GW16102TB', purchasePrice: 8, markup: 25, price: 12.1 },
+    '2-black': { sku: 'GW16102TN', purchasePrice: 10, markup: 25, price: 15.13 },
+    '2-titanium': { sku: 'GW16102VT', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-white': { sku: 'GW16103TB', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-black': { sku: 'GW16103TN', purchasePrice: 12, markup: 25, price: 18.15 },
+    '3-titanium': { sku: 'GW16103VT', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-white': { sku: 'GW16104TB', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-black': { sku: 'GW16104TN', purchasePrice: 15, markup: 25, price: 22.69 },
+    '4-titanium': { sku: 'GW16104VT', purchasePrice: 15, markup: 25, price: 22.69 },
+    '6-white': { sku: 'GW16106TB', purchasePrice: 16, markup: 25, price: 24.2 },
+    '6-black': { sku: 'GW16106TN', purchasePrice: 19, markup: 25, price: 28.74 },
+    '6-titanium': { sku: 'GW16106VT', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  modules: [
+    { id: 'schuko', standardType: 'schuko', hasColorVariants: false, moduleSku: 'GW10241', nameEn: 'Schuko Outlet', nameRo: 'Priză Schuko', size: 2, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'italian', standardType: 'italian', hasColorVariants: false, moduleSku: 'GW10203', nameEn: 'Italian Outlet (Bivalent)', nameRo: 'Priză Bivalentă', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 12, moduleMarkup: 25, modulePrice: 18.15, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'usb', standardType: 'usb', hasColorVariants: false, moduleSku: 'GW10449', nameEn: 'USB Outlet (A+C)', nameRo: 'Priză USB (A+C)', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 45, moduleMarkup: 25, modulePrice: 68.06, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'switch_simple', standardType: 'switch_simple', hasColorVariants: false, moduleSku: 'GW10001', nameEn: 'Simple Switch', nameRo: 'Întrerupător Simplu', size: 1, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 10, moduleMarkup: 25, modulePrice: 15.13, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'switch_stair', standardType: 'switch_stair', hasColorVariants: false, moduleSku: 'GW10071', nameEn: 'Stair Switch', nameRo: 'Întrerupător Cap Scară', size: 2, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'switch_cross', standardType: 'switch_cross', hasColorVariants: false, moduleSku: 'GW10101', nameEn: 'Cross Switch', nameRo: 'Întrerupător Cap Cruce', size: 2, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'dimmer', standardType: 'dimmer', hasColorVariants: false, moduleSku: 'GW10673', nameEn: 'Dimmer (LED)', nameRo: 'Variator (Dimmer LED)', size: 1, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 55, moduleMarkup: 25, modulePrice: 83.19, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'blank', standardType: 'blank', hasColorVariants: false, moduleSku: 'GW10195', nameEn: 'Blank Cover', nameRo: 'Obturator', size: 1, category: 'other', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 3, moduleMarkup: 25, modulePrice: 4.54, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'coax', standardType: 'coax', hasColorVariants: false, moduleSku: 'GW10361', nameEn: 'TV Coaxial Outlet', nameRo: 'Priză TV Coaxial', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 20, moduleMarkup: 25, modulePrice: 30.25, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'rj45', standardType: 'rj45', hasColorVariants: false, moduleSku: 'GW10421', nameEn: 'RJ45 Cat.5e UTP', nameRo: 'Priză RJ45 Cat.5e UTP', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 22, moduleMarkup: 25, modulePrice: 33.28, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+  ],
+  presets: [
+    { id: 'double_schuko', nameEn: 'Double Schuko Outlet', nameRo: 'Priză Dublă Schuko', type: 'outlet', size: 4, modules: ['schuko', 'schuko'] },
+    { id: 'single_schuko', nameEn: 'Single Schuko Outlet', nameRo: 'Priză Simplă Schuko', type: 'outlet', size: 2, modules: ['schuko'] },
+    { id: 'schuko_usb', nameEn: 'Schuko + USB', nameRo: 'Schuko + USB', type: 'outlet', size: 3, modules: ['schuko', 'usb'] },
+    { id: 'double_switch', nameEn: 'Double Switch', nameRo: 'Întrerupător Dublu', type: 'switch', size: 2, modules: ['switch_simple', 'switch_simple'] },
+    { id: 'single_switch', nameEn: 'Single Switch', nameRo: 'Întrerupător Simplu', type: 'switch', size: 2, modules: ['switch_simple', 'blank'] },
+    { id: 'triple_switch', nameEn: 'Triple Switch', nameRo: 'Întrerupător Triplu', type: 'switch', size: 3, modules: ['switch_simple', 'switch_simple', 'switch_simple'] },
+  ],
+};
+
+// Schneider Noua Unica default library
+const DEFAULT_LIBRARY_SCHNEIDER = {
+  systemId: 'schneider',
+  systemName: 'Schneider Noua Unica',
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'anthracite', name: 'Anthracite', nameEn: 'Anthracite', nameRo: 'Antracit', hex: '#383838' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: 'NU7002', purchasePrice: 8, markup: 25, price: 12.1 },
+    3: { sku: 'NU7003', purchasePrice: 10, markup: 25, price: 15.13 },
+    4: { sku: 'NU7004', purchasePrice: 13, markup: 25, price: 19.66 },
+    6: { sku: 'NU7006', purchasePrice: 17, markup: 25, price: 25.71 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: 'NU7002P', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: 'NU7003P', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: 'NU7004P', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: 'NU7006P', purchasePrice: 20, markup: 25, price: 30.25 },
+  },
+  installFaces: {
+    2: { sku: 'NU7102', purchasePrice: 5, markup: 25, price: 7.56 },
+    3: { sku: 'NU7103P', purchasePrice: 6, markup: 25, price: 9.08 },
+    4: { sku: 'NU7104P', purchasePrice: 8, markup: 25, price: 12.1 },
+    6: { sku: 'NU7106P', purchasePrice: 11, markup: 25, price: 16.64 },
+  },
+  decorFaces: {
+    '2-white': { sku: 'NU200218', purchasePrice: 8, markup: 25, price: 12.1 },
+    '2-anthracite': { sku: 'NU200254', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-white': { sku: 'NU200318', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-anthracite': { sku: 'NU200354', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-white': { sku: 'NU200418', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-anthracite': { sku: 'NU200454', purchasePrice: 15, markup: 25, price: 22.69 },
+    '6-white': { sku: 'NU200618', purchasePrice: 16, markup: 25, price: 24.2 },
+    '6-anthracite': { sku: 'NU200654', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  modules: [
+    { id: 'schuko', standardType: 'schuko', hasColorVariants: false, moduleSku: 'NU303618', nameEn: 'Schuko Outlet 2P+E', nameRo: 'Priză Schuko 2P+E', size: 2, category: 'outlet', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 20, moduleMarkup: 25, modulePrice: 30.25, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'italian', standardType: 'italian', hasColorVariants: false, moduleSku: 'NU303118', nameEn: 'Simple Outlet 2P', nameRo: 'Priză Simplă 2P', size: 1, category: 'outlet', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 10, moduleMarkup: 25, modulePrice: 15.13, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'usb', standardType: 'usb', hasColorVariants: false, moduleSku: 'NU301818', nameEn: 'USB Outlet A+C', nameRo: 'Priză USB A+C', size: 2, category: 'outlet', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 50, moduleMarkup: 25, modulePrice: 75.63, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'switch_simple', standardType: 'switch_simple', hasColorVariants: false, moduleSku: 'NU310118', nameEn: 'Simple Switch 1M', nameRo: 'Întrerupător Simplu 1M', size: 1, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 12, moduleMarkup: 25, modulePrice: 18.15, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'switch_stair', standardType: 'switch_stair', hasColorVariants: false, moduleSku: 'NU310318', nameEn: 'Stair Switch 1M', nameRo: 'Întrerupător Cap Scară 1M', size: 1, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'switch_cross', standardType: 'switch_cross', hasColorVariants: false, moduleSku: 'NU320518', nameEn: 'Cross Switch 2M', nameRo: 'Întrerupător Cap Cruce 2M', size: 2, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'dimmer', standardType: 'dimmer', hasColorVariants: false, moduleSku: 'NU351418', nameEn: 'LED Dimmer 2M', nameRo: 'Variator LED 2M', size: 2, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 60, moduleMarkup: 25, modulePrice: 90.75, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'blank', standardType: 'blank', hasColorVariants: false, moduleSku: 'NU986518', nameEn: 'Blank Cover', nameRo: 'Tastă Falsă', size: 1, category: 'other', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 3, moduleMarkup: 25, modulePrice: 4.54, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+  ],
+  presets: [
+    { id: 'double_schuko', nameEn: 'Double Schuko Outlet', nameRo: 'Priză Dublă Schuko', type: 'outlet', size: 4, modules: ['schuko', 'schuko'] },
+    { id: 'single_schuko', nameEn: 'Single Schuko Outlet', nameRo: 'Priză Simplă Schuko', type: 'outlet', size: 2, modules: ['schuko'] },
+    { id: 'double_switch', nameEn: 'Double Switch', nameRo: 'Întrerupător Dublu', type: 'switch', size: 2, modules: ['switch_simple', 'switch_simple'] },
+    { id: 'single_switch', nameEn: 'Single Switch', nameRo: 'Întrerupător Simplu', type: 'switch', size: 2, modules: ['switch_simple', 'blank'] },
+  ],
+};
+
+const DEFAULT_LIBRARIES = {
+  bticino: DEFAULT_LIBRARY,
+  gewiss: DEFAULT_LIBRARY_GEWISS,
+  schneider: DEFAULT_LIBRARY_SCHNEIDER,
+};
+
 // Library storage functions
 const LIBRARY_KEY = 'bticino-library';
 
@@ -1178,6 +1352,10 @@ const loadLibrary = () => {
       }
       
       return {
+        systemId: parsed.systemId || DEFAULT_LIBRARY.systemId,
+        systemName: parsed.systemName || DEFAULT_LIBRARY.systemName,
+        availableColors: parsed.availableColors || DEFAULT_LIBRARY.availableColors,
+        availableSizes: parsed.availableSizes || DEFAULT_LIBRARY.availableSizes,
         wallBoxesMasonry: { ...DEFAULT_LIBRARY.wallBoxesMasonry, ...wallBoxesMasonry },
         wallBoxesDrywall: { ...DEFAULT_LIBRARY.wallBoxesDrywall, ...wallBoxesDrywall },
         installFaces: { ...DEFAULT_LIBRARY.installFaces, ...parsed.installFaces },
@@ -1457,13 +1635,16 @@ function LanguageSwitcher() {
 function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary }) {
   const [newName, setNewName] = useState('');
   const [newClient, setNewClient] = useState('');
+  const [newSystem, setNewSystem] = useState('bticino');
   const t = useTranslation();
+  const lang = useLanguage();
 
   const handleCreate = () => {
     if (newName.trim()) {
-      onCreate(newName.trim(), newClient.trim());
+      onCreate(newName.trim(), newClient.trim(), newSystem);
       setNewName('');
       setNewClient('');
+      setNewSystem('bticino');
     }
   };
 
@@ -1503,6 +1684,16 @@ function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary }) 
             className="border rounded px-3 py-2 flex-1 min-w-[200px]"
             onKeyDown={(e) => e.key === 'Enter' && handleCreate()}
           />
+          <select
+            value={newSystem}
+            onChange={(e) => setNewSystem(e.target.value)}
+            className="border rounded px-3 py-2 min-w-[180px] bg-white"
+            title={t.selectSystem}
+          >
+            {SYSTEMS.map(sys => (
+              <option key={sys.id} value={sys.id}>{lang === 'ro' ? sys.nameRo : sys.nameEn}</option>
+            ))}
+          </select>
           <button
             onClick={handleCreate}
             className="bg-blue-600 text-white px-4 py-2 rounded flex items-center gap-1 hover:bg-blue-700"
@@ -1528,8 +1719,16 @@ function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary }) 
                   onClick={() => onSelect(project)}
                 >
                   <div className="font-medium">{project.name}</div>
-                  <div className="text-sm text-gray-500">
-                    {project.clientName || t.noClient} · {project.assemblies.length} {t.assemblies}
+                  <div className="text-sm text-gray-500 flex items-center gap-2 flex-wrap">
+                    <span>{project.clientName || t.noClient}</span>
+                    <span>·</span>
+                    <span>{project.assemblies.length} {t.assemblies}</span>
+                    {project.system && (
+                      <>
+                        <span>·</span>
+                        <span className="px-1.5 py-0.5 bg-gray-100 rounded text-xs font-medium">{getSystemName(project.system, lang)}</span>
+                      </>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
@@ -1558,6 +1757,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   const [editingProject, setEditingProject] = useState(false);
   const [editProjectName, setEditProjectName] = useState(project.name);
   const [editClientName, setEditClientName] = useState(project.clientName || '');
+  const [editProjectSystem, setEditProjectSystem] = useState(project.system || 'bticino');
   const [confirmDuplicateId, setConfirmDuplicateId] = useState(null);
   const [duplicateTimestamps, setDuplicateTimestamps] = useState([]);
   const [showAiImport, setShowAiImport] = useState(false);
@@ -1567,6 +1767,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   const [aiImportLoading, setAiImportLoading] = useState(false);
   const [aiImportResult, setAiImportResult] = useState(null);
   const t = useTranslation();
+  const lang = useLanguage();
   const library = React.useContext(LibraryContext);
 
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
@@ -1577,6 +1778,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       ...project,
       name: editProjectName.trim() || project.name,
       clientName: editClientName.trim(),
+      system: editProjectSystem,
     });
     setEditingProject(false);
   };
@@ -1584,6 +1786,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   const cancelProjectEdit = () => {
     setEditProjectName(project.name);
     setEditClientName(project.clientName || '');
+    setEditProjectSystem(project.system || 'bticino');
     setEditingProject(false);
   };
 
@@ -1905,6 +2108,18 @@ function ProjectDetail({ project, onBack, onUpdate }) {
                 placeholder={t.noClient}
               />
             </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{t.system}</label>
+              <select
+                value={editProjectSystem}
+                onChange={(e) => setEditProjectSystem(e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              >
+                {SYSTEMS.map(sys => (
+                  <option key={sys.id} value={sys.id}>{lang === 'ro' ? sys.nameRo : sys.nameEn}</option>
+                ))}
+              </select>
+            </div>
             <div className="flex gap-2 pt-2">
               <button
                 onClick={saveProjectDetails}
@@ -1924,7 +2139,14 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           // View mode
           <div className="flex justify-between items-start">
             <div>
-              <h1 className="text-2xl font-bold">{project.name}</h1>
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-2xl font-bold">{project.name}</h1>
+                {project.system && (
+                  <span className="px-2 py-1 bg-blue-50 text-blue-700 rounded text-sm font-medium border border-blue-200">
+                    {getSystemName(project.system, lang)}
+                  </span>
+                )}
+              </div>
               <p className="text-gray-600">{project.clientName || t.noClient}</p>
             </div>
             <button
@@ -2065,19 +2287,16 @@ function ProjectDetail({ project, onBack, onUpdate }) {
             {/* Color selection */}
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-1">{t.aiImportColor}</label>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setAiImportColor('white')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded border ${aiImportColor === 'white' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-                >
-                  <span className="w-4 h-4 rounded border bg-white"></span> {t.white}
-                </button>
-                <button
-                  onClick={() => setAiImportColor('black')}
-                  className={`flex items-center gap-2 px-3 py-2 rounded border ${aiImportColor === 'black' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
-                >
-                  <span className="w-4 h-4 rounded border bg-gray-800"></span> {t.black}
-                </button>
+              <div className="flex gap-2 flex-wrap">
+                {getAvailableColors(library).map(c => (
+                  <button
+                    key={c.id}
+                    onClick={() => setAiImportColor(c.id)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded border ${aiImportColor === c.id ? 'border-blue-500 bg-blue-50' : 'border-gray-300'}`}
+                  >
+                    <span className="w-4 h-4 rounded border" style={{ backgroundColor: c.hex }}></span> {getColorName(c.id, library, lang)}
+                  </button>
+                ))}
               </div>
             </div>
             
@@ -2360,7 +2579,8 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
   // Render a single assembly item
   const renderAssemblyItem = (assembly, index, showRoom = true) => {
     const usedSize = calculateModulesSize(assembly.modules, library);
-    const colorInfo = COLORS.find(c => c.id === assembly.color);
+    const availableColors = getAvailableColors(library);
+    const colorInfo = availableColors.find(c => c.id === assembly.color);
     const isDragging = draggedId === assembly.id;
     const isDragOver = !groupByRoom && dragOverIndex === index && draggedId !== assembly.id;
 
@@ -2423,7 +2643,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
               className="text-sm bg-gray-100 px-2 py-0.5 rounded border-0 cursor-pointer hover:bg-gray-200"
               title="Change size"
             >
-              {FRAME_SIZES.map(s => (
+              {getAvailableSizes(library).map(s => (
                 <option key={s} value={s}>{s}M</option>
               ))}
             </select>
@@ -2445,8 +2665,8 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
               }}
               title="Change color"
             >
-              {COLORS.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
+              {availableColors.map(c => (
+                <option key={c.id} value={c.id}>{c.nameEn || c.name}</option>
               ))}
             </select>
 
@@ -3265,7 +3485,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const faceWidth = moduleAreaWidth + (sideMargin * 2);
 
-  const colorInfo = COLORS.find(c => c.id === assembly.color);
+  const availableColors = getAvailableColors(library);
+  const colorInfo = availableColors.find(c => c.id === assembly.color);
   const faceBgColor = assembly.color === 'black' ? '#454545' : '#f0f0f0';
   const faceTextColor = assembly.color === 'black' ? '#ffffff' : '#333333';
 
@@ -3306,7 +3527,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               onChange={(e) => updateField('size', parseInt(e.target.value))}
               className="w-full border rounded px-3 py-2"
             >
-              {FRAME_SIZES.map(s => (
+              {getAvailableSizes(library).map(s => (
                 <option key={s} value={s}>{s}M</option>
               ))}
             </select>
@@ -3318,8 +3539,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               onChange={(e) => updateField('color', e.target.value)}
               className="w-full border rounded px-3 py-2"
             >
-              {COLORS.map(c => (
-                <option key={c.id} value={c.id}>{c.id === 'white' ? t.white : t.black}</option>
+              {availableColors.map(c => (
+                <option key={c.id} value={c.id}>{getColorName(c.id, library, lang)}</option>
               ))}
             </select>
           </div>
@@ -3688,7 +3909,7 @@ function BOQView({ project }) {
     };
 
     project.assemblies.forEach((assembly) => {
-      const colorName = COLORS.find(c => c.id === assembly.color)?.name || assembly.color;
+      const colorName = getColorName(assembly.color, library, lang);
       const wallBoxType = assembly.wallBoxType || 'masonry';
 
       // Wall Box / Doza - separate by type
@@ -4844,7 +5065,7 @@ function ProfitView({ project }) {
 // LIBRARY PAGE
 // ============================================================================
 
-function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
+function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSystem }) {
   const [activeTab, setActiveTab] = useState('modules');
   const [editingModule, setEditingModule] = useState(null);
   const [showAddModule, setShowAddModule] = useState(false);
@@ -5047,10 +5268,28 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
       </button>
 
       <div className="bg-white rounded-lg shadow p-4 mb-6">
-        <h1 className="text-2xl font-bold flex items-center gap-2">
-          <Settings className="w-6 h-6" /> {t.componentLibrary}
-        </h1>
-        <p className="text-gray-600">{t.manageSKUs}</p>
+        <div className="flex justify-between items-start flex-wrap gap-4">
+          <div>
+            <h1 className="text-2xl font-bold flex items-center gap-2">
+              <Settings className="w-6 h-6" /> {t.componentLibrary}
+            </h1>
+            <p className="text-gray-600">{t.manageSKUs}</p>
+          </div>
+          {isAdmin && onSwitchSystem && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-gray-700">{t.editingSystem}:</label>
+              <select
+                value={library.systemId || 'bticino'}
+                onChange={(e) => onSwitchSystem(e.target.value)}
+                className="border rounded px-3 py-2 bg-white font-medium"
+              >
+                {SYSTEMS.map(sys => (
+                  <option key={sys.id} value={sys.id}>{lang === 'ro' ? sys.nameRo : sys.nameEn}</option>
+                ))}
+              </select>
+            </div>
+          )}
+        </div>
         {!isAdmin && (
           <div className="mt-2 bg-amber-50 border border-amber-200 text-amber-800 px-3 py-2 rounded text-sm">
             🔒 {lang === 'ro' ? 'Vizualizare doar. Doar conturile @atelierazimut.com pot edita biblioteca.' : 'View only. Only @atelierazimut.com accounts can edit the library.'}
@@ -6427,7 +6666,7 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {FRAME_SIZES.map((size) => {
+                  {getAvailableSizes(library).map((size) => {
                     const item = library.wallBoxesMasonry?.[size] || {};
                     const purchasePrice = item.purchasePrice || 0;
                     const markup = item.markup || 0;
@@ -6543,7 +6782,7 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
                   </tr>
                 </thead>
                 <tbody>
-                  {FRAME_SIZES.map((size) => {
+                  {getAvailableSizes(library).map((size) => {
                     const item = library.wallBoxesDrywall?.[size] || {};
                     const purchasePrice = item.purchasePrice || 0;
                     const markup = item.markup || 0;
@@ -6662,7 +6901,7 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
                 </tr>
               </thead>
               <tbody>
-                {FRAME_SIZES.map((size) => {
+                {getAvailableSizes(library).map((size) => {
                   const item = library.installFaces[size] || {};
                   const purchasePrice = item.purchasePrice || 0;
                   const markup = item.markup || 0;
@@ -6781,8 +7020,8 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
                 </tr>
               </thead>
               <tbody>
-                {FRAME_SIZES.map((size) => (
-                  COLORS.map((color, colorIdx) => {
+                {getAvailableSizes(library).map((size) => (
+                  getAvailableColors(library).map((color, colorIdx) => {
                     const key = `${size}-${color.id}`;
                     const item = library.decorFaces[key] || {};
                     const purchasePrice = item.purchasePrice || 0;
@@ -6793,7 +7032,7 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
                     return (
                       <tr key={key} className={colorIdx === 0 ? 'border-t' : ''}>
                         {colorIdx === 0 && (
-                          <td className="p-2 font-medium" rowSpan={COLORS.length}>{size}M</td>
+                          <td className="p-2 font-medium" rowSpan={getAvailableColors(library).length}>{size}M</td>
                         )}
                         <td className="p-2">
                           <div className="flex items-center gap-2">
@@ -6801,7 +7040,7 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false }) {
                               className="w-4 h-4 rounded border"
                               style={{ backgroundColor: color.hex }}
                             />
-                            {color.id === 'white' ? t.white : t.black}
+                            {getColorName(color.id, library, lang)}
                           </div>
                         </td>
                         <td className="p-2">
@@ -6960,6 +7199,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
           name: project.name,
           clientName: project.client_name,
           clientContact: project.client_contact,
+          system: project.system || 'bticino',
           createdAt: project.created_at,
           assemblies: (assemblies || []).map(a => ({
             id: a.id,
@@ -6978,43 +7218,59 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     setData({ projects: projectsWithAssemblies });
   };
 
-  const loadLibraryFromSupabase = async () => {
-    const { data, error } = await supabase
-      .from('global_library')
-      .select('library_data')
-      .eq('id', 'main')
-      .single();
+  // All system libraries in state
+  const [libraries, setLibraries] = useState({});
 
-    if (error) {
-      console.log('No global library in Supabase, using default/local');
-      const localLib = loadLibrary();
-      setLibrary(localLib);
-    } else if (data?.library_data) {
-      setLibrary(data.library_data);
+  const loadLibraryFromSupabase = async () => {
+    // Start with ALL default libraries pre-populated
+    const libs = {
+      bticino: { ...DEFAULT_LIBRARY },
+      gewiss: { ...DEFAULT_LIBRARY_GEWISS },
+      schneider: { ...DEFAULT_LIBRARY_SCHNEIDER },
+    };
+
+    // Load from Supabase — overlay defaults with saved data
+    const { data: rows, error } = await supabase
+      .from('global_library')
+      .select('id, library_data');
+
+    if (!error && rows && rows.length > 0) {
+      rows.forEach(row => {
+        const libData = row.library_data || {};
+        const systemId = row.id === 'main' ? 'bticino' : row.id;
+        const defaults = DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
+        if (!libData.availableColors) libData.availableColors = defaults.availableColors;
+        if (!libData.availableSizes) libData.availableSizes = defaults.availableSizes;
+        if (!libData.systemId) libData.systemId = systemId;
+        if (!libData.systemName) libData.systemName = defaults.systemName;
+        libs[systemId] = libData;
+      });
     }
+
+    setLibraries(libs);
+    setLibrary(libs.bticino);
     setLibraryLoaded(true);
   };
 
-  const saveLibraryToSupabase = async (libraryData) => {
-    if (!isAdmin) {
-      console.log('Non-admin user, skipping library save to Supabase');
-      return;
-    }
+  const getLibraryForSystem = (systemId) => {
+    return libraries[systemId] || DEFAULT_LIBRARIES[systemId] || library;
+  };
+
+  const saveLibraryToSupabase = async (libraryData, systemId) => {
+    if (!isAdmin) return;
+    const sysId = systemId || libraryData?.systemId || 'bticino';
+    const rowId = sysId === 'bticino' ? 'main' : sysId;
 
     const { error } = await supabase
       .from('global_library')
       .upsert({
-        id: 'main',
+        id: rowId,
         library_data: libraryData,
         updated_at: new Date().toISOString(),
         updated_by: session.user.email,
-      }, {
-        onConflict: 'id'
-      });
+      }, { onConflict: 'id' });
 
-    if (error) {
-      console.error('Error saving global library:', error);
-    }
+    if (error) console.error('Error saving library:', error);
   };
 
   useEffect(() => {
@@ -7025,14 +7281,17 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
   }, [session]);
 
   const saveProject = async (project) => {
-  const { error } = await supabase
-    .from('projects')
-    .update({
-      name: project.name,
-      client_name: project.clientName,
-      client_contact: project.clientContact,
-    })
-    .eq('id', project.id);
+  let { error } = await supabase.from('projects').update({
+    name: project.name, client_name: project.clientName,
+    client_contact: project.clientContact, system: project.system || 'bticino',
+  }).eq('id', project.id);
+
+  if (error && error.message?.includes('system')) {
+    const fallback = await supabase.from('projects').update({
+      name: project.name, client_name: project.clientName, client_contact: project.clientContact,
+    }).eq('id', project.id);
+    error = fallback.error;
+  }
 
   if (error) {
     console.error('Error saving project:', error);
@@ -7094,9 +7353,10 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
 };
 
 useEffect(() => {
-  if (session?.user && libraryLoaded) {
-    saveLibrary(library); // păstrează și local ca backup
-    saveLibraryToSupabase(library);
+  if (session?.user && libraryLoaded && library?.systemId) {
+    if (library.systemId === 'bticino') saveLibrary(library);
+    saveLibraryToSupabase(library, library.systemId);
+    setLibraries(prev => ({ ...prev, [library.systemId]: library }));
   }
 }, [library, session, libraryLoaded]);
 
@@ -7117,29 +7377,27 @@ useEffect(() => {
     await saveProject(updated);
   };
 
-  const createProject = async (name, client) => {
-  // Inserăm în Supabase și lăsăm să genereze ID-ul
-  const { data: savedProject, error } = await supabase
-    .from('projects')
-    .insert({
-      user_id: session.user.id,
-      name: name,
-      client_name: client,
-      client_contact: '',
-    })
-    .select()
-    .single();
+  const createProject = async (name, client, system = 'bticino') => {
+  let result = await supabase.from('projects').insert({
+    user_id: session.user.id, name, client_name: client, client_contact: '', system,
+  }).select().single();
 
-  if (error) {
-    console.error('Error creating project:', error);
-    return;
+  // Fallback if system column doesn't exist yet
+  if (result.error && result.error.message?.includes('system')) {
+    result = await supabase.from('projects').insert({
+      user_id: session.user.id, name, client_name: client, client_contact: '',
+    }).select().single();
   }
+
+  if (result.error) { console.error('Error creating project:', result.error); return; }
+  const savedProject = result.data;
 
   const newProject = {
     id: savedProject.id,
     name: savedProject.name,
     clientName: savedProject.client_name,
     clientContact: savedProject.client_contact,
+    system: savedProject.system || system,
     createdAt: savedProject.created_at,
     assemblies: [],
   };
@@ -7186,8 +7444,8 @@ const deleteProject = async (id) => {
     <div className="fixed top-0 left-0 right-0 z-50 bg-white shadow-sm border-b px-4 py-2 flex justify-between items-center">
       <div className="text-lg font-semibold text-gray-700 flex items-center gap-2">
         <Package className="w-5 h-5" />
-        <span className="hidden sm:inline">BTicino Living Now</span>
-        <span className="sm:hidden">BTicino</span>
+        <span className="hidden sm:inline">{lang === 'ro' ? 'Configurator Aparataj' : 'Electrical Configurator'}</span>
+        <span className="sm:hidden">Config</span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-500 hidden sm:inline">{session.user.email}</span>
@@ -7204,6 +7462,14 @@ const deleteProject = async (id) => {
 
   // Show Library page
   if (showLibrary) {
+    const handleSwitchLibrarySystem = (systemId) => {
+      if (library.systemId && library.systemId !== systemId) {
+        saveLibraryToSupabase(library, library.systemId);
+      }
+      const targetLib = libraries[systemId] || DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
+      setLibrary(targetLib);
+    };
+
     return (
       <LanguageContext.Provider value={languageContextValue}>
         <LibraryContext.Provider value={library}>
@@ -7215,6 +7481,7 @@ const deleteProject = async (id) => {
                 onUpdate={setLibrary}
                 onBack={() => setShowLibrary(false)}
                 isAdmin={isAdmin}
+                onSwitchSystem={handleSwitchLibrarySystem}
               />
             </div>
           </div>
@@ -7226,9 +7493,10 @@ const deleteProject = async (id) => {
   // Show Project Detail
   if (selectedProject) {
     const currentProject = data.projects.find(p => p.id === selectedProject.id);
+    const projectLibrary = getLibraryForSystem(currentProject?.system || selectedProject?.system || 'bticino');
     return (
       <LanguageContext.Provider value={languageContextValue}>
-        <LibraryContext.Provider value={library}>
+        <LibraryContext.Provider value={projectLibrary}>
           <div className="min-h-screen bg-gray-100">
             <GlobalHeader />
             <div className="pt-16">
