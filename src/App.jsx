@@ -2624,7 +2624,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     const isDragOver = !groupByRoom && dragOverIndex === index && draggedId !== assembly.id;
 
     const wbIsMasonry = (assembly.wallBoxType || 'masonry') === 'masonry';
-    const wbBg = wbIsMasonry ? 'rgba(254, 226, 226, 0.45)' : 'rgba(253, 246, 236, 0.5)'; // soft red vs soft cream
+    const wbBg = wbIsMasonry ? '#fde8e8' : '#fdf6ec';
 
     return (
       <li
@@ -3565,7 +3565,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
         <ChevronLeft className="w-4 h-4" /> {t.backToList}
       </button>
 
-      <div className="rounded-lg shadow p-4 mb-6" style={{ backgroundColor: _wbCardBg }}>
+      <div className="bg-white rounded-lg shadow p-4 mb-6">
         <div className="flex items-center gap-4 mb-4">
           <h1 className="text-2xl font-bold font-mono">{assembly.code}</h1>
           <span className={`px-3 py-1 rounded text-sm font-medium ${
@@ -3659,11 +3659,14 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           
           <div 
             className="flex justify-center mb-4 p-6 rounded-lg"
-            style={{ 
+            style={_wbMasonry ? { 
               backgroundColor: '#e8e4e0',
               backgroundImage: 'linear-gradient(45deg, #e0dcd8 25%, transparent 25%), linear-gradient(-45deg, #e0dcd8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e0dcd8 75%), linear-gradient(-45deg, transparent 75%, #e0dcd8 75%)',
               backgroundSize: '4px 4px',
               backgroundPosition: '0 0, 0 2px, 2px -2px, -2px 0px',
+            } : {
+              backgroundColor: '#f5f0e8',
+              backgroundImage: 'none',
             }}
           >
             {/* Face plate container - with padding for delete buttons */}
