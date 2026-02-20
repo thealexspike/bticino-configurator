@@ -880,10 +880,11 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const totalWidth = moduleAreaWidth + (sideMargin * 2);
   
-  // Colors - synced with SVG module colors (#3a3a3a for black, #f5f5f5 for white)
-  const faceBgColor = assembly.color === 'black' ? '#3a3a3a' : '#f5f5f5';
-  const frameBorderColor = assembly.color === 'black' ? '#888' : '#999';
-  const moduleBorderColor = assembly.color === 'black' ? '#666' : '#aaa';
+  // Colors - dynamic based on assembly color hex
+  const _dark = isDarkColor(assembly.color, library);
+  const faceBgColor = _dark ? '#3a3a3a' : '#f5f5f5';
+  const frameBorderColor = _dark ? '#888' : '#999';
+  const moduleBorderColor = _dark ? '#666' : '#aaa';
   
   // Calculate module slots
   const getModuleSlots = () => {
@@ -983,6 +984,15 @@ const buildColorObj = (colors, defaultVal = '', template = null) => {
   const obj = {};
   colors.forEach(c => { obj[c.id] = template ? (template[c.id] ?? defaultVal) : defaultVal; });
   return obj;
+};
+
+// Check if a color is dark based on hex luminance
+const isDarkColor = (colorId, library) => {
+  const colorObj = (library?.availableColors || []).find(c => c.id === colorId);
+  if (!colorObj?.hex) return colorId === 'black'; // fallback
+  const hex = colorObj.hex;
+  const r = parseInt(hex.slice(1,3),16)/255, g = parseInt(hex.slice(3,5),16)/255, b = parseInt(hex.slice(5,7),16)/255;
+  return (0.299*r + 0.587*g + 0.114*b) < 0.5;
 };
 
 const getColorName = (colorId, library, lang) => {
@@ -1616,13 +1626,13 @@ const calculateModulesSize = (modules, library) => {
 // DATA FACTORIES
 // ============================================================================
 
-const createAssembly = (type, code, room = '') => ({
+const createAssembly = (type, code, room = '', library = null) => ({
   id: generateId(),
   type,
   code,
   room,
   size: 2,
-  color: 'white',
+  color: library?.availableColors?.[0]?.id || 'white',
   wallBoxType: 'masonry',
   modules: [],
 });
@@ -1803,7 +1813,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
   const [duplicateTimestamps, setDuplicateTimestamps] = useState([]);
   const [showAiImport, setShowAiImport] = useState(false);
   const [aiImportFile, setAiImportFile] = useState(null);
-  const [aiImportColor, setAiImportColor] = useState('white');
+  const [aiImportColor, setAiImportColor] = useState(null);
   const [aiImportWallBox, setAiImportWallBox] = useState('masonry');
   const [aiImportLoading, setAiImportLoading] = useState(false);
   const [aiImportResult, setAiImportResult] = useState(null);
@@ -1833,7 +1843,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
 
   const addAssembly = (type, presetId = null) => {
     const code = generateAssemblyCode(project.assemblies, type);
-    let assembly = createAssembly(type, code);
+    let assembly = createAssembly(type, code, '', library);
     
     // If preset selected, apply it
     if (presetId && library?.presets) {
@@ -1960,6 +1970,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           body: JSON.stringify({
             pdfBase64,
             modules: moduleCatalog,
+            system: library?.systemName || getSystemName(project?.system, 'en'),
           }),
         }
       );
@@ -2204,7 +2215,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
       {/* Tabs */}
       <div className="flex gap-1 mb-4 flex-wrap">
         <button
-          onClick={() => setShowAiImport(true)}
+          onClick={() => { setShowAiImport(true); if (!aiImportColor) setAiImportColor(getAvailableColors(library)?.[0]?.id || 'white'); }}
           className="flex items-center gap-1 px-3 py-2 rounded text-sm bg-purple-600 text-white hover:bg-purple-700"
         >
           <Upload className="w-4 h-4" /> {t.aiImport}
@@ -2310,6 +2321,11 @@ function ProjectDetail({ project, onBack, onUpdate }) {
             <h2 className="text-lg font-bold mb-2 flex items-center gap-2">
               <Upload className="w-5 h-5 text-purple-600" />
               {t.aiImportTitle}
+              {project.system && (
+                <span className="ml-auto px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-xs font-medium border border-blue-200">
+                  {getSystemName(project.system, lang)}
+                </span>
+              )}
             </h2>
             <p className="text-sm text-gray-600 mb-4">{t.aiImportDescription}</p>
             
@@ -2702,7 +2718,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
               className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
               style={{ 
                 backgroundColor: colorInfo?.hex,
-                color: assembly.color === 'black' ? '#fff' : '#333'
+                color: isDarkColor(assembly.color, library) ? '#fff' : '#333'
               }}
               title="Change color"
             >
@@ -2878,12 +2894,12 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
       const moduleAreaWidth = assembly.size * moduleWidth1M;
       const totalWidth = moduleAreaWidth + (sideMargin * 2);
       
-      const isBlack = assembly.color === 'black';
-      const frameBg = isBlack ? '#3a3a3a' : '#f5f5f5';
+      const isDark = isDarkColor(assembly.color, library);
+      const frameBg = isDark ? '#3a3a3a' : '#f5f5f5';
       const supportBarColor = '#4a4a4a';
-      const moduleBg = isBlack ? '#3a3a3a' : '#ffffff';
-      const moduleBorder = isBlack ? '#555' : '#ddd';
-      const frameBorderOuter = isBlack ? '#555' : '#ddd';
+      const moduleBg = isDark ? '#3a3a3a' : '#ffffff';
+      const moduleBorder = isDark ? '#555' : '#ddd';
+      const frameBorderOuter = isDark ? '#555' : '#ddd';
       
       let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${faceHeight}" viewBox="0 0 ${totalWidth} ${faceHeight}">`;
       
@@ -3081,9 +3097,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         const wallBoxLabel = wallBoxType === 'drywall' 
           ? (lang === 'ro' ? 'Gips-carton' : 'Drywall')
           : (lang === 'ro' ? 'Zidarie' : 'Masonry');
-        const colorLabel = assembly.color === 'white' 
-          ? (lang === 'ro' ? 'Alb' : 'White')
-          : (lang === 'ro' ? 'Negru' : 'Black');
+        const colorLabel = getColorName(assembly.color, library, lang);
         
         // Card background
         doc.setFillColor(252, 252, 252);
@@ -3528,8 +3542,9 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
 
   const availableColors = getAvailableColors(library);
   const colorInfo = availableColors.find(c => c.id === assembly.color);
-  const faceBgColor = assembly.color === 'black' ? '#454545' : '#f0f0f0';
-  const faceTextColor = assembly.color === 'black' ? '#ffffff' : '#333333';
+  const _detailDark = isDarkColor(assembly.color, library);
+  const faceBgColor = _detailDark ? '#454545' : '#f0f0f0';
+  const faceTextColor = _detailDark ? '#ffffff' : '#333333';
 
   return (
     <div className="p-6 max-w-5xl mx-auto">
@@ -3613,7 +3628,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               <span className="font-mono text-gray-400">{installFaceSku || '—'}</span>
             </div>
             <div className="flex justify-between p-2 bg-white rounded border">
-              <span className="text-gray-600">{t.decorFace} {assembly.size}M {assembly.color === 'white' ? t.white : t.black}</span>
+              <span className="text-gray-600">{t.decorFace} {assembly.size}M {getColorName(assembly.color, library, lang)}</span>
               <span className="font-mono text-gray-400">{decorFaceSku || '—'}</span>
             </div>
           </div>
@@ -3711,7 +3726,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                     style={{
                       width: moduleWidth1M,
                       height: faceHeight,
-                      borderColor: assembly.color === 'black' ? '#555' : '#ccc',
+                      borderColor: _detailDark ? '#555' : '#ccc',
                     }}
                   />
                 ))}
@@ -3746,8 +3761,8 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                       style={{
                         width: slot.size * moduleWidth1M,
                         height: faceHeight,
-                        backgroundColor: assembly.color === 'black' ? '#3a3a3a' : '#f5f5f5',
-                        border: `2px solid ${assembly.color === 'black' ? '#555' : '#bbb'}`,
+                        backgroundColor: _detailDark ? '#3a3a3a' : '#f5f5f5',
+                        border: `2px solid ${_detailDark ? '#555' : '#bbb'}`,
                       }}
                     >
                       {/* Module image with real Bticino graphics - fills entire module */}
@@ -4327,7 +4342,7 @@ function QuoteView({ project }) {
     };
 
     project.assemblies.forEach((assembly) => {
-      const colorName = assembly.color === 'white' ? t.white : t.black;
+      const colorName = getColorName(assembly.color, library, lang);
       const wallBoxType = assembly.wallBoxType || 'masonry';
 
       // Wall Box - separate by type
@@ -4818,7 +4833,7 @@ function ProfitView({ project }) {
     };
 
     project.assemblies.forEach((assembly) => {
-      const colorName = assembly.color === 'white' ? t.white : t.black;
+      const colorName = getColorName(assembly.color, library, lang);
       const wallBoxType = assembly.wallBoxType || 'masonry';
 
       // Wall Box
