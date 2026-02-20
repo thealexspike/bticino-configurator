@@ -749,12 +749,11 @@ const getModuleGraphic = (moduleId, moduleSize = 1) => {
 const ModuleImage = ({ moduleId, color, colorHex, width = 60, height = 80, className = '', moduleSize = 1 }) => {
   const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
   const SvgComponent = ModuleGraphicsByType[graphicType] || ModuleGraphicsByType.generic1m;
-  // If colorHex provided, pass it directly as color (SVG resolveColorHex handles #hex)
   const effectiveColor = colorHex || color;
   
   return (
-    <div className={className} style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <SvgComponent color={effectiveColor} />
+    <div className={className} style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+      <SvgComponent color={effectiveColor} width={width} height={height} />
     </div>
   );
 };
@@ -875,7 +874,7 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
   const colorHex = (library?.availableColors || []).find(c => c.id === assembly.color)?.hex;
   const faceBgColor = colorHex || (_dark ? '#3a3a3a' : '#f5f5f5');
   const frameBorderColor = _dark ? '#888' : '#999';
-  const moduleBorderColor = _dark ? '#666' : '#aaa';
+  const moduleBorderColor = _dark ? adjustBrightness(colorHex || '#3a3a3a', 30) : adjustBrightness(colorHex || '#f5f5f5', -25);
   
   // Module slots
   const moduleSlots = [];
@@ -2961,8 +2960,9 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
       const isDark = isDarkColor(assembly.color, library);
       const frameBg = isDark ? '#3a3a3a' : '#f5f5f5';
       const supportBarColor = '#4a4a4a';
-      const moduleBg = isDark ? '#3a3a3a' : '#ffffff';
-      const moduleBorder = isDark ? '#555' : '#ddd';
+      const colorHexPdf = (library?.availableColors || []).find(c => c.id === assembly.color)?.hex;
+      const moduleBg = colorHexPdf || (isDark ? '#3a3a3a' : '#ffffff');
+      const moduleBorder = isDark ? adjustBrightness(colorHexPdf || '#3a3a3a', 30) : adjustBrightness(colorHexPdf || '#f5f5f5', -25);
       const frameBorderOuter = isDark ? '#555' : '#ddd';
       
       let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">`;
@@ -3730,7 +3730,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
           >
             {/* Face plate container - with padding for delete buttons */}
             <div
-              className={`relative transition-all overflow-hidden ${
+              className={`relative transition-all ${
                 dragOverFace ? 'ring-2 ring-blue-400 ring-offset-2' : ''
               }`}
               style={{
@@ -3747,14 +3747,14 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               {/* Top/bottom margins (frame edges) - only if system has them */}
               {topMargin > 0 && (
                 <>
-                  <div className="absolute left-0 right-0 top-0" style={{ height: topMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
-                  <div className="absolute left-0 right-0 bottom-0" style={{ height: bottomMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+                  <div className="absolute left-0 right-0 top-0 pointer-events-none" style={{ height: topMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+                  <div className="absolute left-0 right-0 bottom-0 pointer-events-none" style={{ height: bottomMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
                 </>
               )}
               
               {/* Side margins (face plate edges) */}
-              <div className="absolute top-0 bottom-0 left-0" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
-              <div className="absolute top-0 bottom-0 right-0" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+              <div className="absolute top-0 bottom-0 left-0 pointer-events-none" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
+              <div className="absolute top-0 bottom-0 right-0 pointer-events-none" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
               
               {/* Support frame bars - only for systems that have them (BTicino) */}
               {props.hasSupportBars && (
@@ -3786,7 +3786,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               {/* Installed modules */}
               <div 
                 className="absolute flex"
-                style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, zIndex: 2 }}
+                style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, zIndex: 5 }}
               >
                 {moduleSlots.map((slot, idx) => {
                   const isDragging = draggedModule?.type === 'installed' && draggedModule?.index === idx;
@@ -3807,7 +3807,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                         width: slot.size * moduleWidth1M,
                         height: moduleHeight,
                         backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
-                        border: `2px solid ${_detailDark ? '#555' : '#bbb'}`,
+                        border: `1.5px solid ${_detailDark ? adjustBrightness(colorInfo?.hex || '#3a3a3a', 30) : adjustBrightness(colorInfo?.hex || '#f5f5f5', -25)}`,
                         borderRadius: moduleCornerRadius,
                       }}
                     >
@@ -3847,7 +3847,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                     }`}
                     style={{
                       width: remainingSize * moduleWidth1M,
-                      height: faceHeight,
+                      height: moduleHeight,
                     }}
                     onDragOver={handleDragOver}
                     onDrop={(e) => handleDrop(e, assembly.modules.length)}
