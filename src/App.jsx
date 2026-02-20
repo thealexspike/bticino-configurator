@@ -535,210 +535,187 @@ const getFacePlateImageUrl = (size, color) => {
 // ============================================================================
 
 // Graphics definitions by type
+// Each receives colorHex (e.g. '#C2A878') and derives all SVG fill colors from it
+
+const hexToRgb = (hex) => {
+  const h = hex.replace('#', '');
+  return { r: parseInt(h.slice(0,2),16), g: parseInt(h.slice(2,4),16), b: parseInt(h.slice(4,6),16) };
+};
+const rgbToHex = (r, g, b) => '#' + [r,g,b].map(c => Math.max(0,Math.min(255,Math.round(c))).toString(16).padStart(2,'0')).join('');
+const adjustBrightness = (hex, amount) => {
+  const {r,g,b} = hexToRgb(hex);
+  return rgbToHex(r + amount, g + amount, b + amount);
+};
+const getLuminance = (hex) => {
+  const {r,g,b} = hexToRgb(hex);
+  return (0.299*r + 0.587*g + 0.114*b) / 255;
+};
+
+const svgPalette = (colorHex = '#f5f5f5') => {
+  const lum = getLuminance(colorHex);
+  const dark = lum < 0.5;
+  return {
+    bg: colorHex,
+    accent: dark ? adjustBrightness(colorHex, 20) : adjustBrightness(colorHex, -15),
+    holes: dark ? adjustBrightness(colorHex, -40) : '#333',
+    ground: dark ? adjustBrightness(colorHex, 50) : '#999',
+    connector: dark ? adjustBrightness(colorHex, 50) : '#999',
+    symbol: dark ? '#ffffff' : '#333333',
+    divider: dark ? adjustBrightness(colorHex, 30) : adjustBrightness(colorHex, -20),
+    port: dark ? adjustBrightness(colorHex, -40) : '#333',
+    portInner: colorHex,
+    contacts: dark ? '#888' : '#666',
+    placeholder: dark ? adjustBrightness(colorHex, 40) : '#bbb',
+    led: null, // LEDs stay fixed color
+  };
+};
+
+// Resolve color prop: if hex string (#...) use directly, else map via known palette
+const colorIdToHex = { white: '#f5f5f5', black: '#3a3a3a' };
+const resolveColorHex = (color) => {
+  if (!color) return '#f5f5f5';
+  if (color.startsWith('#')) return color;
+  return colorIdToHex[color] || '#f5f5f5';
+};
+
 const ModuleGraphicsByType = {
   // Schuko outlet - 2M full size
   schuko: ({ color = 'white', width = 60, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const accent = color === 'black' ? '#4a4a4a' : '#e8e8e8';
-    const holes = color === 'black' ? '#1a1a1a' : '#333';
-    const ground = color === 'black' ? '#666' : '#999';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 60 80">
-        <rect x="0" y="0" width="60" height="80" fill={bg}/>
-        {/* Outlet recess - circle not ellipse */}
-        <circle cx="30" cy="40" r="24" fill={accent}/>
-        {/* Ground clips */}
-        <rect x="8" y="32" width="4" height="16" rx="1" fill={ground}/>
-        <rect x="48" y="32" width="4" height="16" rx="1" fill={ground}/>
-        {/* Holes - perfect circles */}
-        <circle cx="20" cy="40" r="5" fill={holes}/>
-        <circle cx="40" cy="40" r="5" fill={holes}/>
+        <rect x="0" y="0" width="60" height="80" fill={p.bg}/>
+        <circle cx="30" cy="40" r="24" fill={p.accent}/>
+        <rect x="8" y="32" width="4" height="16" rx="1" fill={p.ground}/>
+        <rect x="48" y="32" width="4" height="16" rx="1" fill={p.ground}/>
+        <circle cx="20" cy="40" r="5" fill={p.holes}/>
+        <circle cx="40" cy="40" r="5" fill={p.holes}/>
       </svg>
     );
   },
-  // Italian outlet - 1M full size
   italian: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const accent = color === 'black' ? '#4a4a4a' : '#e8e8e8';
-    const holes = color === 'black' ? '#1a1a1a' : '#333';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* Outlet recess - oval for italian style */}
-        <ellipse cx="15" cy="40" rx="10" ry="22" fill={accent}/>
-        {/* Holes - perfect circles */}
-        <circle cx="15" cy="28" r="3" fill={holes}/>
-        <circle cx="15" cy="40" r="3" fill={holes}/>
-        <circle cx="15" cy="52" r="3" fill={holes}/>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <ellipse cx="15" cy="40" rx="10" ry="22" fill={p.accent}/>
+        <circle cx="15" cy="28" r="3" fill={p.holes}/>
+        <circle cx="15" cy="40" r="3" fill={p.holes}/>
+        <circle cx="15" cy="52" r="3" fill={p.holes}/>
       </svg>
     );
   },
-  // Switch - full size, single tone, contrasting symbol
   switch: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
-    const led = '#4ade80';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* Plus symbol */}
-        <path d="M10 40 L20 40 M15 35 L15 45" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
-        {/* LED indicator */}
-        <circle cx="15" cy="70" r="3" fill={led}/>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <path d="M10 40 L20 40 M15 35 L15 45" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        <circle cx="15" cy="70" r="3" fill="#4ade80"/>
       </svg>
     );
   },
-  // Stair switch - full size with up/down arrows
   switch_stair: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
-    const led = '#fbbf24';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* Up arrow */}
-        <path d="M9 38 L15 30 L21 38" stroke={symbol} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        {/* Down arrow */}
-        <path d="M9 46 L15 54 L21 46" stroke={symbol} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
-        {/* LED indicator */}
-        <circle cx="15" cy="70" r="3" fill={led}/>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <path d="M9 38 L15 30 L21 38" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        <path d="M9 46 L15 54 L21 46" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" fill="none"/>
+        <circle cx="15" cy="70" r="3" fill="#fbbf24"/>
       </svg>
     );
   },
-  // Cross switch - full size with X symbol
   switch_cross: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
-    const led = '#f97316';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* X symbol */}
-        <path d="M9 32 L21 52 M21 32 L9 52" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
-        {/* LED indicator */}
-        <circle cx="15" cy="70" r="3" fill={led}/>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <path d="M9 32 L21 52 M21 32 L9 52" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        <circle cx="15" cy="70" r="3" fill="#f97316"/>
       </svg>
     );
   },
-  // Dimmer - 2M full size with +/- symbols
   dimmer: ({ color = 'white', width = 60, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
-    const divider = color === 'black' ? '#555' : '#ddd';
-    const led = '#4ade80';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 60 80">
-        <rect x="0" y="0" width="60" height="80" fill={bg}/>
-        {/* Divider line */}
-        <line x1="30" y1="5" x2="30" y2="75" stroke={divider} strokeWidth="1"/>
-        {/* Plus symbol (left) */}
-        <path d="M10 40 L20 40 M15 35 L15 45" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
-        {/* Minus symbol (right) */}
-        <path d="M40 40 L50 40" stroke={symbol} strokeWidth="2.5" strokeLinecap="round"/>
-        {/* LED indicators */}
-        <circle cx="15" cy="70" r="3" fill={led}/>
-        <circle cx="45" cy="70" r="3" fill={led}/>
+        <rect x="0" y="0" width="60" height="80" fill={p.bg}/>
+        <line x1="30" y1="5" x2="30" y2="75" stroke={p.divider} strokeWidth="1"/>
+        <path d="M10 40 L20 40 M15 35 L15 45" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M40 40 L50 40" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round"/>
+        <circle cx="15" cy="70" r="3" fill="#4ade80"/>
+        <circle cx="45" cy="70" r="3" fill="#4ade80"/>
       </svg>
     );
   },
   usb: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const port = color === 'black' ? '#1a1a1a' : '#333';
-    const portInner = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* USB-A port 1 */}
-        <rect x="7" y="18" width="16" height="10" rx="1" fill={port}/>
-        <rect x="9" y="20" width="12" height="6" rx="0.5" fill={portInner}/>
-        {/* USB-A port 2 */}
-        <rect x="7" y="38" width="16" height="10" rx="1" fill={port}/>
-        <rect x="9" y="40" width="12" height="6" rx="0.5" fill={portInner}/>
-        {/* USB text */}
-        <text x="15" y="68" fontSize="8" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">USB</text>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <rect x="7" y="18" width="16" height="10" rx="1" fill={p.port}/>
+        <rect x="9" y="20" width="12" height="6" rx="0.5" fill={p.portInner}/>
+        <rect x="7" y="38" width="16" height="10" rx="1" fill={p.port}/>
+        <rect x="9" y="40" width="12" height="6" rx="0.5" fill={p.portInner}/>
+        <text x="15" y="68" fontSize="8" fill={p.symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">USB</text>
       </svg>
     );
   },
-  // COAX-TV outlet - 1M with coaxial connector
   coax: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const connector = color === 'black' ? '#666' : '#999';
-    const center = color === 'black' ? '#1a1a1a' : '#333';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* Outer ring */}
-        <circle cx="15" cy="38" r="10" fill={connector}/>
-        {/* Inner circle */}
-        <circle cx="15" cy="38" r="6" fill={bg}/>
-        {/* Center pin */}
-        <circle cx="15" cy="38" r="2.5" fill={center}/>
-        {/* TV text */}
-        <text x="15" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">TV</text>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <circle cx="15" cy="38" r="10" fill={p.connector}/>
+        <circle cx="15" cy="38" r="6" fill={p.bg}/>
+        <circle cx="15" cy="38" r="2.5" fill={p.holes}/>
+        <text x="15" y="68" fontSize="7" fill={p.symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">TV</text>
       </svg>
     );
   },
-  // UTP/RJ45 outlet - 1M with network connector
   utp: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const port = color === 'black' ? '#1a1a1a' : '#333';
-    const contacts = color === 'black' ? '#888' : '#666';
-    const symbol = color === 'black' ? '#ffffff' : '#333333';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* RJ45 port outline */}
-        <rect x="6" y="28" width="18" height="22" rx="1" fill={port}/>
-        {/* Port opening */}
-        <rect x="8" y="32" width="14" height="14" rx="0.5" fill={bg}/>
-        {/* 8 contact pins */}
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <rect x="6" y="28" width="18" height="22" rx="1" fill={p.port}/>
+        <rect x="8" y="32" width="14" height="14" rx="0.5" fill={p.bg}/>
         {[0,1,2,3,4,5,6,7].map(i => (
-          <rect key={i} x={9 + i * 1.5} y="33" width="1" height="8" fill={contacts}/>
+          <rect key={i} x={9 + i * 1.5} y="33" width="1" height="8" fill={p.contacts}/>
         ))}
-        {/* Clip notch */}
-        <rect x="12" y="46" width="6" height="3" fill={bg}/>
-        {/* UTP text */}
-        <text x="15" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">UTP</text>
+        <rect x="12" y="46" width="6" height="3" fill={p.bg}/>
+        <text x="15" y="68" fontSize="7" fill={p.symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">UTP</text>
       </svg>
     );
   },
-  // Generic 1M module - placeholder for unknown modules
   generic1m: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#666' : '#bbb';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
-        {/* Question mark or generic symbol */}
-        <circle cx="15" cy="36" r="12" fill="none" stroke={symbol} strokeWidth="2" strokeDasharray="4 2"/>
-        <text x="15" y="42" fontSize="14" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">?</text>
-        {/* 1M indicator */}
-        <text x="15" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial">1M</text>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
+        <circle cx="15" cy="36" r="12" fill="none" stroke={p.placeholder} strokeWidth="2" strokeDasharray="4 2"/>
+        <text x="15" y="42" fontSize="14" fill={p.placeholder} textAnchor="middle" fontFamily="Arial" fontWeight="bold">?</text>
+        <text x="15" y="68" fontSize="7" fill={p.placeholder} textAnchor="middle" fontFamily="Arial">1M</text>
       </svg>
     );
   },
-  // Generic 2M module - placeholder for unknown 2M modules
   generic2m: ({ color = 'white', width = 60, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
-    const symbol = color === 'black' ? '#666' : '#bbb';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 60 80">
-        <rect x="0" y="0" width="60" height="80" fill={bg}/>
-        {/* Question mark or generic symbol */}
-        <circle cx="30" cy="36" r="14" fill="none" stroke={symbol} strokeWidth="2" strokeDasharray="4 2"/>
-        <text x="30" y="44" fontSize="16" fill={symbol} textAnchor="middle" fontFamily="Arial" fontWeight="bold">?</text>
-        {/* 2M indicator */}
-        <text x="30" y="68" fontSize="7" fill={symbol} textAnchor="middle" fontFamily="Arial">2M</text>
+        <rect x="0" y="0" width="60" height="80" fill={p.bg}/>
+        <circle cx="30" cy="36" r="14" fill="none" stroke={p.placeholder} strokeWidth="2" strokeDasharray="4 2"/>
+        <text x="30" y="44" fontSize="16" fill={p.placeholder} textAnchor="middle" fontFamily="Arial" fontWeight="bold">?</text>
+        <text x="30" y="68" fontSize="7" fill={p.placeholder} textAnchor="middle" fontFamily="Arial">2M</text>
       </svg>
     );
   },
   blank: ({ color = 'white', width = 30, height = 80 }) => {
-    const bg = color === 'black' ? '#3a3a3a' : '#f5f5f5';
+    const p = svgPalette(resolveColorHex(color));
     return (
       <svg width={width} height={height} viewBox="0 0 30 80">
-        <rect x="0" y="0" width="30" height="80" fill={bg}/>
+        <rect x="0" y="0" width="30" height="80" fill={p.bg}/>
       </svg>
     );
   },
@@ -769,13 +746,15 @@ const getModuleGraphic = (moduleId, moduleSize = 1) => {
 };
 
 // Module image component
-const ModuleImage = ({ moduleId, color, width = 60, height = 80, className = '', moduleSize = 1 }) => {
+const ModuleImage = ({ moduleId, color, colorHex, width = 60, height = 80, className = '', moduleSize = 1 }) => {
   const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
   const SvgComponent = ModuleGraphicsByType[graphicType] || ModuleGraphicsByType.generic1m;
+  // If colorHex provided, pass it directly as color (SVG resolveColorHex handles #hex)
+  const effectiveColor = colorHex || color;
   
   return (
     <div className={className} style={{ width, height, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <SvgComponent color={color} />
+      <SvgComponent color={effectiveColor} />
     </div>
   );
 };
@@ -818,9 +797,11 @@ const FacePlateImage = ({ size, color, width, height }) => {
 
 // Face plate frame SVG
 const FacePlateFrame = ({ size, color, children, width, height }) => {
-  const bg = color === 'black' ? '#1a1a1a' : '#f5f5f5';
-  const border = color === 'black' ? '#333' : '#ddd';
-  const innerBg = color === 'black' ? '#222' : '#fff';
+  const hex = resolveColorHex(color);
+  const dark = getLuminance(hex) < 0.5;
+  const bg = dark ? adjustBrightness(hex, -20) : hex;
+  const border = dark ? adjustBrightness(hex, 30) : adjustBrightness(hex, -30);
+  const innerBg = dark ? adjustBrightness(hex, -10) : '#fff';
   
   return (
     <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
@@ -882,7 +863,8 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
   
   // Colors - dynamic based on assembly color hex
   const _dark = isDarkColor(assembly.color, library);
-  const faceBgColor = _dark ? '#3a3a3a' : '#f5f5f5';
+  const colorHex = (library?.availableColors || []).find(c => c.id === assembly.color)?.hex;
+  const faceBgColor = colorHex || (_dark ? '#3a3a3a' : '#f5f5f5');
   const frameBorderColor = _dark ? '#888' : '#999';
   const moduleBorderColor = _dark ? '#666' : '#aaa';
   
@@ -942,7 +924,7 @@ const AssemblyThumbnail = ({ assembly, library, scale = 0.4 }) => {
               }}
             >
               {ModuleGraphic && (
-                <ModuleGraphic color={assembly.color} width={slot.size * moduleWidth1M - 2} height={faceHeight} />
+                <ModuleGraphic color={colorHex || assembly.color} width={slot.size * moduleWidth1M - 2} height={faceHeight} />
               )}
             </div>
           );
@@ -3543,7 +3525,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const availableColors = getAvailableColors(library);
   const colorInfo = availableColors.find(c => c.id === assembly.color);
   const _detailDark = isDarkColor(assembly.color, library);
-  const faceBgColor = _detailDark ? '#454545' : '#f0f0f0';
+  const faceBgColor = colorInfo?.hex || (_detailDark ? '#454545' : '#f0f0f0');
   const faceTextColor = _detailDark ? '#ffffff' : '#333333';
 
   return (
@@ -3761,7 +3743,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                       style={{
                         width: slot.size * moduleWidth1M,
                         height: faceHeight,
-                        backgroundColor: _detailDark ? '#3a3a3a' : '#f5f5f5',
+                        backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
                         border: `2px solid ${_detailDark ? '#555' : '#bbb'}`,
                       }}
                     >
@@ -3770,6 +3752,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                         <ModuleImage 
                           moduleId={slot.moduleId} 
                           color={assembly.color}
+                          colorHex={colorInfo?.hex}
                           width={slot.size * moduleWidth1M}
                           height={faceHeight}
                         />
@@ -5358,16 +5341,16 @@ function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwitchSyste
       {/* Tabs */}
       <div className="flex gap-2 mb-4 flex-wrap">
         <button
-          onClick={() => setActiveTab('modules')}
-          className={`px-4 py-2 rounded ${activeTab === 'modules' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
-        >
-          {t.modules}
-        </button>
-        <button
           onClick={() => setActiveTab('colors')}
           className={`px-4 py-2 rounded ${activeTab === 'colors' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
         >
           🎨 {t.manageColors}
+        </button>
+        <button
+          onClick={() => setActiveTab('modules')}
+          className={`px-4 py-2 rounded ${activeTab === 'modules' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
+        >
+          {t.modules}
         </button>
         <button
           onClick={() => setActiveTab('wallboxes')}
