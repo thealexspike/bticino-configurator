@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy, Upload } from 'lucide-react';
-import { supabase, supabaseUrl, supabaseAnonKeyLegacy } from './supabase';
+import { api } from './api';
 import Auth from './Auth';
+import AdminUsers from './AdminUsers';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
@@ -2005,42 +2006,16 @@ function ProjectDetail({ project, onBack, onUpdate }) {
         category: m.category,
       }));
       
-      // Get fresh session token
-      const { data: { session: freshSession }, error: sessionError } = await supabase.auth.refreshSession();
-      if (sessionError || !freshSession) {
-        const { data: { session: fallbackSession } } = await supabase.auth.getSession();
-        if (!fallbackSession) {
-          setAiImportResult({ error: 'Not authenticated' });
-          setAiImportLoading(false);
-          return;
-        }
-        var accessToken = fallbackSession.access_token;
-      } else {
-        var accessToken = freshSession.access_token;
-      }
-      
-      // Call Edge Function
-      const response = await fetch(
-        `${supabaseUrl}/functions/v1/parse-necesar`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${accessToken}`,
-            'apikey': supabaseAnonKeyLegacy,
-          },
-          body: JSON.stringify({
-            pdfBase64,
-            modules: moduleCatalog,
-            system: library?.systemName || getSystemName(project?.system, 'en'),
-          }),
-        }
-      );
-      
-      const result = await response.json();
-      
-      if (!response.ok) {
-        setAiImportResult({ error: result.error || t.aiImportError });
+      // Apel către API-ul propriu (Cloudflare Pages Function)
+      let result;
+      try {
+        result = await api.parseNecesar(
+          pdfBase64,
+          moduleCatalog,
+          library?.systemName || getSystemName(project?.system, 'en'),
+        );
+      } catch (err) {
+        setAiImportResult({ error: err.message || t.aiImportError });
         setAiImportLoading(false);
         return;
       }
@@ -6919,6 +6894,7 @@ const [library, setLibrary] = useState(DEFAULT_LIBRARY);
 const [libraryLoaded, setLibraryLoaded] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showLibrary, setShowLibrary] = useState(false);
+  const [showAdminUsers, setShowAdminUsers] = useState(false);
   const [lang, setLang] = useState(() => {
     try {
       return localStorage.getItem('configurator-aparataj-lang') || localStorage.getItem('bticino-lang') || 'en';
@@ -6934,58 +6910,46 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
 
   // Verifică sesiunea la start
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    api.getSession().then((session) => {
       setSession(session);
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const unsubscribe = api.onAuthChange((session) => {
       setSession(session);
     });
 
-    return () => subscription.unsubscribe();
+    return unsubscribe;
   }, []);
 
   const loadProjects = async () => {
-    const { data: projects, error } = await supabase
-      .from('projects')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (error) {
+    let projects;
+    try {
+      projects = await api.listProjects();
+    } catch (error) {
       console.error('Error loading projects:', error);
       return;
     }
 
-    // Încarcă ansamblurile pentru fiecare proiect
-    const projectsWithAssemblies = await Promise.all(
-      projects.map(async (project) => {
-        const { data: assemblies } = await supabase
-          .from('assemblies')
-          .select('*')
-          .eq('project_id', project.id);
-
-        return {
-          ...project,
-          id: project.id,
-          name: project.name,
-          clientName: project.client_name,
-          clientContact: project.client_contact,
-          system: project.system || 'bticino',
-          createdAt: project.created_at,
-          assemblies: (assemblies || []).map(a => ({
-            id: a.id,
-            type: a.type,
-            code: a.code,
-            room: a.room,
-            size: a.size,
-            color: a.color,
-            wallBoxType: a.wall_box_type || 'masonry',
-            modules: a.modules || [],
-          })),
-        };
-      })
-    );
+    const projectsWithAssemblies = projects.map(project => ({
+      ...project,
+      id: project.id,
+      name: project.name,
+      clientName: project.client_name,
+      clientContact: project.client_contact,
+      system: project.system || 'bticino',
+      createdAt: project.created_at,
+      assemblies: (project.assemblies || []).map(a => ({
+        id: a.id,
+        type: a.type,
+        code: a.code,
+        room: a.room,
+        size: a.size,
+        color: a.color,
+        wallBoxType: a.wall_box_type || 'masonry',
+        modules: a.modules || [],
+      })),
+    }));
 
     setData({ projects: projectsWithAssemblies });
   };
@@ -6993,7 +6957,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
   // All system libraries in state
   const [libraries, setLibraries] = useState({});
 
-  const loadLibraryFromSupabase = async () => {
+  const loadLibraryFromServer = async () => {
     // Start with ALL default libraries pre-populated
     const libs = {
       bticino: { ...DEFAULT_LIBRARY },
@@ -7001,12 +6965,15 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       schneider: { ...DEFAULT_LIBRARY_SCHNEIDER },
     };
 
-    // Load from Supabase — overlay defaults with saved data
-    const { data: rows, error } = await supabase
-      .from('global_library')
-      .select('id, library_data');
+    // Load from D1 — overlay defaults with saved data
+    let rows = [];
+    try {
+      rows = await api.getLibraryRows();
+    } catch (error) {
+      console.error('Error loading library:', error);
+    }
 
-    if (!error && rows && rows.length > 0) {
+    if (rows && rows.length > 0) {
       rows.forEach(row => {
         const libData = row.library_data || {};
         const systemId = row.id === 'main' ? 'bticino' : row.id;
@@ -7026,106 +6993,62 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     return libraries[systemId] || DEFAULT_LIBRARIES[systemId] || library;
   };
 
-  const saveLibraryToSupabase = async (libraryData, systemId) => {
+  const saveLibraryToServer = async (libraryData, systemId) => {
     if (!isAdmin) return;
     const sysId = systemId || libraryData?.systemId || 'bticino';
     const rowId = sysId === 'bticino' ? 'main' : sysId;
 
-    const { error } = await supabase
-      .from('global_library')
-      .upsert({
-        id: rowId,
-        library_data: libraryData,
-        updated_at: new Date().toISOString(),
-        updated_by: session.user.email,
-      }, { onConflict: 'id' });
-
-    if (error) console.error('Error saving library:', error);
+    try {
+      await api.saveLibrary(rowId, libraryData);
+    } catch (error) {
+      console.error('Error saving library:', error);
+    }
   };
 
   useEffect(() => {
     if (session?.user) {
       loadProjects();
-      loadLibraryFromSupabase();
+      loadLibraryFromServer();
     }
   }, [session]);
 
   const saveProject = async (project) => {
-  let { error } = await supabase.from('projects').update({
-    name: project.name, client_name: project.clientName,
-    client_contact: project.clientContact, system: project.system || 'bticino',
-  }).eq('id', project.id);
+  try {
+    await api.updateProject(project.id, {
+      name: project.name,
+      client_name: project.clientName,
+      client_contact: project.clientContact,
+      system: project.system || 'bticino',
+    });
 
-  if (error && error.message?.includes('system')) {
-    const fallback = await supabase.from('projects').update({
-      name: project.name, client_name: project.clientName, client_contact: project.clientContact,
-    }).eq('id', project.id);
-    error = fallback.error;
-  }
+    // Sincronizează toate ansamblurile într-un singur apel;
+    // serverul șterge ce nu mai există și întoarce id-urile noi
+    const mapping = await api.syncAssemblies(project.id, project.assemblies.map(a => ({
+      id: a.id,
+      type: a.type,
+      code: a.code,
+      room: a.room,
+      size: a.size,
+      color: a.color,
+      wall_box_type: a.wallBoxType || 'masonry',
+      modules: a.modules,
+    })));
 
-  if (error) {
-    console.error('Error saving project:', error);
-    return;
-  }
-
-  // Obține ansamblurile existente din Supabase
-  const { data: existingAssemblies } = await supabase
-    .from('assemblies')
-    .select('id')
-    .eq('project_id', project.id);
-
-  const existingIds = (existingAssemblies || []).map(a => a.id);
-  const currentIds = project.assemblies.map(a => a.id).filter(id => existingIds.includes(id));
-  
-  // Șterge ansamblurile care nu mai există în proiect
-  const idsToDelete = existingIds.filter(id => !project.assemblies.some(a => a.id === id));
-  if (idsToDelete.length > 0) {
-    await supabase
-      .from('assemblies')
-      .delete()
-      .in('id', idsToDelete);
-  }
-
-  // Salvează ansamblurile
-  for (const assembly of project.assemblies) {
-    const assemblyData = {
-      project_id: project.id,
-      type: assembly.type,
-      code: assembly.code,
-      room: assembly.room,
-      size: assembly.size,
-      color: assembly.color,
-      wall_box_type: assembly.wallBoxType || 'masonry',
-      modules: assembly.modules,
-    };
-
-    // Verifică dacă assembly există deja în Supabase
-    const isExisting = existingIds.includes(assembly.id);
-
-    if (isExisting) {
-      await supabase
-        .from('assemblies')
-        .update(assemblyData)
-        .eq('id', assembly.id);
-    } else {
-      const { data: newAssembly } = await supabase
-        .from('assemblies')
-        .insert(assemblyData)
-        .select()
-        .single();
-      
-      // Actualizează ID-ul local cu cel din Supabase
-      if (newAssembly) {
-        assembly.id = newAssembly.id;
+    // Actualizează id-urile locale cu cele din server
+    for (const assembly of project.assemblies) {
+      if (mapping[assembly.id]) {
+        assembly.id = mapping[assembly.id];
       }
     }
+  } catch (error) {
+    console.error('Error saving project:', error);
   }
 };
 
 useEffect(() => {
   if (session?.user && libraryLoaded && library?.systemId) {
     if (library.systemId === 'bticino') saveLibrary(library);
-    saveLibraryToSupabase(library, library.systemId);
+    saveLibraryToServer(library, library.systemId);
     setLibraries(prev => ({ ...prev, [library.systemId]: library }));
   }
 }, [library, session, libraryLoaded]);
@@ -7148,19 +7071,15 @@ useEffect(() => {
   };
 
   const createProject = async (name, client, system = 'bticino') => {
-  let result = await supabase.from('projects').insert({
-    user_id: session.user.id, name, client_name: client, client_contact: '', system,
-  }).select().single();
-
-  // Fallback if system column doesn't exist yet
-  if (result.error && result.error.message?.includes('system')) {
-    result = await supabase.from('projects').insert({
-      user_id: session.user.id, name, client_name: client, client_contact: '',
-    }).select().single();
+  let savedProject;
+  try {
+    savedProject = await api.createProject({
+      name, client_name: client, client_contact: '', system,
+    });
+  } catch (error) {
+    console.error('Error creating project:', error);
+    return;
   }
-
-  if (result.error) { console.error('Error creating project:', result.error); return; }
-  const savedProject = result.data;
 
   const newProject = {
     id: savedProject.id,
@@ -7176,11 +7095,13 @@ useEffect(() => {
 };
 
 const deleteProject = async (id) => {
-  // Șterge ansamblurile asociate
-  await supabase.from('assemblies').delete().eq('project_id', id);
-  // Șterge proiectul
-  await supabase.from('projects').delete().eq('id', id);
-  
+  try {
+    // Serverul șterge și ansamblurile asociate
+    await api.deleteProject(id);
+  } catch (error) {
+    console.error('Error deleting project:', error);
+  }
+
   setData({
     ...data,
     projects: data.projects.filter(p => p.id !== id),
@@ -7188,7 +7109,7 @@ const deleteProject = async (id) => {
 };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
+    await api.signOut();
     setData({ projects: [] });
     setSelectedProject(null);
   };
@@ -7219,6 +7140,14 @@ const deleteProject = async (id) => {
       </div>
       <div className="flex items-center gap-2">
         <span className="text-sm text-gray-500 hidden sm:inline">{session.user.email}</span>
+        {isAdmin && (
+          <button
+            onClick={() => { setShowAdminUsers(true); setShowLibrary(false); setSelectedProject(null); }}
+            className="text-sm text-gray-600 hover:text-gray-900 px-2 py-1"
+          >
+            {lang === 'ro' ? 'Conturi' : 'Users'}
+          </button>
+        )}
         <LanguageSwitcher />
         <button
           onClick={handleLogout}
@@ -7230,11 +7159,28 @@ const deleteProject = async (id) => {
     </div>
   );
 
+  // Show Admin Users page
+  if (showAdminUsers && isAdmin) {
+    return (
+      <LanguageContext.Provider value={languageContextValue}>
+        <div className="min-h-screen bg-gray-100">
+          <GlobalHeader />
+          <div className="pt-16">
+            <AdminUsers
+              onBack={() => setShowAdminUsers(false)}
+              currentUserId={session.user.id}
+            />
+          </div>
+        </div>
+      </LanguageContext.Provider>
+    );
+  }
+
   // Show Library page
   if (showLibrary) {
     const handleSwitchLibrarySystem = (systemId) => {
       if (library.systemId && library.systemId !== systemId) {
-        saveLibraryToSupabase(library, library.systemId);
+        saveLibraryToServer(library, library.systemId);
       }
       const targetLib = libraries[systemId] || DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
       setLibrary(targetLib);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { supabase } from './supabase';
+import { api } from './api';
 
 export default function Auth() {
   const [loading, setLoading] = useState(false);
@@ -13,22 +13,14 @@ export default function Auth() {
     setLoading(true);
     setMessage('');
 
-    if (isLogin) {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) setMessage(error.message);
-    } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (error) {
-        setMessage(error.message);
+    try {
+      if (isLogin) {
+        await api.signIn(email, password);
       } else {
-        setMessage('Verifică email-ul pentru a confirma contul!');
+        await api.signUp(email, password);
       }
+    } catch (err) {
+      setMessage(err.message || 'A apărut o eroare');
     }
     setLoading(false);
   };
@@ -42,7 +34,7 @@ export default function Auth() {
         <h2 className="text-xl text-center mb-6">
           {isLogin ? 'Autentificare' : 'Creare cont'}
         </h2>
-        
+
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -56,7 +48,7 @@ export default function Auth() {
               required
             />
           </div>
-          
+
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">
               Parolă
@@ -72,7 +64,7 @@ export default function Auth() {
           </div>
 
           {message && (
-            <p className={`text-sm ${message.includes('Verifică') ? 'text-green-600' : 'text-red-600'}`}>
+            <p className="text-sm text-red-600">
               {message}
             </p>
           )}
