@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy, Upload } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy, Upload, Eye, EyeOff } from 'lucide-react';
 import { api } from './api';
 import Auth from './Auth';
 import AdminUsers from './AdminUsers';
@@ -131,7 +131,13 @@ const TRANSLATIONS = {
     moduleFaces: 'Module Faces',
     noAssemblies: 'No assemblies to generate',
     allPricesIncludeVat: 'All prices include VAT',
-    
+    excludeFromOrder: 'Exclude from order',
+    includeInOrder: 'Include in order',
+    excludedLabel: 'Excluded',
+    excludeCategory: 'Exclude category',
+    includeCategory: 'Include category',
+    excludedItemsNote: 'Excluded items do not count toward totals and are left out of PDFs.',
+
     // VAT
     vat: 'VAT',
     vatRate: 'VAT (21%)',
@@ -358,7 +364,13 @@ const TRANSLATIONS = {
     moduleFaces: 'Fețe Module',
     noAssemblies: 'Nu există ansambluri pentru generare',
     allPricesIncludeVat: 'Toate prețurile includ TVA',
-    
+    excludeFromOrder: 'Exclude din comandă',
+    includeInOrder: 'Include în comandă',
+    excludedLabel: 'Exclus',
+    excludeCategory: 'Exclude categoria',
+    includeCategory: 'Include categoria',
+    excludedItemsNote: 'Articolele excluse nu se numără în totaluri și nu apar în PDF-uri.',
+
     // VAT
     vat: 'TVA',
     vatRate: 'TVA (21%)',
@@ -2338,8 +2350,8 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           existingRooms={existingRooms}
         />
       )}
-      {activeTab === 'boq' && <BOQView project={project} />}
-      {activeTab === 'quote' && <QuoteView project={project} />}
+      {activeTab === 'boq' && <BOQView project={project} onUpdate={onUpdate} />}
+      {activeTab === 'quote' && <QuoteView project={project} onUpdate={onUpdate} />}
       {activeTab === 'profit' && <ProfitView project={project} />}
       
       {/* Preset Selection Dialog */}
@@ -4035,12 +4047,43 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
 }
 
 
+// --- Excludere articole din necesar/ofertă ---
+// Cheile pot fi: "<categorie>" (toată categoria) sau "<categorie>:<cheieArticol>" (un singur articol)
+function isEntryExcluded(excluded, category, itemKey) {
+  return !!(excluded && (excluded[category] || excluded[`${category}:${itemKey}`]));
+}
+
 // --- BOQ View ---
-function BOQView({ project }) {
+function BOQView({ project, onUpdate }) {
   const library = React.useContext(LibraryContext);
   const t = useTranslation();
   const lang = useLanguage();
   const MODULE_CATALOG = getModuleCatalog(library);
+
+  const excluded = project.excludedItems || {};
+
+  const setExcluded = (next) => {
+    if (onUpdate) onUpdate({ ...project, excludedItems: next });
+  };
+
+  const toggleItem = (category, itemKey) => {
+    const key = `${category}:${itemKey}`;
+    const next = { ...excluded };
+    if (next[key]) delete next[key]; else next[key] = true;
+    setExcluded(next);
+  };
+
+  const toggleCategory = (category) => {
+    const next = { ...excluded };
+    if (next[category]) {
+      delete next[category];
+    } else {
+      next[category] = true;
+      // Curăță excluderile individuale, categoria acoperă tot
+      Object.keys(next).forEach(k => { if (k.startsWith(`${category}:`)) delete next[k]; });
+    }
+    setExcluded(next);
+  };
 
   const boqData = useMemo(() => {
     const items = {
@@ -4140,8 +4183,11 @@ function BOQView({ project }) {
     { key: 'moduleFaces', title: t.moduleFaces },
   ];
 
-  const totalItems = Object.values(boqData).reduce(
-    (sum, category) => sum + Object.values(category).reduce((s, item) => s + item.qty, 0),
+  const activeEntries = (catKey) => Object.entries(boqData[catKey])
+    .filter(([itemKey]) => !isEntryExcluded(excluded, catKey, itemKey));
+
+  const totalItems = sections.reduce(
+    (sum, { key }) => sum + activeEntries(key).reduce((s, [, item]) => s + item.qty, 0),
     0
   );
 
@@ -4225,9 +4271,10 @@ function BOQView({ project }) {
     };
     
     sections.forEach(({ key, title }) => {
-      const items = Object.values(boqData[key]);
+      // Doar articolele active (cele excluse nu intră în comandă)
+      const items = activeEntries(key).map(([, item]) => item);
       if (items.length === 0) return;
-      
+
       // Calculate section total qty
       const sectionTotalQty = items.reduce((sum, item) => sum + item.qty, 0);
       
@@ -4379,30 +4426,60 @@ function BOQView({ project }) {
         <p className="p-4 text-gray-500">{t.noAssemblies}</p>
       ) : (
         <div className="divide-y">
+          <p className="px-4 pt-3 text-xs text-gray-400">{t.excludedItemsNote}</p>
           {sections.map(({ key, title }) => {
-            const items = Object.values(boqData[key]);
-            if (items.length === 0) return null;
+            const entries = Object.entries(boqData[key]);
+            if (entries.length === 0) return null;
+            const categoryExcluded = !!excluded[key];
             return (
               <div key={key} className="p-4">
-                <h3 className="font-medium text-white bg-gray-600 px-3 py-2 rounded-t">{title}</h3>
+                <h3 className={`font-medium text-white px-3 py-2 rounded-t flex items-center justify-between ${categoryExcluded ? 'bg-gray-400' : 'bg-gray-600'}`}>
+                  <span className={categoryExcluded ? 'line-through' : ''}>
+                    {title}
+                    {categoryExcluded && <span className="ml-2 text-xs font-normal no-underline">({t.excludedLabel})</span>}
+                  </span>
+                  <button
+                    onClick={() => toggleCategory(key)}
+                    className="text-xs flex items-center gap-1 bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                    title={categoryExcluded ? t.includeCategory : t.excludeCategory}
+                  >
+                    {categoryExcluded ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                    {categoryExcluded ? t.includeInOrder : t.excludeFromOrder}
+                  </button>
+                </h3>
                 <table className="w-full text-sm border border-gray-200">
                   <thead>
                     <tr className="bg-gray-100 text-left text-gray-600">
-                      <th className="p-2 border-b w-[40%]">{t.item}</th>
-                      <th className="p-2 border-b w-[20%]">{t.color}</th>
-                      <th className="p-2 border-b w-[25%]">{t.sku}</th>
-                      <th className="p-2 border-b text-center w-[15%]">{t.qty}</th>
+                      <th className="p-2 border-b w-[36%]">{t.item}</th>
+                      <th className="p-2 border-b w-[18%]">{t.color}</th>
+                      <th className="p-2 border-b w-[22%]">{t.sku}</th>
+                      <th className="p-2 border-b text-center w-[12%]">{t.qty}</th>
+                      <th className="p-2 border-b w-[12%]"></th>
                     </tr>
                   </thead>
                   <tbody>
-                    {items.map((item, idx) => (
-                      <tr key={idx} className="border-b hover:bg-gray-50">
-                        <td className="p-2">{item.name}</td>
-                        <td className="p-2 text-gray-600">{item.color}</td>
-                        <td className="p-2 font-mono text-gray-400 italic">{item.sku || '—'}</td>
-                        <td className="p-2 text-center font-mono font-bold">{item.qty}</td>
-                      </tr>
-                    ))}
+                    {entries.map(([itemKey, item]) => {
+                      const rowExcluded = isEntryExcluded(excluded, key, itemKey);
+                      return (
+                        <tr key={itemKey} className={`border-b hover:bg-gray-50 ${rowExcluded ? 'opacity-50' : ''}`}>
+                          <td className={`p-2 ${rowExcluded ? 'line-through' : ''}`}>{item.name}</td>
+                          <td className="p-2 text-gray-600">{item.color}</td>
+                          <td className="p-2 font-mono text-gray-400 italic">{item.sku || '—'}</td>
+                          <td className={`p-2 text-center font-mono font-bold ${rowExcluded ? 'line-through' : ''}`}>{item.qty}</td>
+                          <td className="p-2 text-right">
+                            {!categoryExcluded && (
+                              <button
+                                onClick={() => toggleItem(key, itemKey)}
+                                className={`text-xs flex items-center gap-1 ml-auto px-2 py-1 rounded ${rowExcluded ? 'text-green-700 hover:bg-green-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}
+                                title={rowExcluded ? t.includeInOrder : t.excludeFromOrder}
+                              >
+                                {rowExcluded ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                              </button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -4413,11 +4490,35 @@ function BOQView({ project }) {
     </div>
   );
 }
-function QuoteView({ project }) {
+function QuoteView({ project, onUpdate }) {
   const library = React.useContext(LibraryContext);
   const t = useTranslation();
   const lang = useLanguage();
   const MODULE_CATALOG = getModuleCatalog(library);
+
+  const excluded = project.excludedItems || {};
+
+  const setExcluded = (next) => {
+    if (onUpdate) onUpdate({ ...project, excludedItems: next });
+  };
+
+  const toggleItem = (category, itemKey) => {
+    const key = `${category}:${itemKey}`;
+    const next = { ...excluded };
+    if (next[key]) delete next[key]; else next[key] = true;
+    setExcluded(next);
+  };
+
+  const toggleCategory = (category) => {
+    const next = { ...excluded };
+    if (next[category]) {
+      delete next[category];
+    } else {
+      next[category] = true;
+      Object.keys(next).forEach(k => { if (k.startsWith(`${category}:`)) delete next[k]; });
+    }
+    setExcluded(next);
+  };
 
   const quoteData = useMemo(() => {
     const items = {
@@ -4521,22 +4622,25 @@ function QuoteView({ project }) {
 
   // Calculate totals
   const VAT_RATE = 0.21; // 21% TVA in Romania
-  
-  const calculateSectionTotal = (items) => {
-    return Object.values(items).reduce((sum, item) => sum + (item.unitPrice * item.qty), 0);
+
+  const activeEntries = (catKey) => Object.entries(quoteData[catKey])
+    .filter(([itemKey]) => !isEntryExcluded(excluded, catKey, itemKey));
+
+  const calculateSectionTotal = (entries) => {
+    return entries.reduce((sum, [, item]) => sum + (item.unitPrice * item.qty), 0);
   };
 
-  const grandTotalWithVat = Object.values(quoteData).reduce(
-    (sum, category) => sum + calculateSectionTotal(category),
+  const grandTotalWithVat = sections.reduce(
+    (sum, { key }) => sum + calculateSectionTotal(activeEntries(key)),
     0
   );
-  
+
   // Prices in library are stored WITH VAT, so we calculate backwards
   const grandTotalWithoutVat = grandTotalWithVat / (1 + VAT_RATE);
   const vatAmount = grandTotalWithVat - grandTotalWithoutVat;
 
-  const totalItems = Object.values(quoteData).reduce(
-    (sum, category) => sum + Object.values(category).reduce((s, item) => s + item.qty, 0),
+  const totalItems = sections.reduce(
+    (sum, { key }) => sum + activeEntries(key).reduce((s, [, item]) => s + item.qty, 0),
     0
   );
 
@@ -4636,10 +4740,12 @@ function QuoteView({ project }) {
     const totalTableWidth = col1Width + col2Width + col3Width + col4Width + col5Width + col6Width;
     
     sections.forEach(({ key, title }) => {
-      const items = Object.values(quoteData[key]);
+      // Doar articolele active (cele excluse nu apar în ofertă)
+      const entriesForPdf = activeEntries(key);
+      const items = entriesForPdf.map(([, item]) => item);
       if (items.length === 0) return;
-      
-      const sectionTotalWithVat = calculateSectionTotal(quoteData[key]);
+
+      const sectionTotalWithVat = calculateSectionTotal(entriesForPdf);
       const sectionTotalQty = items.reduce((sum, item) => sum + item.qty, 0);
       
       // Estimate space needed
@@ -4826,38 +4932,65 @@ function QuoteView({ project }) {
       ) : (
         <>
           <div className="divide-y">
+            <p className="px-4 pt-3 text-xs text-gray-400">{t.excludedItemsNote}</p>
             {sections.map(({ key, title }) => {
-              const items = Object.values(quoteData[key]);
-              if (items.length === 0) return null;
-              const sectionTotalWithVat = calculateSectionTotal(quoteData[key]);
-              const sectionTotalWithoutVat = sectionTotalWithVat / (1 + VAT_RATE);
+              const entries = Object.entries(quoteData[key]);
+              if (entries.length === 0) return null;
+              const categoryExcluded = !!excluded[key];
+              const sectionTotalWithVat = calculateSectionTotal(activeEntries(key));
               return (
                 <div key={key} className="p-4">
-                  <h3 className="font-medium text-white bg-gray-600 px-3 py-2 rounded-t">{title}</h3>
+                  <h3 className={`font-medium text-white px-3 py-2 rounded-t flex items-center justify-between ${categoryExcluded ? 'bg-gray-400' : 'bg-gray-600'}`}>
+                    <span className={categoryExcluded ? 'line-through' : ''}>
+                      {title}
+                      {categoryExcluded && <span className="ml-2 text-xs font-normal">({t.excludedLabel})</span>}
+                    </span>
+                    <button
+                      onClick={() => toggleCategory(key)}
+                      className="text-xs flex items-center gap-1 bg-white/20 hover:bg-white/30 px-2 py-1 rounded"
+                      title={categoryExcluded ? t.includeCategory : t.excludeCategory}
+                    >
+                      {categoryExcluded ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                      {categoryExcluded ? t.includeInOrder : t.excludeFromOrder}
+                    </button>
+                  </h3>
                   <table className="w-full text-sm border border-gray-200">
                     <thead>
                       <tr className="bg-gray-100 text-left text-gray-600">
-                        <th className="p-2 border-b w-[30%]">{t.item}</th>
-                        <th className="p-2 border-b w-[12%]">{t.color}</th>
-                        <th className="p-2 border-b text-right w-[15%]">{t.unitPriceExclVat}</th>
-                        <th className="p-2 border-b text-right w-[15%]">{t.unitPriceInclVat}</th>
-                        <th className="p-2 border-b text-center w-[10%]">{t.qty}</th>
-                        <th className="p-2 border-b text-right w-[18%]">{t.total}</th>
+                        <th className="p-2 border-b w-[26%]">{t.item}</th>
+                        <th className="p-2 border-b w-[10%]">{t.color}</th>
+                        <th className="p-2 border-b text-right w-[14%]">{t.unitPriceExclVat}</th>
+                        <th className="p-2 border-b text-right w-[14%]">{t.unitPriceInclVat}</th>
+                        <th className="p-2 border-b text-center w-[8%]">{t.qty}</th>
+                        <th className="p-2 border-b text-right w-[16%]">{t.total}</th>
+                        <th className="p-2 border-b w-[12%]"></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {items.map((item, idx) => {
+                      {entries.map(([itemKey, item]) => {
+                        const rowExcluded = isEntryExcluded(excluded, key, itemKey);
                         const unitWithoutVat = priceWithoutVat(item.unitPrice);
                         const totalWithVat = item.unitPrice * item.qty;
                         return (
-                          <tr key={idx} className="border-b hover:bg-gray-50">
-                            <td className="p-2">{item.name}</td>
+                          <tr key={itemKey} className={`border-b hover:bg-gray-50 ${rowExcluded ? 'opacity-50' : ''}`}>
+                            <td className={`p-2 ${rowExcluded ? 'line-through' : ''}`}>{item.name}</td>
                             <td className="p-2 text-gray-600">{item.color}</td>
                             <td className="p-2 text-right font-mono text-gray-400">{formatPrice(unitWithoutVat)}</td>
                             <td className="p-2 text-right font-mono">{formatPrice(item.unitPrice)}</td>
-                            <td className="p-2 text-center font-mono">{item.qty}</td>
-                            <td className="p-2 text-right font-mono font-bold">
+                            <td className={`p-2 text-center font-mono ${rowExcluded ? 'line-through' : ''}`}>{item.qty}</td>
+                            <td className={`p-2 text-right font-mono font-bold ${rowExcluded ? 'line-through' : ''}`}>
                               {formatPrice(totalWithVat)}
+                            </td>
+                            <td className="p-2 text-right">
+                              {!categoryExcluded && (
+                                <button
+                                  onClick={() => toggleItem(key, itemKey)}
+                                  className={`text-xs flex items-center gap-1 ml-auto px-2 py-1 rounded ${rowExcluded ? 'text-green-700 hover:bg-green-50' : 'text-gray-400 hover:text-red-600 hover:bg-red-50'}`}
+                                  title={rowExcluded ? t.includeInOrder : t.excludeFromOrder}
+                                >
+                                  {rowExcluded ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
+                                </button>
+                              )}
                             </td>
                           </tr>
                         );
@@ -4865,6 +4998,7 @@ function QuoteView({ project }) {
                       <tr className="bg-gray-100">
                         <td colSpan={5} className="p-2 text-right font-bold">{t.subtotal}:</td>
                         <td className="p-2 text-right font-mono font-bold">{formatPrice(sectionTotalWithVat)}</td>
+                        <td></td>
                       </tr>
                     </tbody>
                   </table>
@@ -4909,8 +5043,9 @@ function ProfitView({ project }) {
   const t = useTranslation();
   const lang = useLanguage();
   const MODULE_CATALOG = getModuleCatalog(library);
+  const excluded = project.excludedItems || {};
 
-  const profitData = useMemo(() => {
+  const profitDataAll = useMemo(() => {
     const items = {
       wallBoxesMasonry: {},
       wallBoxesDrywall: {},
@@ -5024,6 +5159,18 @@ function ProfitView({ project }) {
 
     return items;
   }, [project, library, MODULE_CATALOG, t, lang]);
+
+  // Articolele excluse din comandă nu intră în analiza de profit
+  const profitData = useMemo(() => {
+    const filtered = {};
+    Object.entries(profitDataAll).forEach(([cat, items]) => {
+      filtered[cat] = {};
+      Object.entries(items).forEach(([itemKey, item]) => {
+        if (!isEntryExcluded(excluded, cat, itemKey)) filtered[cat][itemKey] = item;
+      });
+    });
+    return filtered;
+  }, [profitDataAll, excluded]);
 
   const sections = [
     { key: 'wallBoxesMasonry', title: t.wallBoxesMasonry || 'Wall Boxes (Masonry)' },
@@ -6931,6 +7078,13 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       return;
     }
 
+    const parseExcluded = (raw) => {
+      try {
+        const parsed = JSON.parse(raw || '{}');
+        return parsed && typeof parsed === 'object' ? parsed : {};
+      } catch { return {}; }
+    };
+
     const projectsWithAssemblies = projects.map(project => ({
       ...project,
       id: project.id,
@@ -6938,6 +7092,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       clientName: project.client_name,
       clientContact: project.client_contact,
       system: project.system || 'bticino',
+      excludedItems: parseExcluded(project.excluded_items),
       createdAt: project.created_at,
       assemblies: (project.assemblies || []).map(a => ({
         id: a.id,
@@ -7019,6 +7174,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       client_name: project.clientName,
       client_contact: project.clientContact,
       system: project.system || 'bticino',
+      excluded_items: project.excludedItems || {},
     });
 
     // Sincronizează toate ansamblurile într-un singur apel;

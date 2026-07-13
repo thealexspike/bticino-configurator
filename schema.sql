@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS projects (
   client_name TEXT DEFAULT '',
   client_contact TEXT DEFAULT '',
   system TEXT DEFAULT 'bticino',
+  excluded_items TEXT NOT NULL DEFAULT '{}',
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 

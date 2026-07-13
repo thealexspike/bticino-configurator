@@ -15,13 +15,18 @@ export async function onRequestPut(context) {
   if (!project) return json({ error: 'Proiect inexistent' }, 404);
 
   const body = await readJson(context.request);
+  let excludedItems = project.excluded_items || '{}';
+  if (body && typeof body.excluded_items === 'object' && body.excluded_items !== null) {
+    excludedItems = JSON.stringify(body.excluded_items);
+  }
   await env.DB.prepare(
-    `UPDATE projects SET name = ?1, client_name = ?2, client_contact = ?3, system = ?4 WHERE id = ?5`
+    `UPDATE projects SET name = ?1, client_name = ?2, client_contact = ?3, system = ?4, excluded_items = ?5 WHERE id = ?6`
   ).bind(
     String(body?.name ?? project.name),
     String(body?.client_name ?? project.client_name ?? ''),
     String(body?.client_contact ?? project.client_contact ?? ''),
     String(body?.system ?? project.system ?? 'bticino'),
+    excludedItems,
     project.id
   ).run();
 
