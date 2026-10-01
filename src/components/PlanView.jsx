@@ -7,8 +7,9 @@ import { ASSEMBLY_DRAG_TYPE, usePlanLink } from '../planLink';
 import { photoUrl } from './AssemblyPhotos';
 import { PhotoPasteInput } from './PhotoPasteInput';
 import { PLAN_FILE_ACCEPT } from '../lib/planImport';
-import { getModuleName, LibraryContext } from '../lib/library';
+import { LibraryContext } from '../lib/library';
 import { AssemblyThumbnail } from './visual/ModuleVisuals';
+import { QuickModuleEditor } from './QuickModuleEditor';
 
 const MIN_ZOOM = 0.03;
 const MAX_ZOOM = 6;
@@ -86,6 +87,8 @@ export function PlanView({
     const el = viewportRef.current;
     if (!el) return undefined;
     const onWheel = (e) => {
+      // Peste fișa aparatului rotița derulează fișa, nu face zoom pe plan
+      if (e.target.closest?.('[data-plan-overlay]')) return;
       e.preventDefault();
       const r = el.getBoundingClientRect();
       const mx = e.clientX - r.left;
@@ -467,7 +470,9 @@ export function PlanView({
         {/* Fișa aparatului selectat */}
         {selected && selected.planId === plan?.id && (
           <div
-            className="absolute bottom-3 left-3 bg-white rounded-lg shadow-lg p-3 w-72 text-sm"
+            data-plan-overlay
+            className="absolute bottom-3 left-3 bg-white rounded-lg shadow-lg p-3 w-80 text-sm overflow-y-auto"
+            style={{ maxHeight: 'calc(100% - 1.5rem)' }}
             onPointerDown={(e) => e.stopPropagation()}
           >
             <div className="flex items-start justify-between gap-2 mb-2">
@@ -482,12 +487,12 @@ export function PlanView({
             <div className="flex justify-center mb-2">
               <AssemblyThumbnail assembly={selected} library={library} maxWidth={200} maxHeight={80} />
             </div>
-            <div className="text-xs text-gray-600 mb-2">
-              {(selected.modules || []).map(m => {
-                const mod = (library?.modules || []).find(c => c.id === m.moduleId);
-                return mod ? getModuleName(mod, lang) : m.moduleId;
-              }).join(', ') || L('Fără module', 'No modules')}
-            </div>
+            <QuickModuleEditor
+              assembly={selected}
+              library={library}
+              readOnly={readOnly}
+              onChange={(updated) => onUpdate({ ...project, assemblies: assemblies.map(a => (a.id === updated.id ? updated : a)) })}
+            />
             {selected.notes && <div className="text-xs text-gray-500 italic mb-2">{selected.notes}</div>}
             {(photosOf(selected.id).length > 0 || !readOnly) && (
               <div className="mb-2">
