@@ -9,6 +9,7 @@ import { ProjectList } from './components/ProjectList';
 import { DEFAULT_LIBRARY, DEFAULT_LIBRARY_GEWISS, DEFAULT_LIBRARY_SCHNEIDER, DEFAULT_LIBRARY_GENERIC, DEFAULT_LIBRARIES } from './data/libraries';
 import { TRANSLATIONS, LanguageContext } from './i18n';
 import { saveLibrary, LibraryContext } from './lib/library';
+import { ReadOnlyContext } from './readOnly';
 
 // --- Mapare rânduri API -> modelul folosit în UI ---
 
@@ -68,6 +69,9 @@ export default function App() {
   const [selectedProject, setSelectedProject] = useState(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showAdminUsers, setShowAdminUsers] = useState(false);
+  // Admin: proiectele altui utilizator, doar citire ({ user, projects })
+  const [viewAs, setViewAs] = useState(null);
+  const [viewAsProjectId, setViewAsProjectId] = useState(null);
   const [lang, setLang] = useState(() => {
     try {
       return localStorage.getItem('configurator-aparataj-lang') || localStorage.getItem('bticino-lang') || 'en';
@@ -235,10 +239,29 @@ const deleteProject = async (id) => {
   });
 };
 
+  const openViewAs = async (user) => {
+    try {
+      const result = await api.adminUserProjects(user.id);
+      setViewAs({ user: result.user, projects: result.projects.map(projectFromApi) });
+      setViewAsProjectId(null);
+      setShowAdminUsers(false);
+    } catch (error) {
+      alert(error.message);
+    }
+  };
+
+  const closeViewAs = () => {
+    setViewAs(null);
+    setViewAsProjectId(null);
+    setShowAdminUsers(true);
+  };
+
   const handleLogout = async () => {
     await api.signOut();
     setData({ projects: [] });
     setSelectedProject(null);
+    setViewAs(null);
+    setViewAsProjectId(null);
   };
 
   const languageContextValue = { lang, t, setLang };
@@ -257,10 +280,58 @@ const deleteProject = async (id) => {
     return <Auth />;
   }
 
-  const openAdminUsers = () => { setShowAdminUsers(true); setShowLibrary(false); setSelectedProject(null); };
+  const openAdminUsers = () => { setShowAdminUsers(true); setShowLibrary(false); setSelectedProject(null); setViewAs(null); setViewAsProjectId(null); };
   const header = (
     <GlobalHeader lang={lang} email={session.user.email} isAdmin={isAdmin} onOpenUsers={openAdminUsers} onLogout={handleLogout} />
   );
+
+  // Admin: proiectele altui utilizator, doar citire
+  if (viewAs && isAdmin) {
+    const viewedProject = viewAs.projects.find(p => p.id === viewAsProjectId);
+    const banner = (
+      <div className="sticky top-12 z-40 bg-amber-100 border-b border-amber-300 px-4 py-2 flex items-center justify-between gap-3 text-sm">
+        <span className="text-amber-900">
+          {lang === 'ro' ? 'Vizualizezi proiectele lui' : 'Viewing projects of'} <strong>{viewAs.user.email}</strong>
+          {' · '}{lang === 'ro' ? 'doar citire, nimic nu se salvează' : 'read-only, nothing is saved'}
+        </span>
+        <button onClick={closeViewAs} className="bg-amber-600 text-white px-3 py-1 rounded hover:bg-amber-700 whitespace-nowrap">
+          {lang === 'ro' ? 'Închide' : 'Close'}
+        </button>
+      </div>
+    );
+    const noop = () => {};
+    return (
+      <LanguageContext.Provider value={languageContextValue}>
+        <ReadOnlyContext.Provider value={true}>
+          <LibraryContext.Provider value={viewedProject ? getLibraryForSystem(viewedProject.system || 'bticino') : library}>
+            <div className="min-h-screen bg-gray-100">
+              {header}
+              <div className="pt-16">
+                {banner}
+                {viewedProject ? (
+                  <ProjectDetail
+                    project={viewedProject}
+                    onBack={() => setViewAsProjectId(null)}
+                    onUpdate={noop}
+                    getLibraryForSystem={getLibraryForSystem}
+                  />
+                ) : (
+                  <ProjectList
+                    projects={viewAs.projects}
+                    onSelect={(p) => setViewAsProjectId(p.id)}
+                    onCreate={noop}
+                    onDelete={noop}
+                    onOpenLibrary={noop}
+                    title={viewAs.user.email}
+                  />
+                )}
+              </div>
+            </div>
+          </LibraryContext.Provider>
+        </ReadOnlyContext.Provider>
+      </LanguageContext.Provider>
+    );
+  }
 
   // Show Admin Users page
   if (showAdminUsers && isAdmin) {
@@ -272,6 +343,7 @@ const deleteProject = async (id) => {
             <AdminUsers
               onBack={() => setShowAdminUsers(false)}
               currentUserId={session.user.id}
+              onViewProjects={openViewAs}
             />
           </div>
         </div>

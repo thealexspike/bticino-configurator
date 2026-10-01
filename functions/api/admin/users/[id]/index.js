@@ -1,4 +1,4 @@
-import { json, readJson, requireAdmin, hashPassword } from '../../../_shared/auth.js';
+import { json, readJson, requireAdmin, hashPassword } from '../../../../_shared/auth.js';
 
 // PUT /api/admin/users/:id — resetare parolă
 export async function onRequestPut(context) {

@@ -8,6 +8,7 @@ import { ProfitView } from './ProfitView';
 import { QuoteView } from './QuoteView';
 import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
+import { useReadOnly } from '../readOnly';
 import { generateId, generateAssemblyCode, reorderAssembly, createAssembly, createModuleInstance } from '../lib/assemblies';
 import { getAvailableColors, getSystemName, getColorName, LibraryContext } from '../lib/library';
 
@@ -31,6 +32,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   const t = useTranslation();
   const lang = useLanguage();
   const library = React.useContext(LibraryContext);
+  const readOnly = useReadOnly();
 
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
   const switches = project.assemblies.filter(a => a.type === 'switch');
@@ -427,6 +429,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
               </div>
               <p className="text-gray-600">{project.clientName || t.noClient}</p>
             </div>
+            {!readOnly && (
             <button
               onClick={() => setEditingProject(true)}
               className="text-gray-500 hover:text-blue-600 p-2"
@@ -434,18 +437,21 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
             >
               <Settings className="w-5 h-5" />
             </button>
+            )}
           </div>
         )}
       </div>
 
       {/* Tabs */}
       <div className="flex gap-1 mb-4 flex-wrap">
+        {!readOnly && (
         <button
           onClick={() => { setShowAiImport(true); if (!aiImportColor) setAiImportColor(getAvailableColors(library)?.[0]?.id || 'white'); }}
           className="flex items-center gap-1 px-3 py-2 rounded text-sm bg-purple-600 text-white hover:bg-purple-700"
         >
           <Upload className="w-4 h-4" /> {t.aiImport}
         </button>
+        )}
         <button
           onClick={() => setActiveTab('outlets')}
           className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${

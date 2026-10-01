@@ -114,6 +114,10 @@ export const api = {
     return request(`/admin/users/${userId}`, { method: 'PUT', body: { password } });
   },
 
+  async adminUserProjects(userId) {
+    return request(`/admin/users/${userId}/projects`);
+  },
+
   async adminDeleteUser(userId) {
     return request(`/admin/users/${userId}`, { method: 'DELETE' });
   },

@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft } from 'lucide-react';
 import { AssemblyThumbnail } from './visual/ModuleVisuals';
 import { useTranslation, useLanguage } from '../i18n';
+import { useReadOnly } from '../readOnly';
 import { calculateModulesSize } from '../lib/assemblies';
 import { getAvailableColors, getAvailableSizes, isDarkColor, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
 import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
@@ -24,6 +25,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   const library = React.useContext(LibraryContext);
   const t = useTranslation();
   const lang = useLanguage();
+  const readOnly = useReadOnly();
   const MODULE_CATALOG = getModuleCatalog(library);
 
   const sortedAssemblies = [...assemblies].sort((a, b) => a.code.localeCompare(b.code));
@@ -125,6 +127,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
 
   const startEditingCode = (assembly, e) => {
     e.stopPropagation();
+    if (readOnly) return;
     setEditingCodeId(assembly.id);
     const num = parseInt(assembly.code.slice(1));
     setEditingCodeValue(String(num));
@@ -164,6 +167,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   // Room editing handlers
   const startEditingRoom = (assembly, e) => {
     e.stopPropagation();
+    if (readOnly) return;
     setEditingRoomId(assembly.id);
     setEditingRoomValue(assembly.room || '');
     setRoomDropdownOpen(true);
@@ -211,6 +215,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   // Notes editing handlers
   const startEditingNotes = (assembly, e) => {
     e.stopPropagation();
+    if (readOnly) return;
     skipNotesBlur.current = false;
     setEditingNotesId(assembly.id);
     setEditingNotesValue(assembly.notes || '');
@@ -257,13 +262,13 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
     return (
       <li
         key={assembly.id}
-        draggable
+        draggable={!readOnly}
         onDragStart={(e) => handleDragStart(e, assembly)}
         onDragOver={(e) => !groupByRoom && handleDragOver(e, index)}
         onDragLeave={!groupByRoom ? handleDragLeave : undefined}
         onDrop={(e) => !groupByRoom && handleDrop(e, index)}
         onDragEnd={handleDragEnd}
-        className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 cursor-grab active:cursor-grabbing transition-all ${
+        className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'} transition-all ${
           isDragging ? 'opacity-50 bg-blue-50' : ''
         } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
       >
@@ -305,6 +310,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             {/* Size selector */}
             <select
               value={assembly.size}
+              disabled={readOnly}
               onChange={(e) => {
                 e.stopPropagation();
                 handleSizeChange(assembly, e.target.value);
@@ -321,6 +327,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             {/* Color selector */}
             <select
               value={assembly.color}
+              disabled={readOnly}
               onChange={(e) => {
                 e.stopPropagation();
                 if (onUpdate) {
@@ -343,6 +350,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             {/* Wall box type selector */}
             <select
               value={assembly.wallBoxType || 'masonry'}
+              disabled={readOnly}
               onChange={(e) => {
                 e.stopPropagation();
                 if (onUpdate) {
@@ -489,7 +497,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             >
               <Settings className="w-4 h-4" />
             </button>
-            {onMoveToType && (
+            {onMoveToType && !readOnly && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
                 className="text-purple-500 hover:text-purple-700 p-2"
@@ -498,7 +506,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 <ArrowRightLeft className="w-4 h-4" />
               </button>
             )}
-            {confirmDuplicateId === assembly.id ? (
+            {readOnly ? null : confirmDuplicateId === assembly.id ? (
               <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <button
                   onClick={() => onConfirmDuplicate(assembly.id)}
@@ -525,12 +533,14 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 <Copy className="w-4 h-4" />
               </button>
             )}
+            {!readOnly && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(assembly.id); }}
               className="text-red-500 hover:text-red-700 p-2"
             >
               <Trash2 className="w-4 h-4" />
             </button>
+            )}
           </div>
         </div>
       </li>
@@ -567,6 +577,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               <FileText className="w-4 h-4" /> PDF
             </button>
           )}
+          {!readOnly && (<>
           <button
             onClick={onAddEmpty}
             className="bg-gray-500 text-white px-3 py-1.5 rounded flex items-center gap-1 text-sm hover:bg-gray-600"
@@ -579,6 +590,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
           >
             <Plus className="w-4 h-4" /> {addLabel}
           </button>
+          </>)}
         </div>
       </div>
 

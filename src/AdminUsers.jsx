@@ -1,7 +1,30 @@
 import React, { useEffect, useState } from 'react';
 import { api } from './api';
 
-export default function AdminUsers({ onBack, currentUserId }) {
+// Domenii de email publice: conturile de pe ele nu aparțin unei firme
+const PUBLIC_DOMAINS = new Set([
+  'gmail.com', 'googlemail.com', 'yahoo.com', 'yahoo.ro', 'outlook.com', 'hotmail.com',
+  'live.com', 'icloud.com', 'me.com', 'aol.com', 'proton.me', 'protonmail.com', 'gmx.com', 'mail.com',
+]);
+const NO_FIRM = '';
+
+const domainOf = (email) => String(email || '').toLowerCase().split('@')[1] || '';
+
+// Grupează conturile pe firmă (domeniul emailului); conturile personale la final
+const groupByFirm = (users) => {
+  const groups = new Map();
+  for (const u of users) {
+    const d = domainOf(u.email);
+    const key = PUBLIC_DOMAINS.has(d) || !d ? NO_FIRM : d;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(u);
+  }
+  return [...groups.entries()]
+    .sort(([a], [b]) => (a === NO_FIRM) - (b === NO_FIRM) || a.localeCompare(b))
+    .map(([key, list]) => ({ key, users: list }));
+};
+
+export default function AdminUsers({ onBack, currentUserId, onViewProjects }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -141,9 +164,20 @@ export default function AdminUsers({ onBack, currentUserId }) {
               </tr>
             </thead>
             <tbody>
-              {users.map(u => (
+              {groupByFirm(users).map(group => (
+                <React.Fragment key={group.key || 'no-firm'}>
+                <tr className="bg-gray-100 border-b">
+                  <td className="px-3 py-2 font-semibold text-gray-700" colSpan={6}>
+                    {group.key || 'Fără firmă (email personal)'}
+                    <span className="ml-2 font-normal text-gray-500">
+                      {group.users.length} {group.users.length === 1 ? 'cont' : 'conturi'}
+                      {' · '}{group.users.reduce((sum, u) => sum + (u.project_count || 0), 0)} proiecte
+                    </span>
+                  </td>
+                </tr>
+                {group.users.map(u => (
                 <tr key={u.id} className="border-b last:border-0">
-                  <td className="p-3">
+                  <td className="p-3 pl-6">
                     {u.email}
                     {u.id === currentUserId && <span className="ml-2 text-xs text-gray-400">(tu)</span>}
                     {u.email.toLowerCase().endsWith('@atelierazimut.com') && (
@@ -159,6 +193,15 @@ export default function AdminUsers({ onBack, currentUserId }) {
                       : <span className="text-orange-600">nesetată</span>}
                   </td>
                   <td className="p-3 text-right whitespace-nowrap">
+                    {onViewProjects && u.id !== currentUserId && (
+                      <button
+                        onClick={() => onViewProjects(u)}
+                        disabled={!u.project_count}
+                        className="text-blue-600 hover:underline mr-3 disabled:text-gray-300 disabled:no-underline disabled:cursor-default"
+                      >
+                        Vezi proiecte
+                      </button>
+                    )}
                     <button
                       onClick={() => handleResetPassword(u)}
                       className="text-blue-600 hover:underline mr-3"
@@ -175,6 +218,8 @@ export default function AdminUsers({ onBack, currentUserId }) {
                     )}
                   </td>
                 </tr>
+                ))}
+                </React.Fragment>
               ))}
               {users.length === 0 && (
                 <tr><td className="p-4 text-gray-500" colSpan={6}>Niciun cont.</td></tr>

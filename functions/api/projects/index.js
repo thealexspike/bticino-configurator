@@ -1,32 +1,13 @@
 import { json, readJson, requireUser, uuid, nowIso } from '../../_shared/auth.js';
+import { listProjectsForUser } from '../../_shared/projects.js';
 
 // GET /api/projects — toate proiectele utilizatorului, cu ansambluri
 export async function onRequestGet(context) {
   const denied = requireUser(context);
   if (denied) return denied;
 
-  const { env } = context;
-  const userId = context.data.user.id;
-
-  const { results: projects } = await env.DB.prepare(
-    'SELECT * FROM projects WHERE user_id = ?1 ORDER BY created_at DESC'
-  ).bind(userId).all();
-
-  const { results: assemblies } = await env.DB.prepare(
-    `SELECT a.* FROM assemblies a JOIN projects p ON p.id = a.project_id
-     WHERE p.user_id = ?1 ORDER BY a.created_at`
-  ).bind(userId).all();
-
-  const byProject = {};
-  for (const a of assemblies) {
-    let modules = [];
-    try { modules = JSON.parse(a.modules || '[]'); } catch { modules = []; }
-    (byProject[a.project_id] ||= []).push({ ...a, modules });
-  }
-
-  return json({
-    projects: projects.map(p => ({ ...p, assemblies: byProject[p.id] || [] })),
-  });
+  const projects = await listProjectsForUser(context.env.DB, context.data.user.id);
+  return json({ projects });
 }
 
 // POST /api/projects — creare proiect

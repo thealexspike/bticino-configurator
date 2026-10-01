@@ -3,8 +3,10 @@ import { Plus, Trash2, ChevronRight, Package, Settings } from 'lucide-react';
 import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { getSystemName } from '../lib/library';
+import { useReadOnly } from '../readOnly';
 
-export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary }) {
+export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary, title }) {
+  const readOnly = useReadOnly();
   const [newName, setNewName] = useState('');
   const [newClient, setNewClient] = useState('');
   const [newSystem, setNewSystem] = useState('bticino');
@@ -25,8 +27,9 @@ export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibr
       <div className="flex justify-between items-center mb-6 flex-wrap gap-4">
         <h1 className="text-2xl font-bold flex items-center gap-2">
           <Package className="w-6 h-6" />
-          {t.configurator}
+          {title || t.configurator}
         </h1>
+        {!readOnly && (
         <div className="flex items-center gap-2">
           <button
             onClick={onOpenLibrary}
@@ -35,8 +38,10 @@ export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibr
             <Settings className="w-4 h-4" /> {t.library}
           </button>
         </div>
+        )}
       </div>
 
+      {!readOnly && (
       <div className="bg-white rounded-lg shadow p-4 mb-6">
         <h2 className="font-semibold mb-3">{t.createNewProject}</h2>
         <div className="flex gap-2 flex-wrap">
@@ -74,6 +79,7 @@ export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibr
           </button>
         </div>
       </div>
+      )}
 
       <div className="bg-white rounded-lg shadow">
         <h2 className="font-semibold p-4 border-b">{t.projects}</h2>
@@ -104,12 +110,14 @@ export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibr
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
+                  {!readOnly && (
                   <button
                     onClick={() => onDelete(project.id)}
                     className="text-red-500 hover:text-red-700 p-2"
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
+                  )}
                   <ChevronRight className="w-5 h-5 text-gray-400" />
                 </div>
               </li>
