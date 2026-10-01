@@ -38,19 +38,24 @@ export async function onRequestPut(context) {
       String(a.type || 'outlet'), String(a.code || ''), String(a.room || ''),
       Number(a.size) || 2, String(a.color || ''), String(a.wall_box_type || 'masonry'),
       modules, String(a.notes || ''),
+      a.plan_id ? String(a.plan_id) : null,
+      Number.isFinite(Number(a.plan_x)) && a.plan_x !== null ? Math.min(1, Math.max(0, Number(a.plan_x))) : null,
+      Number.isFinite(Number(a.plan_y)) && a.plan_y !== null ? Math.min(1, Math.max(0, Number(a.plan_y))) : null,
     ];
 
     if (existingIds.has(localId)) {
       statements.push(env.DB.prepare(
         `UPDATE assemblies SET type = ?1, code = ?2, room = ?3, size = ?4,
-         color = ?5, wall_box_type = ?6, modules = ?7, notes = ?8 WHERE id = ?9`
+         color = ?5, wall_box_type = ?6, modules = ?7, notes = ?8,
+         plan_id = ?9, plan_x = ?10, plan_y = ?11 WHERE id = ?12`
       ).bind(...fields, localId));
     } else {
       const serverId = uuid();
       mapping[localId] = serverId;
       statements.push(env.DB.prepare(
-        `INSERT INTO assemblies (id, project_id, type, code, room, size, color, wall_box_type, modules, notes, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`
+        `INSERT INTO assemblies (id, project_id, type, code, room, size, color, wall_box_type, modules, notes,
+         plan_id, plan_x, plan_y, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13, ?14)`
       ).bind(serverId, project.id, ...fields, nowIso()));
     }
   }

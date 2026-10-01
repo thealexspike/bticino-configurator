@@ -37,6 +37,9 @@ CREATE TABLE IF NOT EXISTS assemblies (
   wall_box_type TEXT DEFAULT 'masonry',
   modules TEXT NOT NULL DEFAULT '[]',
   notes TEXT DEFAULT '',
+  plan_id TEXT,
+  plan_x REAL,
+  plan_y REAL,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
@@ -47,6 +50,20 @@ CREATE TABLE IF NOT EXISTS global_library (
   updated_by TEXT
 );
 
+CREATE TABLE IF NOT EXISTS plans (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  name TEXT NOT NULL DEFAULT '',
+  sort_order INTEGER NOT NULL DEFAULT 0,
+  width INTEGER NOT NULL,
+  height INTEGER NOT NULL,
+  marker_scale REAL NOT NULL DEFAULT 0.022,
+  mime TEXT NOT NULL DEFAULT 'image/jpeg',
+  image TEXT NOT NULL,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_plans_project ON plans(project_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at);
 CREATE INDEX IF NOT EXISTS idx_projects_user ON projects(user_id);

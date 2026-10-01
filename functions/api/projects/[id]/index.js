@@ -44,6 +44,7 @@ export async function onRequestDelete(context) {
 
   await env.DB.batch([
     env.DB.prepare('DELETE FROM assemblies WHERE project_id = ?1').bind(project.id),
+    env.DB.prepare('DELETE FROM plans WHERE project_id = ?1').bind(project.id),
     env.DB.prepare('DELETE FROM projects WHERE id = ?1').bind(project.id),
   ]);
 

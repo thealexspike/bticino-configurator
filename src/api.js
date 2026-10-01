@@ -90,6 +90,25 @@ export const api = {
     return mapping || {};
   },
 
+  // --- Planuri ---
+  async listPlans(projectId) {
+    const { plans } = await request(`/projects/${projectId}/plans`);
+    return plans;
+  },
+
+  async createPlan(projectId, plan) {
+    const { plan: created } = await request(`/projects/${projectId}/plans`, { method: 'POST', body: plan });
+    return created;
+  },
+
+  async updatePlan(projectId, planId, fields) {
+    return request(`/projects/${projectId}/plans/${planId}`, { method: 'PUT', body: fields });
+  },
+
+  async deletePlan(projectId, planId) {
+    return request(`/projects/${projectId}/plans/${planId}`, { method: 'DELETE' });
+  },
+
   // --- Librărie globală ---
   async getLibraryRows() {
     const { rows } = await request('/library');

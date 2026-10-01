@@ -1,8 +1,9 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft } from 'lucide-react';
+import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft , MapPin } from 'lucide-react';
 import { AssemblyThumbnail } from './visual/ModuleVisuals';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
+import { usePlanLink, ASSEMBLY_DRAG_TYPE } from '../planLink';
 import { calculateModulesSize } from '../lib/assemblies';
 import { getAvailableColors, getAvailableSizes, isDarkColor, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
 import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
@@ -26,6 +27,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   const t = useTranslation();
   const lang = useLanguage();
   const readOnly = useReadOnly();
+  const planLink = usePlanLink();
   const MODULE_CATALOG = getModuleCatalog(library);
 
   const sortedAssemblies = [...assemblies].sort((a, b) => a.code.localeCompare(b.code));
@@ -73,6 +75,8 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   const handleDragStart = (e, assembly) => {
     setDraggedId(assembly.id);
     e.dataTransfer.effectAllowed = 'move';
+    // Permite și tragerea pe plan, când panoul de plan e deschis
+    e.dataTransfer.setData(ASSEMBLY_DRAG_TYPE, assembly.id);
   };
 
   const handleDragOver = (e, index) => {
@@ -282,6 +286,18 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
+            {/* Pe plan: iconiță; click = arată pe plan */}
+            {assembly.planId && planLink.planNames?.[assembly.planId] && (
+              <button
+                type="button"
+                onClick={(e) => { e.stopPropagation(); planLink.locate?.(assembly.id); }}
+                disabled={!planLink.active}
+                className="text-teal-600 hover:text-teal-800 disabled:hover:text-teal-600 disabled:cursor-default -mr-2"
+                title={(lang === 'ro' ? 'Pe plan: ' : 'On plan: ') + planLink.planNames[assembly.planId]}
+              >
+                <MapPin className="w-4 h-4" />
+              </button>
+            )}
             {/* Code (position) editor */}
             {editingCodeId === assembly.id ? (
               <div className="flex items-center" onClick={(e) => e.stopPropagation()}>

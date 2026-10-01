@@ -1,11 +1,14 @@
-import React, { useState, useMemo } from 'react';
-import { ChevronLeft, Package, Zap, Settings, FileText, Upload } from 'lucide-react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import { ChevronLeft, Package, Zap, Settings, FileText, Upload, Map as MapIcon } from 'lucide-react';
 import { api } from '../api';
 import { AssemblyEditor } from './AssemblyEditor';
 import { AssemblyList } from './AssemblyList';
 import { BOQView } from './BOQView';
 import { ProfitView } from './ProfitView';
 import { QuoteView } from './QuoteView';
+import { PlanView } from './PlanView';
+import { PlanLinkContext } from '../planLink';
+import { filesToPlans, PLAN_FILE_ACCEPT } from '../lib/planImport';
 import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
@@ -33,6 +36,65 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   const lang = useLanguage();
   const library = React.useContext(LibraryContext);
   const readOnly = useReadOnly();
+
+  // Planuri (opționale): lista de aparataje rămâne ca înainte; cu un plan deschis,
+  // ecranul se împarte: lista în stânga (30%), planul în dreapta.
+  const planOpenKey = `configurator-aparataj-plan-open-${project.id}`;
+  const [plans, setPlans] = useState([]);
+  const [activePlanId, setActivePlanId] = useState(null);
+  const [planOpen, setPlanOpen] = useState(() => {
+    try { return localStorage.getItem(planOpenKey) !== '0'; } catch { return true; }
+  });
+  const [planImportStatus, setPlanImportStatus] = useState(null);
+  const planViewRef = useRef(null);
+  const planFileInputRef = useRef(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    api.listPlans(project.id)
+      .then(list => {
+        if (cancelled) return;
+        setPlans(list);
+        setActivePlanId(current => (list.some(p => p.id === current) ? current : list[0]?.id || null));
+      })
+      .catch(err => console.error('Error loading plans:', err));
+    return () => { cancelled = true; };
+  }, [project.id]);
+
+  const setPlanPanelOpen = (open) => {
+    setPlanOpen(open);
+    try { localStorage.setItem(planOpenKey, open ? '1' : '0'); } catch { /* stocare indisponibilă */ }
+  };
+
+  const importPlanFiles = async (files) => {
+    if (!files || files.length === 0) return;
+    setPlanImportStatus(lang === 'ro' ? 'Se pregătește planul...' : 'Preparing plan...');
+    if (plans.length === 0) setPlanPanelOpen(true);
+    try {
+      const items = await filesToPlans(files, setPlanImportStatus);
+      const created = [];
+      for (const item of items) {
+        setPlanImportStatus((lang === 'ro' ? 'Se încarcă ' : 'Uploading ') + item.name);
+        created.push(await api.createPlan(project.id, item));
+      }
+      if (created.length) {
+        setPlans(prev => [...prev, ...created]);
+        setActivePlanId(created[0].id);
+        setPlanPanelOpen(true);
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setPlanImportStatus(null);
+    }
+  };
+
+  const planVisible = planOpen && (plans.length > 0 || !!planImportStatus);
+  const planLinkValue = {
+    active: planVisible,
+    locate: (assemblyId) => planViewRef.current?.focusAssembly(assemblyId),
+    planNames: Object.fromEntries(plans.map(p => [p.id, p.name])),
+  };
 
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
   const switches = project.assemblies.filter(a => a.type === 'switch');
@@ -135,6 +197,9 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
       ...source,
       id: generateId(),
       code,
+      planId: null,
+      planX: null,
+      planY: null,
       modules: source.modules.map(m => ({
         ...m,
         id: generateId(),
@@ -342,7 +407,9 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   }
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
+    <PlanLinkContext.Provider value={planLinkValue}>
+    <div className={planVisible ? 'p-4 flex gap-4 items-start' : 'p-6 max-w-4xl mx-auto'}>
+      <div className={planVisible ? 'w-[30%] min-w-[420px] shrink-0' : ''}>
       <button
         onClick={onBack}
         className="flex items-center gap-1 text-blue-600 mb-4 hover:text-blue-800"
@@ -451,6 +518,34 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         >
           <Upload className="w-4 h-4" /> {t.aiImport}
         </button>
+        )}
+        {plans.length === 0 && !readOnly && (
+          <>
+            <button
+              onClick={() => planFileInputRef.current?.click()}
+              disabled={!!planImportStatus}
+              className="flex items-center gap-1 px-3 py-2 rounded text-sm bg-teal-600 text-white hover:bg-teal-700 disabled:opacity-50"
+              title={lang === 'ro' ? 'Importă planul electric (JPEG, PNG sau PDF; un plan pe pagină)' : 'Import the electrical plan (JPEG, PNG or PDF; one plan per page)'}
+            >
+              <MapIcon className="w-4 h-4" /> {planImportStatus ? (lang === 'ro' ? 'Se importă...' : 'Importing...') : (lang === 'ro' ? 'Import plan' : 'Import plan')}
+            </button>
+            <input
+              ref={planFileInputRef}
+              type="file"
+              accept={PLAN_FILE_ACCEPT}
+              multiple
+              className="hidden"
+              onChange={(e) => { importPlanFiles(e.target.files); e.target.value = ''; }}
+            />
+          </>
+        )}
+        {plans.length > 0 && (
+          <button
+            onClick={() => setPlanPanelOpen(!planOpen)}
+            className={`flex items-center gap-1 px-3 py-2 rounded text-sm ${planOpen ? 'bg-teal-600 text-white hover:bg-teal-700' : 'bg-teal-50 text-teal-700 border border-teal-300 hover:bg-teal-100'}`}
+          >
+            <MapIcon className="w-4 h-4" /> {planOpen ? (lang === 'ro' ? 'Ascunde planul' : 'Hide plan') : (lang === 'ro' ? 'Arată planul' : 'Show plan')}
+          </button>
         )}
         <button
           onClick={() => setActiveTab('outlets')}
@@ -662,6 +757,25 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           </div>
         </div>
       )}
+      </div>
+
+      {planVisible && (
+        <div className="flex-1 min-w-0 sticky top-16" style={{ height: 'calc(100vh - 5rem)' }}>
+          <PlanView
+            ref={planViewRef}
+            project={project}
+            plans={plans}
+            activePlanId={activePlanId}
+            onSelectPlan={setActivePlanId}
+            onPlansChange={setPlans}
+            onUpdate={onUpdate}
+            onAddFiles={importPlanFiles}
+            importStatus={planImportStatus}
+            onCollapse={() => setPlanPanelOpen(false)}
+          />
+        </div>
+      )}
     </div>
+    </PlanLinkContext.Provider>
   );
 }

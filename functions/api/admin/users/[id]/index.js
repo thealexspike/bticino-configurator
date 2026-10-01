@@ -40,6 +40,9 @@ export async function onRequestDelete(context) {
     env.DB.prepare(
       'DELETE FROM assemblies WHERE project_id IN (SELECT id FROM projects WHERE user_id = ?1)'
     ).bind(user.id),
+    env.DB.prepare(
+      'DELETE FROM plans WHERE project_id IN (SELECT id FROM projects WHERE user_id = ?1)'
+    ).bind(user.id),
     env.DB.prepare('DELETE FROM projects WHERE user_id = ?1').bind(user.id),
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(user.id),
     env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(user.id),

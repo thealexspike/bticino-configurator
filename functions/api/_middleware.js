@@ -1,4 +1,5 @@
 import { getUserFromRequest, json } from '../_shared/auth.js';
+import { ensureSchema } from '../_shared/schema.js';
 
 export async function onRequest(context) {
   try {
@@ -6,6 +7,11 @@ export async function onRequest(context) {
   } catch (err) {
     console.error('Session middleware error:', err);
     context.data.user = null;
+  }
+  try {
+    await ensureSchema(context.env.DB);
+  } catch (err) {
+    console.error('Schema check error:', err);
   }
   try {
     return await context.next();

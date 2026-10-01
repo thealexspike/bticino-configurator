@@ -13,6 +13,28 @@
 
 export const CHANGELOG = [
   {
+    id: '2026-10-01-plan',
+    date: '2026-10-01',
+    title: {
+      ro: 'Planul electric pe proiect',
+      en: 'Electrical plan in the project',
+    },
+    items: {
+      ro: [
+        'Butonul „Import plan" din proiect încarcă un plan JPEG, PNG sau PDF. Fiecare pagină din PDF devine un plan separat, de exemplu câte unul pe etaj.',
+        'Cu planul deschis, lista stă în stânga și planul în dreapta. Planul se poate ascunde oricând, iar lista rămâne ca înainte.',
+        'Trage prizele și întrerupătoarele din listă pe plan. Apar ca cerculețe albe cu codul lor (P01, I01) și se pot muta oricând.',
+        'Iconița de lângă cod arată că aparatul e pe plan. Un clic pe ea îl găsește pe plan.',
+      ],
+      en: [
+        'The "Import plan" button in a project loads a JPEG, PNG or PDF plan. Each PDF page becomes a separate plan, for example one per floor.',
+        'With the plan open, the list sits on the left and the plan on the right. The plan can be hidden at any time and the list stays as before.',
+        'Drag outlets and switches from the list onto the plan. They show as white circles with their code (P01, I01) and can be moved at any time.',
+        'The icon next to the code shows the assembly is on the plan. Clicking it finds it on the plan.',
+      ],
+    },
+  },
+  {
     id: '2026-10-01',
     date: '2026-10-01',
     title: {

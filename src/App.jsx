@@ -39,6 +39,9 @@ const projectFromApi = (project) => ({
     wallBoxType: a.wall_box_type || 'masonry',
     notes: a.notes || '',
     modules: a.modules || [],
+    planId: a.plan_id || null,
+    planX: a.plan_x ?? null,
+    planY: a.plan_y ?? null,
   })),
 });
 
@@ -170,6 +173,9 @@ export default function App() {
       wall_box_type: a.wallBoxType || 'masonry',
       notes: a.notes || '',
       modules: a.modules,
+      plan_id: a.planId || null,
+      plan_x: a.planX ?? null,
+      plan_y: a.planY ?? null,
     })));
 
     // Actualizează id-urile locale cu cele din server
