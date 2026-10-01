@@ -599,7 +599,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
               </div>
               
               <div className="mb-4">
-                <GraphicPicker value={newModule.graphic} onChange={(g) => setNewModule({ ...newModule, graphic: g })} />
+                <GraphicPicker value={newModule.graphic} onChange={(g) => setNewModule({ ...newModule, graphic: g })} size={newModule.size} moduleId={newModule.id} library={library} />
               </div>
 
               {/* Module color variants checkbox */}
@@ -805,7 +805,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     </div>
                     
                     <div className="mb-4">
-                      <GraphicPicker value={mod.graphic} onChange={(g) => updateModule(mod.id, { graphic: g || undefined })} />
+                      <GraphicPicker value={mod.graphic} onChange={(g) => updateModule(mod.id, { graphic: g || undefined })} size={mod.size} moduleId={mod.id} library={library} />
                     </div>
 
                     {/* Module/face color variants checkboxes */}
