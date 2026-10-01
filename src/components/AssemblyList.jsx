@@ -683,8 +683,8 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   const exportElectricianPDF = () => generateAssemblyListPdf({ type, lang, project, library, assemblies: sortedAssemblies, moduleCatalog: MODULE_CATALOG });
 
   return (
-    <div className="bg-white rounded-lg shadow">
-      <div className="flex justify-between items-center p-4 border-b">
+    <div className={`bg-white rounded-lg shadow ${planLink.active ? 'flex flex-col flex-1 min-h-0' : ''}`}>
+      <div className="flex justify-between items-center p-4 border-b shrink-0">
         <div className="flex items-center gap-4">
           <h2 className="font-semibold">{type === 'outlet' ? t.outlets : t.switches}</h2>
           {/* Group by room toggle */}
@@ -726,6 +726,8 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
         </div>
       </div>
 
+      {/* Cu planul deschis se derulează doar rândurile; bara de sus rămâne fixă */}
+      <div className={planLink.active ? 'flex-1 min-h-0 overflow-y-auto' : ''}>
       {sortedAssemblies.length === 0 ? (
         <p className="p-4 text-gray-500">{noItemsLabel}</p>
       ) : groupByRoom ? (
@@ -781,8 +783,9 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
           {sortedAssemblies.map((assembly, index) => renderAssemblyItem(assembly, index, true))}
         </ul>
       )}
+      </div>
       
-      <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t">
+      <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t shrink-0">
         💡 {groupByRoom ? t.editHintGrouped : t.editHint}
       </div>
     </div>

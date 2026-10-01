@@ -466,7 +466,12 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   return (
     <PlanLinkContext.Provider value={planLinkValue}>
     <div className={planVisible ? 'p-4 flex gap-4 items-start' : 'p-6 max-w-4xl mx-auto'}>
-      <div className={planVisible ? 'w-[30%] min-w-[420px] shrink-0' : ''}>
+      {/* Cu planul deschis: coloana are înălțimea ecranului; sus rămâne fix (proiect, butoane,
+          tab-uri, bara listei), se derulează doar lista de aparataje / conținutul tab-ului */}
+      <div
+        className={planVisible ? 'w-[30%] min-w-[420px] shrink-0 sticky top-16 flex flex-col' : ''}
+        style={planVisible ? { height: 'calc(100vh - 5rem)' } : undefined}
+      >
       <button
         onClick={onBack}
         className="flex items-center gap-1 text-blue-600 mb-4 hover:text-blue-800"
@@ -649,6 +654,9 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
       </div>
 
       {/* Content */}
+      <div className={planVisible
+        ? ((activeTab === 'outlets' || activeTab === 'switches') ? 'flex-1 min-h-0 flex flex-col' : 'flex-1 min-h-0 overflow-y-auto')
+        : ''}>
       {activeTab === 'outlets' && (
         <AssemblyList
           assemblies={outlets}
@@ -690,6 +698,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
       {activeTab === 'boq' && <BOQView project={project} onUpdate={onUpdate} />}
       {activeTab === 'quote' && <QuoteView project={project} onUpdate={onUpdate} />}
       {activeTab === 'profit' && <ProfitView project={project} />}
+      </div>
       
       {/* Preset Selection Dialog */}
       {showPresetDialog && (
