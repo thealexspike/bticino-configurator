@@ -320,6 +320,7 @@ const deleteProject = async (id) => {
                 project={currentProject || selectedProject}
                 onBack={() => setSelectedProject(null)}
                 onUpdate={updateProject}
+                getLibraryForSystem={getLibraryForSystem}
               />
             </div>
           </div>

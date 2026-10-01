@@ -7,3 +7,7 @@ scripts/import.sql
 
 # PDF-uri generate la testare
 *.pdf
+
+# Generate de scripts/migrate-module-ids.mjs
+scripts/*.sql
+scripts/backup-*.json

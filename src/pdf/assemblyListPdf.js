@@ -1,6 +1,7 @@
 import jsPDF from 'jspdf';
 import { getSystemProportions } from '../data/libraries';
 import { adjustBrightness } from '../graphics/colors';
+import { getModuleGraphicType } from '../graphics/moduleGraphics';
 import { isDarkColor, getColorName, getModuleName } from '../lib/library';
 import { removeDiacritics, svgToImage } from './common';
 
@@ -72,40 +73,40 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       svg += `<rect x="${moduleX}" y="${moduleTop}" width="${modWidth}" height="${modHeight}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
       
       if (catalogItem) {
-        const modId = catalogItem.id.toLowerCase();
+        const g = getModuleGraphicType(catalogItem);
         const symbolColor = isDark ? '#ffffff' : '#333333';
         const accentColor = isDark ? '#555555' : '#e8e8e8';
         const holeColor = isDark ? '#ffffff' : '#333333';
         const sw = 0.95;
         
-        if (modId.includes('schuko')) {
+        if (g === 'schuko') {
           svg += `<circle cx="${centerX}" cy="${centerY}" r="${8 * s}" fill="${accentColor}"/>`;
           svg += `<circle cx="${centerX - 3.5 * s}" cy="${centerY}" r="${1.8 * s}" fill="${holeColor}"/>`;
           svg += `<circle cx="${centerX + 3.5 * s}" cy="${centerY}" r="${1.8 * s}" fill="${holeColor}"/>`;
-        } else if (modId.includes('italian')) {
+        } else if (g === 'italian') {
           svg += `<ellipse cx="${centerX}" cy="${centerY}" rx="${3.5 * s}" ry="${8 * s}" fill="${accentColor}"/>`;
           svg += `<circle cx="${centerX}" cy="${centerY - 4 * s}" r="${1.2 * s}" fill="${holeColor}"/>`;
           svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.2 * s}" fill="${holeColor}"/>`;
           svg += `<circle cx="${centerX}" cy="${centerY + 4 * s}" r="${1.2 * s}" fill="${holeColor}"/>`;
-        } else if (modId.includes('usb')) {
+        } else if (g === 'usb') {
           svg += `<rect x="${centerX - 3 * s}" y="${centerY - 5.5 * s}" width="${6 * s}" height="${3.2 * s}" rx="0.5" fill="${holeColor}"/>`;
           svg += `<rect x="${centerX - 3 * s}" y="${centerY + 0.8 * s}" width="${6 * s}" height="${3.2 * s}" rx="0.5" fill="${holeColor}"/>`;
-        } else if (modId.includes('switch') || modId.includes('intrerupator')) {
+        } else if (g === 'switch' || g === 'switch_stair' || g === 'switch_cross') {
           svg += `<line x1="${centerX - 4 * s}" y1="${centerY}" x2="${centerX + 4 * s}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           svg += `<line x1="${centerX}" y1="${centerY - 4 * s}" x2="${centerX}" y2="${centerY + 4 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           svg += `<circle cx="${centerX}" cy="${centerY + 10 * s}" r="${1.5 * s}" fill="#4ade80"/>`;
-        } else if (modId.includes('dimmer') || modId.includes('potentiometru')) {
+        } else if (g === 'dimmer') {
           svg += `<line x1="${centerX - 8 * s}" y1="${centerY - 3 * s}" x2="${centerX - 2 * s}" y2="${centerY - 3 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           svg += `<line x1="${centerX - 5 * s}" y1="${centerY - 6 * s}" x2="${centerX - 5 * s}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           svg += `<line x1="${centerX + 2 * s}" y1="${centerY + 3 * s}" x2="${centerX + 8 * s}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
-        } else if (modId.includes('coax') || modId.includes('tv')) {
+        } else if (g === 'coax') {
           svg += `<circle cx="${centerX}" cy="${centerY}" r="${5 * s}" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
           svg += `<circle cx="${centerX}" cy="${centerY}" r="${1.5 * s}" fill="${symbolColor}"/>`;
-        } else if (modId.includes('utp') || modId.includes('rj45') || modId.includes('data')) {
+        } else if (g === 'utp') {
           svg += `<rect x="${centerX - 4 * s}" y="${centerY - 3 * s}" width="${8 * s}" height="${6 * s}" rx="1" fill="none" stroke="${symbolColor}" stroke-width="${sw}"/>`;
           svg += `<line x1="${centerX - 2 * s}" y1="${centerY - 3 * s}" x2="${centerX - 2 * s}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
           svg += `<line x1="${centerX + 2 * s}" y1="${centerY - 3 * s}" x2="${centerX + 2 * s}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw * 0.7}"/>`;
-        } else if (modId.includes('blank') || modId.includes('tasta')) {
+        } else if (g === 'blank') {
           // Blank
         } else {
           svg += `<rect x="${centerX - 3 * s}" y="${centerY - 3 * s}" width="${6 * s}" height="${6 * s}" fill="${holeColor}"/>`;

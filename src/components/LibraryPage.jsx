@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Plus, Trash2, ChevronLeft, Package, Zap, Settings } from 'lucide-react';
 import { PriceInput } from './PriceInput';
+import { GraphicPicker } from './GraphicPicker';
 import { FRAME_SIZES, SYSTEMS } from '../data/libraries';
 import { getModuleGraphic } from '../graphics/moduleGraphics';
 import { useTranslation, useLanguage } from '../i18n';
@@ -25,6 +26,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
   // New module form state
   const [newModule, setNewModule] = useState({
     id: '',
+    graphic: '',
     moduleHasColorVariants: false,
     faceHasColorVariants: true,
     moduleSku: '',
@@ -125,10 +127,11 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
     }
     safeOnUpdate({
       ...library,
-      modules: [...library.modules, { ...newModule }],
+      modules: [...library.modules, { ...newModule, graphic: newModule.graphic || undefined }],
     });
     setNewModule({
       id: '',
+      graphic: '',
       moduleHasColorVariants: false,
       faceHasColorVariants: true,
       moduleSku: '',
@@ -595,6 +598,10 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                 </div>
               </div>
               
+              <div className="mb-4">
+                <GraphicPicker value={newModule.graphic} onChange={(g) => setNewModule({ ...newModule, graphic: g })} />
+              </div>
+
               {/* Module color variants checkbox */}
               <div className="mb-4 flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -721,7 +728,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
           <div className="divide-y">
             {library.modules.map((mod) => {
               const displayName = getModuleName(mod, lang);
-              const GraphicComponent = getModuleGraphic(mod.id, mod.size);
+              const GraphicComponent = getModuleGraphic(mod);
               return (
               <div key={mod.id} className="p-4">
                 {editingModule === mod.id ? (
@@ -797,6 +804,10 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                       </div>
                     </div>
                     
+                    <div className="mb-4">
+                      <GraphicPicker value={mod.graphic} onChange={(g) => updateModule(mod.id, { graphic: g || undefined })} />
+                    </div>
+
                     {/* Module/face color variants checkboxes */}
                     <div className="mb-4 flex flex-wrap gap-4">
                       <label className="flex items-center gap-2 cursor-pointer">

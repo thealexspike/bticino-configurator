@@ -165,8 +165,33 @@ export const getGraphicTypeFromId = (moduleId, moduleSize = 1) => {
   return moduleSize === 2 ? 'generic2m' : 'generic1m';
 };
 
-// Get graphic component for a module ID
-export const getModuleGraphic = (moduleId, moduleSize = 1) => {
-  const type = getGraphicTypeFromId(moduleId, moduleSize);
+// Graficile predefinite dintre care adminul alege la definirea unui modul
+export const GRAPHIC_TYPES = [
+  { id: 'schuko', nameEn: 'Schuko outlet', nameRo: 'Priză Schuko', size: 2 },
+  { id: 'italian', nameEn: 'Italian / bivalent outlet', nameRo: 'Priză bivalentă', size: 1 },
+  { id: 'usb', nameEn: 'USB outlet', nameRo: 'Priză USB', size: 1 },
+  { id: 'coax', nameEn: 'TV coaxial', nameRo: 'TV coaxial', size: 1 },
+  { id: 'utp', nameEn: 'RJ45 / data', nameRo: 'RJ45 / date', size: 1 },
+  { id: 'switch', nameEn: 'Simple switch', nameRo: 'Întrerupător simplu', size: 1 },
+  { id: 'switch_stair', nameEn: 'Stair switch', nameRo: 'Cap scară', size: 1 },
+  { id: 'switch_cross', nameEn: 'Cross switch', nameRo: 'Cap cruce', size: 1 },
+  { id: 'dimmer', nameEn: 'Dimmer', nameRo: 'Variator', size: 2 },
+  { id: 'blank', nameEn: 'Blank', nameRo: 'Obturator', size: 1 },
+  { id: 'generic1m', nameEn: 'Generic 1M', nameRo: 'Generic 1M', size: 1 },
+  { id: 'generic2m', nameEn: 'Generic 2M', nameRo: 'Generic 2M', size: 2 },
+];
+
+// Tipul de grafică al unui modul din catalog: cel ales explicit (module.graphic),
+// altfel dedus din id
+export const getModuleGraphicType = (module) => {
+  if (module?.graphic && ModuleGraphicsByType[module.graphic]) return module.graphic;
+  return getGraphicTypeFromId(module?.id, module?.size || 1);
+};
+
+// Componenta de grafică; acceptă un modul din catalog sau (id, dimensiune)
+export const getModuleGraphic = (moduleOrId, moduleSize = 1) => {
+  const type = (moduleOrId && typeof moduleOrId === 'object')
+    ? getModuleGraphicType(moduleOrId)
+    : getGraphicTypeFromId(moduleOrId, moduleSize);
   return ModuleGraphicsByType[type] || ModuleGraphicsByType.generic1m;
 };

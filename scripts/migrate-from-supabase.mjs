@@ -13,7 +13,7 @@
 // afișată la consolă. Conturile care există deja în D1 (același email)
 // sunt păstrate, iar proiectele lor vechi le sunt atașate.
 
-import { randomUUID, randomBytes, pbkdf2Sync } from 'node:crypto';
+import { randomBytes, pbkdf2Sync } from 'node:crypto';
 import { writeFileSync } from 'node:fs';
 
 const SUPABASE_URL = 'https://xdrexercxxbgsobmtvfr.supabase.co';

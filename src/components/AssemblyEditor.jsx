@@ -441,6 +441,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                       <div className="absolute inset-0 flex items-center justify-center">
                         <ModuleImage 
                           moduleId={slot.moduleId} 
+                          graphic={slot.catalogItem?.graphic}
                           color={assembly.color}
                           colorHex={colorInfo?.hex}
                           width={slot.size * moduleWidth1M}
@@ -581,6 +582,8 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                       >
                         <ModuleImage 
                           moduleId={mod.id} 
+                          graphic={mod.graphic}
+                          moduleSize={mod.size}
                           color="white"
                           width={(() => { const p = getSystemProportions(library); const ar = mod.size === 2 ? (p.moduleWidth1M * 2 / p.moduleHeight) : (p.moduleWidth1M / p.moduleHeight); return Math.round(52 * ar); })()}
                           height={52}

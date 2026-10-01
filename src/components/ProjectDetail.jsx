@@ -11,7 +11,7 @@ import { useTranslation, useLanguage } from '../i18n';
 import { generateId, generateAssemblyCode, reorderAssembly, createAssembly, createModuleInstance } from '../lib/assemblies';
 import { getAvailableColors, getSystemName, getColorName, LibraryContext } from '../lib/library';
 
-export function ProjectDetail({ project, onBack, onUpdate }) {
+export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }) {
   const [activeTab, setActiveTab] = useState('outlets');
   const [editingAssembly, setEditingAssembly] = useState(null);
   const [showPresetDialog, setShowPresetDialog] = useState(null); // 'outlet' or 'switch' or null
@@ -19,6 +19,7 @@ export function ProjectDetail({ project, onBack, onUpdate }) {
   const [editProjectName, setEditProjectName] = useState(project.name);
   const [editClientName, setEditClientName] = useState(project.clientName || '');
   const [editProjectSystem, setEditProjectSystem] = useState(project.system || 'bticino');
+  const [fallbackColor, setFallbackColor] = useState('');
   const [confirmDuplicateId, setConfirmDuplicateId] = useState(null);
   const [duplicateTimestamps, setDuplicateTimestamps] = useState([]);
   const [showAiImport, setShowAiImport] = useState(false);
@@ -34,12 +35,28 @@ export function ProjectDetail({ project, onBack, onUpdate }) {
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
   const switches = project.assemblies.filter(a => a.type === 'switch');
 
+  // La schimbarea sistemului, culorile care nu există în sistemul nou se înlocuiesc
+  // cu o culoare din sistemul nou (nu se inventează culori)
+  const targetLibrary = getLibraryForSystem ? getLibraryForSystem(editProjectSystem) : library;
+  const targetColors = getAvailableColors(targetLibrary);
+  const systemChanged = editProjectSystem !== (project.system || 'bticino');
+  const assembliesWithMissingColor = systemChanged
+    ? project.assemblies.filter(a => !targetColors.some(c => c.id === a.color))
+    : [];
+  const effectiveFallbackColor = targetColors.some(c => c.id === fallbackColor)
+    ? fallbackColor
+    : (targetColors[0]?.id || 'white');
+
   const saveProjectDetails = () => {
+    const assemblies = assembliesWithMissingColor.length > 0
+      ? project.assemblies.map(a => (targetColors.some(c => c.id === a.color) ? a : { ...a, color: effectiveFallbackColor }))
+      : project.assemblies;
     onUpdate({
       ...project,
       name: editProjectName.trim() || project.name,
       clientName: editClientName.trim(),
       system: editProjectSystem,
+      assemblies,
     });
     setEditingProject(false);
   };
@@ -367,6 +384,20 @@ export function ProjectDetail({ project, onBack, onUpdate }) {
                 ))}
               </select>
             </div>
+            {assembliesWithMissingColor.length > 0 && (
+              <div className="bg-amber-50 border border-amber-200 rounded p-3 text-sm">
+                <p className="text-amber-800 mb-2">{t.colorsNotInSystem.replace('{n}', assembliesWithMissingColor.length)}</p>
+                <select
+                  value={effectiveFallbackColor}
+                  onChange={(e) => setFallbackColor(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                >
+                  {targetColors.map(c => (
+                    <option key={c.id} value={c.id}>{getColorName(c.id, targetLibrary, lang)}</option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className="flex gap-2 pt-2">
               <button
                 onClick={saveProjectDetails}

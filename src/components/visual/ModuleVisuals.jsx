@@ -5,8 +5,8 @@ import { ModuleGraphicsByType, getGraphicTypeFromId, getModuleGraphic } from '..
 import { isDarkColor } from '../../lib/library';
 
 // Module image component
-export const ModuleImage = ({ moduleId, color, colorHex, width = 60, height = 80, className = '', moduleSize = 1 }) => {
-  const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
+export const ModuleImage = ({ moduleId, graphic, color, colorHex, width = 60, height = 80, className = '', moduleSize = 1 }) => {
+  const graphicType = (graphic && ModuleGraphicsByType[graphic]) ? graphic : getGraphicTypeFromId(moduleId, moduleSize);
   const SvgComponent = ModuleGraphicsByType[graphicType] || ModuleGraphicsByType.generic1m;
   const effectiveColor = colorHex || color;
   
@@ -18,8 +18,8 @@ export const ModuleImage = ({ moduleId, color, colorHex, width = 60, height = 80
 };
 
 // Thumbnail for module list in Library
-export const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
-  const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
+export const ModuleThumbnail = ({ moduleId, graphic, size = 40, moduleSize = 1 }) => {
+  const graphicType = (graphic && ModuleGraphicsByType[graphic]) ? graphic : getGraphicTypeFromId(moduleId, moduleSize);
   // Real BTicino proportions: 1M = 8.5 x 31, 2M = 17 x 31
   const is2M = graphicType === 'schuko' || graphicType === 'dimmer' || graphicType === 'generic2m' || moduleSize === 2;
   const aspectRatio = is2M ? (17 / 31) : (8.5 / 31);
@@ -116,7 +116,7 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
         }}
       >
         {moduleSlots.map((slot, idx) => {
-          const ModuleGraphic = slot.catalogItem ? getModuleGraphic(slot.catalogItem.id, slot.size) : null;
+          const ModuleGraphic = slot.catalogItem ? getModuleGraphic(slot.catalogItem) : null;
           return (
             <div
               key={slot.id || idx}
