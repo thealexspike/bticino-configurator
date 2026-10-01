@@ -971,6 +971,7 @@ const SYSTEMS = [
   { id: 'bticino', nameEn: 'BTicino Living Now', nameRo: 'BTicino Living Now' },
   { id: 'gewiss', nameEn: 'Gewiss Chorus', nameRo: 'Gewiss Chorus' },
   { id: 'schneider', nameEn: 'Schneider Noua Unica', nameRo: 'Schneider Noua Unica' },
+  { id: 'generic', nameEn: 'Generic Modular (estimate)', nameRo: 'Sistem modular generic (estimativ)' },
 ];
 
 // Helpers for dynamic colors/sizes from library
@@ -1374,10 +1375,76 @@ const DEFAULT_LIBRARY_SCHNEIDER = {
   ],
 };
 
+// Generic modular placeholder library - brand-agnostic, for estimates
+// No SKUs; prices are indicative (same as the Gewiss defaults) and editable in the Library.
+// Module IDs, sizes and colors match the Gewiss defaults so a project can later be switched to a real system.
+// hasModuleFaces: false -> modules are single pieces, no separate face/key lines in BOQ, quote or profit.
+const DEFAULT_LIBRARY_GENERIC = {
+  systemId: 'generic',
+  systemName: 'Generic Modular',
+  hasModuleFaces: false,
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#333333' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: '', purchasePrice: 8, markup: 25, price: 12.1 },
+    3: { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    4: { sku: '', purchasePrice: 13, markup: 25, price: 19.66 },
+    6: { sku: '', purchasePrice: 17, markup: 25, price: 25.71 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: '', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: '', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: '', purchasePrice: 20, markup: 25, price: 30.25 },
+  },
+  installFaces: {
+    2: { sku: '', purchasePrice: 5, markup: 25, price: 7.56 },
+    3: { sku: '', purchasePrice: 6, markup: 25, price: 9.08 },
+    4: { sku: '', purchasePrice: 8, markup: 25, price: 12.1 },
+    6: { sku: '', purchasePrice: 11, markup: 25, price: 16.64 },
+  },
+  decorFaces: {
+    '2-white': { sku: '', purchasePrice: 8, markup: 25, price: 12.1 },
+    '2-black': { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-white': { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-black': { sku: '', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-white': { sku: '', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-black': { sku: '', purchasePrice: 15, markup: 25, price: 22.69 },
+    '6-white': { sku: '', purchasePrice: 16, markup: 25, price: 24.2 },
+    '6-black': { sku: '', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  modules: [
+    { id: 'schuko', standardType: 'schuko', hasColorVariants: false, moduleSku: '', nameEn: 'Schuko Outlet', nameRo: 'Priză Schuko', size: 2, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'italian', standardType: 'italian', hasColorVariants: false, moduleSku: '', nameEn: 'Bivalent Outlet', nameRo: 'Priză Bivalentă', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 12, moduleMarkup: 25, modulePrice: 18.15, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'usb', standardType: 'usb', hasColorVariants: false, moduleSku: '', nameEn: 'USB Outlet', nameRo: 'Priză USB', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 45, moduleMarkup: 25, modulePrice: 68.06, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_simple', standardType: 'switch_simple', hasColorVariants: false, moduleSku: '', nameEn: 'Simple Switch', nameRo: 'Întrerupător Simplu', size: 1, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 10, moduleMarkup: 25, modulePrice: 15.13, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_stair', standardType: 'switch_stair', hasColorVariants: false, moduleSku: '', nameEn: 'Stair Switch', nameRo: 'Întrerupător Cap Scară', size: 2, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_cross', standardType: 'switch_cross', hasColorVariants: false, moduleSku: '', nameEn: 'Cross Switch', nameRo: 'Întrerupător Cap Cruce', size: 2, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'dimmer', standardType: 'dimmer', hasColorVariants: false, moduleSku: '', nameEn: 'Dimmer', nameRo: 'Variator (Dimmer)', size: 1, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 55, moduleMarkup: 25, modulePrice: 83.19, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'blank', standardType: 'blank', hasColorVariants: false, moduleSku: '', nameEn: 'Blank Cover', nameRo: 'Obturator', size: 1, category: 'other', faceSku: { white: '', black: '' }, modulePurchasePrice: 3, moduleMarkup: 25, modulePrice: 4.54, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'coax', standardType: 'coax', hasColorVariants: false, moduleSku: '', nameEn: 'TV Coaxial Outlet', nameRo: 'Priză TV Coaxial', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 20, moduleMarkup: 25, modulePrice: 30.25, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'rj45', standardType: 'rj45', hasColorVariants: false, moduleSku: '', nameEn: 'RJ45 Data Outlet', nameRo: 'Priză Date RJ45', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 22, moduleMarkup: 25, modulePrice: 33.28, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+  ],
+  presets: [
+    { id: 'double_schuko', nameEn: 'Double Schuko Outlet', nameRo: 'Priză Dublă Schuko', type: 'outlet', size: 4, modules: ['schuko', 'schuko'] },
+    { id: 'single_schuko', nameEn: 'Single Schuko Outlet', nameRo: 'Priză Simplă Schuko', type: 'outlet', size: 2, modules: ['schuko'] },
+    { id: 'schuko_usb', nameEn: 'Schuko + USB', nameRo: 'Schuko + USB', type: 'outlet', size: 3, modules: ['schuko', 'usb'] },
+    { id: 'tv_data', nameEn: 'TV + Data', nameRo: 'TV + Date', type: 'outlet', size: 2, modules: ['coax', 'rj45'] },
+    { id: 'double_switch', nameEn: 'Double Switch', nameRo: 'Întrerupător Dublu', type: 'switch', size: 2, modules: ['switch_simple', 'switch_simple'] },
+    { id: 'single_switch', nameEn: 'Single Switch', nameRo: 'Întrerupător Simplu', type: 'switch', size: 2, modules: ['switch_simple', 'blank'] },
+    { id: 'triple_switch', nameEn: 'Triple Switch', nameRo: 'Întrerupător Triplu', type: 'switch', size: 3, modules: ['switch_simple', 'switch_simple', 'switch_simple'] },
+    { id: 'stair_switch', nameEn: 'Stair Switch', nameRo: 'Întrerupător Cap Scară', type: 'switch', size: 2, modules: ['switch_stair'] },
+  ],
+};
+
 const DEFAULT_LIBRARIES = {
   bticino: DEFAULT_LIBRARY,
   gewiss: DEFAULT_LIBRARY_GEWISS,
   schneider: DEFAULT_LIBRARY_SCHNEIDER,
+  generic: DEFAULT_LIBRARY_GENERIC,
 };
 
 // ============================================================================
@@ -1428,6 +1495,9 @@ const SYSTEM_PROPORTIONS = {
     moduleCornerRadius: 1,
   },
 };
+
+// Generic placeholder system looks like Gewiss
+SYSTEM_PROPORTIONS.generic = SYSTEM_PROPORTIONS.gewiss;
 
 const getSystemProportions = (library) => {
   const sysId = library?.systemId || 'bticino';
@@ -4016,7 +4086,9 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
                     </div>
                     <div>
                       <span className="font-medium">{getModuleName(mod, lang)}</span>
-                      <span className="text-xs text-gray-400 ml-2">+ {t.face}</span>
+                      {library?.hasModuleFaces !== false && (
+                        <span className="text-xs text-gray-400 ml-2">+ {t.face}</span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -4158,8 +4230,11 @@ function BOQView({ project, onUpdate }) {
           };
           items.modules[modKey].qty++;
 
+          // Systems without separate module faces (e.g. generic placeholder)
+          if (library?.hasModuleFaces === false) return;
+
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
-          const mfSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
+          const mfSku =getModuleFaceSku(mod.moduleId, assembly.color, library);
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
             name: `${translatedName} - ${t.face}`, 
             sku: mfSku,
@@ -4388,7 +4463,7 @@ function BOQView({ project, onUpdate }) {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(150, 150, 150);
       doc.text(
-        `BTicino Living Now Configurator - ${pageLabel} ${i} ${ofLabel} ${pageCount}`,
+        `${getSystemName(project.system, lang)} - ${pageLabel} ${i} ${ofLabel} ${pageCount}`,
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 10,
         { align: 'center' }
@@ -4595,6 +4670,7 @@ function QuoteView({ project, onUpdate }) {
           items.modules[modKey].qty++;
 
           // Module Face
+          if (library?.hasModuleFaces === false) return;
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
           const mfPrice = getModuleFacePrice(mod.moduleId, assembly.color, library);
           items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
@@ -4881,7 +4957,7 @@ function QuoteView({ project, onUpdate }) {
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(150, 150, 150);
       doc.text(
-        `BTicino Living Now Configurator - Page ${i} of ${pageCount}`,
+        `${getSystemName(project.system, lang)} - Page ${i} of ${pageCount}`,
         pageWidth / 2,
         doc.internal.pageSize.getHeight() - 10,
         { align: 'center' }
@@ -5140,8 +5216,9 @@ function ProfitView({ project }) {
           items.modules[modKey].qty++;
 
           // Module Face
+          if (library?.hasModuleFaces === false) return;
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
-          const mfPurchase = catalogItem.facePurchasePrice?.[assembly.color] || 0;
+          const mfPurchase =catalogItem.facePurchasePrice?.[assembly.color] || 0;
           const mfPrice = catalogItem.facePrice?.[assembly.color] || 0;
           const mfSellingWithoutVat = mfPrice / (1 + VAT_RATE);
           
@@ -7118,6 +7195,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       bticino: { ...DEFAULT_LIBRARY },
       gewiss: { ...DEFAULT_LIBRARY_GEWISS },
       schneider: { ...DEFAULT_LIBRARY_SCHNEIDER },
+      generic: { ...DEFAULT_LIBRARY_GENERIC },
     };
 
     // Load from D1 — overlay defaults with saved data
