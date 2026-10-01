@@ -3,6 +3,10 @@ import { Sparkles, ChevronDown, ChevronUp, X } from 'lucide-react';
 import { CHANGELOG } from '../data/changelog';
 import { useLanguage } from '../i18n';
 
+// Pe ecrane late (marginea liberă are loc de panou) stă fix în stânga jos;
+// pe ecrane înguste rămâne în pagină, deasupra formularului de proiect nou.
+const PLACEMENT = 'min-[1600px]:fixed min-[1600px]:left-4 min-[1600px]:bottom-4 min-[1600px]:w-80 min-[1600px]:mb-0 min-[1600px]:z-30';
+
 const SEEN_KEY = 'configurator-aparataj-changelog-seen';
 const COLLAPSED_KEY = 'configurator-aparataj-changelog-collapsed';
 
@@ -54,7 +58,7 @@ export function WhatsNew() {
     return (
       <button
         onClick={expand}
-        className="mb-6 w-full bg-white rounded-lg shadow px-4 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50"
+        className={`mb-6 w-full bg-white rounded-lg shadow px-4 py-3 flex items-center justify-between text-sm text-gray-600 hover:bg-gray-50 ${PLACEMENT}`}
       >
         <span className="flex items-center gap-2">
           <Sparkles className="w-4 h-4 text-amber-500" />
@@ -67,7 +71,7 @@ export function WhatsNew() {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow mb-6 border-l-4 border-amber-400">
+    <div className={`bg-white rounded-lg shadow mb-6 border-l-4 border-amber-400 min-[1600px]:max-h-[70vh] min-[1600px]:overflow-y-auto ${PLACEMENT}`}>
       <div className="flex items-center justify-between px-4 pt-4">
         <h2 className="font-semibold flex items-center gap-2">
           <Sparkles className="w-5 h-5 text-amber-500" />
