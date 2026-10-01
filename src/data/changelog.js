@@ -6,8 +6,10 @@
 //   title  - titlu scurt, { ro, en }
 //   items  - ce s-a schimbat, din perspectiva utilizatorului, { ro: [...], en: [...] }
 //
-// Scrie doar ce vede un utilizator obișnuit. Modificările interne sau doar pentru
-// administratori nu intră aici.
+// Adaugă o notă DOAR când se finalizează o funcție importantă pentru utilizatori,
+// nu la fiecare modificare. Fix-urile mărunte, ajustările de interfață, lucrurile
+// interne sau doar pentru administratori nu intră aici. Mai multe funcții mici
+// livrate împreună pot intra într-o singură notă.
 
 export const CHANGELOG = [
   {
