@@ -1,7 +1,7 @@
 import { json, readJson, requireUser, uuid, nowIso } from '../../../_shared/auth.js';
 
 // PUT /api/projects/:id/assemblies — sincronizează întreaga listă de ansambluri
-// Body: { assemblies: [{ id, type, code, room, size, color, wall_box_type, modules }] }
+// Body: { assemblies: [{ id, type, code, room, size, color, wall_box_type, modules, notes }] }
 // Răspuns: { mapping: { <idLocal>: <idServer> } } pentru ansamblurile nou create
 export async function onRequestPut(context) {
   const denied = requireUser(context);
@@ -37,26 +37,38 @@ export async function onRequestPut(context) {
     const fields = [
       String(a.type || 'outlet'), String(a.code || ''), String(a.room || ''),
       Number(a.size) || 2, String(a.color || ''), String(a.wall_box_type || 'masonry'),
-      modules,
+      modules, String(a.notes || ''),
     ];
 
     if (existingIds.has(localId)) {
       statements.push(env.DB.prepare(
         `UPDATE assemblies SET type = ?1, code = ?2, room = ?3, size = ?4,
-         color = ?5, wall_box_type = ?6, modules = ?7 WHERE id = ?8`
+         color = ?5, wall_box_type = ?6, modules = ?7, notes = ?8 WHERE id = ?9`
       ).bind(...fields, localId));
     } else {
       const serverId = uuid();
       mapping[localId] = serverId;
       statements.push(env.DB.prepare(
-        `INSERT INTO assemblies (id, project_id, type, code, room, size, color, wall_box_type, modules, created_at)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10)`
+        `INSERT INTO assemblies (id, project_id, type, code, room, size, color, wall_box_type, modules, notes, created_at)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`
       ).bind(serverId, project.id, ...fields, nowIso()));
     }
   }
 
   if (statements.length > 0) {
-    await env.DB.batch(statements);
+    try {
+      await env.DB.batch(statements);
+    } catch (err) {
+      // Bază de date creată înainte de câmpul „observații": adaugă coloana și reîncearcă
+      if (!/column.*notes/i.test(String(err?.message || err))) throw err;
+      try {
+        await env.DB.prepare("ALTER TABLE assemblies ADD COLUMN notes TEXT DEFAULT ''").run();
+      } catch (alterErr) {
+        // O altă cerere a adăugat deja coloana
+        if (!/duplicate column/i.test(String(alterErr?.message || alterErr))) throw alterErr;
+      }
+      await env.DB.batch(statements);
+    }
   }
 
   return json({ ok: true, mapping });

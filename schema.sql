@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS assemblies (
   color TEXT DEFAULT '',
   wall_box_type TEXT DEFAULT 'masonry',
   modules TEXT NOT NULL DEFAULT '[]',
+  notes TEXT DEFAULT '',
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 

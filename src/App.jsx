@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy, Upload, Eye, EyeOff } from 'lucide-react';
+import { Plus, Trash2, ChevronRight, ChevronLeft, Package, Zap, Settings, FileText, Home, Box, Layers, Globe, Copy, Upload, Eye, EyeOff, MessageSquare, ArrowRightLeft } from 'lucide-react';
 import { api } from './api';
 import Auth from './Auth';
 import AdminUsers from './AdminUsers';
@@ -63,6 +63,10 @@ const TRANSLATIONS = {
     noSwitches: 'No switches yet.',
     modules: 'modules',
     noRoom: 'No room',
+    notes: 'Notes',
+    addNote: 'Add note...',
+    moveToSwitches: 'Move to switches',
+    moveToOutlets: 'Move to outlets',
     used: 'used',
     overCapacity: 'OVER CAPACITY!',
     editProject: 'Edit Project',
@@ -296,6 +300,10 @@ const TRANSLATIONS = {
     noSwitches: 'Nu există întrerupătoare încă.',
     modules: 'module',
     noRoom: 'Fără cameră',
+    notes: 'Observații',
+    addNote: 'Adaugă observație...',
+    moveToSwitches: 'Mută la întrerupătoare',
+    moveToOutlets: 'Mută la prize',
     used: 'folosit',
     overCapacity: 'CAPACITATE DEPĂȘITĂ!',
     editProject: 'Editează Proiect',
@@ -1770,6 +1778,7 @@ const createAssembly = (type, code, room = '', library = null) => ({
   size: 2,
   color: library?.availableColors?.[0]?.id || 'white',
   wallBoxType: 'masonry',
+  notes: '',
   modules: [],
 });
 
@@ -2021,6 +2030,17 @@ function ProjectDetail({ project, onBack, onUpdate }) {
     onUpdate({
       ...project,
       assemblies: project.assemblies.filter(a => a.id !== id),
+    });
+  };
+
+  // Move an assembly between outlets and switches; it gets the next free code in the target list
+  const moveAssemblyToType = (assemblyId, newType) => {
+    const source = project.assemblies.find(a => a.id === assemblyId);
+    if (!source || source.type === newType) return;
+    const code = generateAssemblyCode(project.assemblies, newType);
+    onUpdate({
+      ...project,
+      assemblies: project.assemblies.map(a => a.id === assemblyId ? { ...a, type: newType, code } : a),
     });
   };
 
@@ -2399,6 +2419,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           confirmDuplicateId={confirmDuplicateId}
           onReorder={handleReorder}
           onUpdate={updateAssembly}
+          onMoveToType={moveAssemblyToType}
           existingRooms={existingRooms}
         />
       )}
@@ -2417,6 +2438,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
           confirmDuplicateId={confirmDuplicateId}
           onReorder={handleReorder}
           onUpdate={updateAssembly}
+          onMoveToType={moveAssemblyToType}
           existingRooms={existingRooms}
         />
       )}
@@ -2552,7 +2574,7 @@ function ProjectDetail({ project, onBack, onUpdate }) {
 }
 
 // --- Assembly List ---
-function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, existingRooms = [] }) {
+function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, onMoveToType, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [dragOverRoom, setDragOverRoom] = useState(null);
@@ -2562,6 +2584,9 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
   const [editingRoomValue, setEditingRoomValue] = useState('');
   const [roomDropdownOpen, setRoomDropdownOpen] = useState(false);
   const [groupByRoom, setGroupByRoom] = useState(false);
+  const [editingNotesId, setEditingNotesId] = useState(null);
+  const [editingNotesValue, setEditingNotesValue] = useState('');
+  const skipNotesBlur = React.useRef(false);
 
   // Get library and translations from context
   const library = React.useContext(LibraryContext);
@@ -2750,6 +2775,37 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     setTimeout(() => {
       handleRoomSubmit(assembly);
     }, 150);
+  };
+
+  // Notes editing handlers
+  const startEditingNotes = (assembly, e) => {
+    e.stopPropagation();
+    skipNotesBlur.current = false;
+    setEditingNotesId(assembly.id);
+    setEditingNotesValue(assembly.notes || '');
+  };
+
+  const handleNotesSubmit = (assembly) => {
+    if (skipNotesBlur.current) {
+      skipNotesBlur.current = false;
+      return;
+    }
+    const notes = editingNotesValue.trim();
+    if (onUpdate && notes !== (assembly.notes || '')) {
+      onUpdate({ ...assembly, notes });
+    }
+    setEditingNotesId(null);
+    setEditingNotesValue('');
+  };
+
+  const handleNotesKeyDown = (e, assembly) => {
+    if (e.key === 'Enter') {
+      e.target.blur();
+    } else if (e.key === 'Escape') {
+      skipNotesBlur.current = true;
+      setEditingNotesId(null);
+      setEditingNotesValue('');
+    }
   };
 
   // Render a single assembly item
@@ -2952,6 +3008,32 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
               </div>
             )}
           </div>
+
+          {/* Notes editor */}
+          <div className="text-sm flex items-center gap-1 mt-1">
+            <MessageSquare className="w-3 h-3 text-gray-400 flex-shrink-0" />
+            {editingNotesId === assembly.id ? (
+              <input
+                type="text"
+                value={editingNotesValue}
+                onChange={(e) => setEditingNotesValue(e.target.value)}
+                onBlur={() => handleNotesSubmit(assembly)}
+                onKeyDown={(e) => handleNotesKeyDown(e, assembly)}
+                onClick={(e) => e.stopPropagation()}
+                placeholder={t.addNote}
+                className="border rounded px-2 py-0.5 text-sm flex-1 max-w-md"
+                autoFocus
+              />
+            ) : (
+              <span
+                className={`hover:bg-blue-100 px-1 rounded cursor-text ${assembly.notes ? 'text-gray-700' : 'text-gray-400 italic'}`}
+                onClick={(e) => startEditingNotes(assembly, e)}
+                title={t.notes}
+              >
+                {assembly.notes || t.addNote}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3">
@@ -2968,6 +3050,15 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
             >
               <Settings className="w-4 h-4" />
             </button>
+            {onMoveToType && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
+                className="text-purple-500 hover:text-purple-700 p-2"
+                title={type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}
+              >
+                <ArrowRightLeft className="w-4 h-4" />
+              </button>
+            )}
             {confirmDuplicateId === assembly.id ? (
               <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <button
@@ -3284,6 +3375,15 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
         doc.setTextColor(120, 120, 120);
         const truncatedModules = moduleNames.length > 60 ? moduleNames.substring(0, 57) + '...' : moduleNames;
         doc.text(truncatedModules, 13, yPos + 18);
+
+        // Info line 3: Notes
+        if (assembly.notes) {
+          const noteLabel = lang === 'ro' ? 'Obs' : 'Note';
+          const noteLines = doc.splitTextToSize(`${noteLabel}: ${removeDiacritics(assembly.notes)}`, 130);
+          doc.setFont('helvetica', 'italic');
+          doc.setTextColor(90, 90, 90);
+          doc.text(noteLines.length > 1 ? noteLines[0] + '...' : noteLines[0], 13, yPos + 24);
+        }
         
         // Generate and add SVG sketch — fit to card area
         const maxImgWidth = 50; // mm in PDF
@@ -3527,6 +3627,7 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
   const [dragOverFace, setDragOverFace] = useState(false);
   const facePlateContainerRef = React.useRef(null);
   const [facePlateScale, setFacePlateScale] = useState(1);
+  const [notesValue, setNotesValue] = useState(assembly.notes || '');
 
   // Get library and translations from context
   const library = React.useContext(LibraryContext);
@@ -3801,6 +3902,22 @@ function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
               <option value="drywall">{t.drywall}</option>
             </select>
           </div>
+        </div>
+
+        <div className="mb-6">
+          <label className="block text-sm font-medium text-gray-700 mb-1">{t.notes}</label>
+          <input
+            type="text"
+            value={notesValue}
+            onChange={(e) => setNotesValue(e.target.value)}
+            onBlur={() => {
+              const notes = notesValue.trim();
+              if (notes !== (assembly.notes || '')) updateField('notes', notes);
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
+            placeholder={t.addNote}
+            className="w-full border rounded px-3 py-2"
+          />
         </div>
 
         {/* Auto-derived SKUs */}
@@ -7179,6 +7296,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
         size: a.size,
         color: a.color,
         wallBoxType: a.wall_box_type || 'masonry',
+        notes: a.notes || '',
         modules: a.modules || [],
       })),
     }));
@@ -7265,6 +7383,7 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
       size: a.size,
       color: a.color,
       wall_box_type: a.wallBoxType || 'masonry',
+      notes: a.notes || '',
       modules: a.modules,
     })));
 
