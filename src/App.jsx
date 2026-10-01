@@ -64,6 +64,51 @@ const librariesFromRows = (rows) => {
   return libs;
 };
 
+// Presetele sunt comune tuturor sistemelor (modulele au aceleași id-uri peste tot).
+// Se țin în global_library, pe rândul PRESETS_ROW_ID. Până la prima salvare, lista
+// comună se obține unificând presetele vechi, salvate pe fiecare sistem.
+const PRESETS_ROW_ID = 'presets';
+const presetKey = (p) => `${p.type}|${p.size}|${(p.modules || []).join('+')}`;
+
+const mergeSystemPresets = (libs) => {
+  const seenKeys = new Set();
+  const seenIds = new Set();
+  const seenNames = new Set();
+  const out = [];
+  for (const sys of ['bticino', 'generic', 'gewiss', 'schneider']) {
+    for (const p of libs[sys]?.presets || []) {
+      const key = presetKey(p);
+      if (seenKeys.has(key)) continue;
+      seenKeys.add(key);
+      let id = p.id || `preset_${out.length + 1}`;
+      for (let n = 2; seenIds.has(id); n++) id = `${p.id}_${n}`;
+      seenIds.add(id);
+      // Același nume, conținut diferit (ex. cap scară 1M + obturator vs. cap scară 2M)
+      const n = (p.modules || []).length;
+      const clash = seenNames.has(p.nameRo || p.nameEn);
+      const named = clash
+        ? { ...p, nameRo: `${p.nameRo} – ${n} ${n === 1 ? 'modul' : 'module'}`, nameEn: `${p.nameEn} – ${n} ${n === 1 ? 'module' : 'modules'}` }
+        : p;
+      seenNames.add(named.nameRo || named.nameEn);
+      out.push({ ...named, id });
+    }
+  }
+  return out;
+};
+
+// Rezultat: { libs (fără presete proprii), presets (comune), fromRow (există deja rândul comun) }
+const splitLibrariesAndPresets = (rows) => {
+  const libs = librariesFromRows(rows);
+  const row = (rows || []).find(r => r.id === PRESETS_ROW_ID);
+  const fromRow = Array.isArray(row?.library_data?.presets);
+  const presets = fromRow ? row.library_data.presets : mergeSystemPresets(libs);
+  for (const sys of Object.keys(libs)) {
+    const { presets: _legacy, ...rest } = libs[sys];
+    libs[sys] = rest;
+  }
+  return { libs, presets, fromRow };
+};
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -104,6 +149,9 @@ export default function App() {
 
   // Librăriile tuturor sistemelor (default-uri suprascrise de ce e salvat pe server)
   const [libraries, setLibraries] = useState({});
+  const [commonPresets, setCommonPresets] = useState([]);
+  // O librărie de sistem, completată cu presetele comune
+  const withPresets = (lib) => (lib ? { ...lib, presets: commonPresets } : lib);
 
   // Încarcă proiectele și librăriile la autentificare
   useEffect(() => {
@@ -118,16 +166,22 @@ export default function App() {
       .catch(error => { console.error('Error loading library:', error); return []; })
       .then(rows => {
         if (cancelled) return;
-        const libs = librariesFromRows(rows);
+        const { libs, presets, fromRow } = splitLibrariesAndPresets(rows);
         setLibraries(libs);
         setLibrary(libs.bticino);
+        setCommonPresets(presets);
+        // Prima încărcare de către un admin: lista unificată devine lista comună
+        const email = session?.user?.email || '';
+        if (!fromRow && email.toLowerCase().endsWith('@atelierazimut.com')) {
+          api.saveLibrary(PRESETS_ROW_ID, { presets }).catch(err => console.error('Error saving presets:', err));
+        }
       });
 
     return () => { cancelled = true; };
   }, [session]);
 
   const getLibraryForSystem = (systemId) => {
-    return libraries[systemId] || DEFAULT_LIBRARIES[systemId] || library;
+    return withPresets(libraries[systemId] || DEFAULT_LIBRARIES[systemId] || library);
   };
 
   const saveLibraryToServer = async (libraryData, systemId) => {
@@ -143,12 +197,24 @@ export default function App() {
   };
 
   // Orice editare din LibraryPage: actualizează starea și salvează (local + server)
+  // Presetele merg pe rândul comun; restul, în librăria sistemului (doar dacă s-a schimbat ceva)
   const handleLibraryUpdate = (nextLibrary) => {
-    setLibrary(nextLibrary);
-    if (!nextLibrary?.systemId) return;
-    setLibraries(prev => ({ ...prev, [nextLibrary.systemId]: nextLibrary }));
-    if (nextLibrary.systemId === 'bticino') saveLibrary(nextLibrary);
-    saveLibraryToServer(nextLibrary, nextLibrary.systemId);
+    if (!nextLibrary) return;
+    const { presets, ...systemLibrary } = nextLibrary;
+    if (presets && presets !== commonPresets) {
+      setCommonPresets(presets);
+      if (isAdmin) {
+        api.saveLibrary(PRESETS_ROW_ID, { presets }).catch(err => console.error('Error saving presets:', err));
+      }
+    }
+    const systemChanged = Object.keys(systemLibrary).some(k => systemLibrary[k] !== library?.[k])
+      || Object.keys(library || {}).some(k => k !== 'presets' && !(k in systemLibrary));
+    if (!systemChanged) return;
+    setLibrary(systemLibrary);
+    if (!systemLibrary.systemId) return;
+    setLibraries(prev => ({ ...prev, [systemLibrary.systemId]: systemLibrary }));
+    if (systemLibrary.systemId === 'bticino') saveLibrary(systemLibrary);
+    saveLibraryToServer(systemLibrary, systemLibrary.systemId);
   };
 
   const saveProject = async (project) => {
@@ -309,7 +375,7 @@ const deleteProject = async (id) => {
     return (
       <LanguageContext.Provider value={languageContextValue}>
         <ReadOnlyContext.Provider value={true}>
-          <LibraryContext.Provider value={viewedProject ? getLibraryForSystem(viewedProject.system || 'bticino') : library}>
+          <LibraryContext.Provider value={viewedProject ? getLibraryForSystem(viewedProject.system || 'bticino') : withPresets(library)}>
             <div className="min-h-screen bg-gray-100">
               {header}
               <div className="pt-16">
@@ -360,18 +426,18 @@ const deleteProject = async (id) => {
   // Show Library page
   if (showLibrary) {
     const handleSwitchLibrarySystem = (systemId) => {
-      const targetLib = libraries[systemId] || DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
+      const { presets: _legacy, ...targetLib } = libraries[systemId] || DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
       setLibrary(targetLib);
     };
 
     return (
       <LanguageContext.Provider value={languageContextValue}>
-        <LibraryContext.Provider value={library}>
+        <LibraryContext.Provider value={withPresets(library)}>
           <div className="min-h-screen bg-gray-100">
             {header}
             <div className="pt-16">
               <LibraryPage
-                library={library}
+                library={withPresets(library)}
                 onUpdate={handleLibraryUpdate}
                 onBack={() => setShowLibrary(false)}
                 isAdmin={isAdmin}
@@ -410,7 +476,7 @@ const deleteProject = async (id) => {
   // Show Project List
   return (
     <LanguageContext.Provider value={languageContextValue}>
-      <LibraryContext.Provider value={library}>
+      <LibraryContext.Provider value={withPresets(library)}>
         <div className="min-h-screen bg-gray-100">
           {header}
           <div className="pt-16">

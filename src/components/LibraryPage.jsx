@@ -283,7 +283,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
           <div className="flex justify-between items-center p-4 border-b">
             <div>
               <h2 className="font-semibold">{t.presets}</h2>
-              <p className="text-sm text-gray-500">{t.presetsDescription}</p>
+              <p className="text-sm text-gray-500">{t.presetsDescription} · <span className="text-purple-700">{lang === 'ro' ? 'comune tuturor sistemelor' : 'shared by all systems'}</span></p>
             </div>
             {isAdmin && (
             <button

@@ -412,18 +412,28 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
             </button>
             
             {/* Presets */}
-            {presets.map(preset => (
-              <button
-                key={preset.id}
-                onClick={() => onSelect(preset.id)}
-                className="w-full text-left p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 mb-2 transition-colors"
-              >
-                <div className="font-medium">{getPresetName(preset)}</div>
-                <div className="text-sm text-gray-500">
-                  {preset.size}M · {preset.modules.map(m => getModuleName(m)).join(' + ')}
-                </div>
-              </button>
-            ))}
+            {presets.map(preset => {
+              // Presetele sunt comune; un modul poate lipsi din sistemul acestui proiect
+              const missing = preset.modules.filter(id => !modules.some(m => m.id === id));
+              return (
+                <button
+                  key={preset.id}
+                  onClick={() => onSelect(preset.id)}
+                  disabled={missing.length > 0}
+                  className="w-full text-left p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 mb-2 transition-colors disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:cursor-not-allowed"
+                >
+                  <div className="font-medium">{getPresetName(preset)}</div>
+                  <div className="text-sm text-gray-500">
+                    {preset.size}M · {preset.modules.map(m => getModuleName(m)).join(' + ')}
+                  </div>
+                  {missing.length > 0 && (
+                    <div className="text-xs text-amber-700 mt-0.5">
+                      {lang === 'ro' ? 'Lipsește în acest sistem: ' : 'Missing in this system: '}{[...new Set(missing)].join(', ')}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
           </div>
           <div className="p-4 border-t bg-gray-50">
             <button
