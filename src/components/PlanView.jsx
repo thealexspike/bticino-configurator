@@ -16,6 +16,13 @@ const MAX_ZOOM = 6;
 const clamp = (v, lo, hi) => Math.min(hi, Math.max(lo, v));
 const round4 = (v) => Math.round(v * 10000) / 10000;
 
+// Culorile marcajelor: conturul după tip (ca tab-urile Prize / Întrerupătoare),
+// fundalul după doză (ca în listă: zidărie roșu, gips-carton verde)
+export const MARKER_BORDER = { outlet: '#2563eb', switch: '#7c3aed' };
+export const MARKER_FILL = { masonry: '#fecaca', drywall: '#bbf7d0' };
+const markerBorder = (a) => MARKER_BORDER[a.type === 'switch' ? 'switch' : 'outlet'];
+const markerFill = (a) => MARKER_FILL[(a.wallBoxType || 'masonry') === 'drywall' ? 'drywall' : 'masonry'];
+
 export const planImageUrl = (projectId, planId) => `/api/projects/${projectId}/plans/${planId}/image`;
 
 // Panoul cu planurile proiectului (un plan per etaj). Aparatajele se trag din
@@ -377,15 +384,18 @@ export function PlanView({
                   onPointerUp={handleMarkerPointerUp}
                   onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoverId(a.id); }}
                   onPointerLeave={() => setHoverId(h => (h === a.id ? null : h))}
-                  className="absolute rounded-full bg-white flex items-center justify-center font-bold text-gray-900 leading-none"
+                  className="absolute rounded-full flex items-center justify-center font-bold text-gray-900 leading-none"
                   style={{
                     left: x - markerSize / 2,
                     top: y - markerSize / 2,
                     width: markerSize,
                     height: markerSize,
                     fontSize: markerSize * 0.34,
-                    border: `${Math.max(1.5, markerSize * 0.07)}px solid ${isSelected ? '#2563eb' : '#111827'}`,
-                    boxShadow: isSelected ? `0 0 0 ${markerSize * 0.12}px rgba(37, 99, 235, 0.35)` : '0 1px 3px rgba(0,0,0,0.35)',
+                    backgroundColor: markerFill(a),
+                    border: `${Math.max(2, markerSize * 0.09)}px solid ${markerBorder(a)}`,
+                    boxShadow: isSelected
+                      ? `0 0 0 ${markerSize * 0.08}px #fff, 0 0 0 ${markerSize * 0.18}px rgba(37, 99, 235, 0.55)`
+                      : '0 1px 3px rgba(0,0,0,0.35)',
                     cursor: readOnly ? 'pointer' : (live ? 'grabbing' : 'grab'),
                     zIndex: isSelected || live ? 2 : 1,
                     touchAction: 'none',
@@ -425,6 +435,20 @@ export function PlanView({
         {importStatus && (
           <div className="absolute inset-0 bg-white/70 flex items-center justify-center text-sm text-gray-700">
             <span className="bg-white shadow rounded px-4 py-2">⏳ {importStatus}</span>
+          </div>
+        )}
+
+        {/* Legenda marcajelor */}
+        {plan && onPlan.length > 0 && (
+          <div className="absolute bottom-3 right-3 bg-white/95 rounded-lg shadow px-3 py-2 text-xs text-gray-700 flex flex-col gap-1 pointer-events-none" style={{ zIndex: 3 }}>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full bg-white inline-block" style={{ border: `2.5px solid ${MARKER_BORDER.outlet}` }} />{L('Priză', 'Outlet')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full bg-white inline-block" style={{ border: `2.5px solid ${MARKER_BORDER.switch}` }} />{L('Întrerupător', 'Switch')}</span>
+            </div>
+            <div className="flex items-center gap-3">
+              <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full inline-block border border-gray-400" style={{ backgroundColor: MARKER_FILL.masonry }} />{L('Zidărie', 'Masonry')}</span>
+              <span className="flex items-center gap-1.5"><span className="w-3.5 h-3.5 rounded-full inline-block border border-gray-400" style={{ backgroundColor: MARKER_FILL.drywall }} />{L('Gips-carton', 'Drywall')}</span>
+            </div>
           </div>
         )}
 
