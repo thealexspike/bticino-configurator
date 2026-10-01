@@ -1,10 +1,12 @@
 // Normalizarea id-urilor de module între sisteme.
 //
 // Regula: același produs are același id în toate librăriile, ca un proiect să
-// poată fi mutat de pe un sistem pe altul fără remapare. Cap scară și cap cruce
-// există ca module separate pe 1M și 2M; coax și rj45 există peste tot.
+// poată fi mutat de pe un sistem pe altul fără remapare. Întrerupător simplu
+// (switch_simple = 1M, switch_simple_2m), cap scară și cap cruce există pe 1M și 2M;
+// coax și rj45 există peste tot.
 //
-// Folosit de scripts/migrate-module-ids.mjs (D1) și la regenerarea default-urilor.
+// Pentru un modul nou comun tuturor sistemelor: adaugă-l în SPECS, apoi rulează
+// scripts/sync-default-libraries.mjs (cod) și scripts/migrate-module-ids.mjs (D1).
 
 export const FIXED_RENAMES = {
   two_way_gewiss: 'switch_stair_1m',
@@ -12,6 +14,7 @@ export const FIXED_RENAMES = {
 };
 
 const SPECS = {
+  switch_simple_2m: { nameEn: 'Simple Switch 2M', nameRo: 'Întrerupător Simplu 2M', size: 2, category: 'switch', standardType: 'switch_simple', graphic: 'switch' },
   switch_stair_1m: { nameEn: 'Stair Switch 1M', nameRo: 'Întrerupător Cap Scară 1M', size: 1, category: 'switch', standardType: 'switch_stair', graphic: 'switch_stair' },
   switch_stair_2m: { nameEn: 'Stair Switch 2M', nameRo: 'Întrerupător Cap Scară 2M', size: 2, category: 'switch', standardType: 'switch_stair', graphic: 'switch_stair' },
   switch_cross_1m: { nameEn: 'Cross Switch 1M', nameRo: 'Întrerupător Cap Cruce 1M', size: 1, category: 'switch', standardType: 'switch_cross', graphic: 'switch_cross' },
@@ -23,7 +26,7 @@ const SPECS = {
 export const REQUIRED_MODULES = Object.keys(SPECS);
 
 // Ordinea de afișare pentru id-urile cunoscute; restul rămân după, în ordinea lor
-const ORDER = ['schuko', 'italian', 'usb', 'coax', 'rj45', 'switch_simple',
+const ORDER = ['schuko', 'italian', 'usb', 'coax', 'rj45', 'switch_simple', 'switch_simple_2m',
   'switch_stair_1m', 'switch_stair_2m', 'switch_cross_1m', 'switch_cross_2m', 'dimmer', 'blank'];
 
 // Harta de redenumire specifică unei librării (depinde de dimensiunea pe care o are
