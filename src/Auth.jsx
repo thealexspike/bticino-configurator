@@ -5,7 +5,6 @@ export default function Auth() {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [isLogin, setIsLogin] = useState(true);
   const [message, setMessage] = useState('');
 
   const handleSubmit = async (e) => {
@@ -14,11 +13,7 @@ export default function Auth() {
     setMessage('');
 
     try {
-      if (isLogin) {
-        await api.signIn(email, password);
-      } else {
-        await api.signUp(email, password);
-      }
+      await api.signIn(email, password);
     } catch (err) {
       setMessage(err.message || 'A apărut o eroare');
     }
@@ -32,7 +27,7 @@ export default function Auth() {
           BTicino Configurator
         </h1>
         <h2 className="text-xl text-center mb-6">
-          {isLogin ? 'Autentificare' : 'Creare cont'}
+          Autentificare
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -74,18 +69,12 @@ export default function Auth() {
             disabled={loading}
             className="w-full bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:opacity-50"
           >
-            {loading ? 'Se încarcă...' : isLogin ? 'Intră în cont' : 'Creează cont'}
+            {loading ? 'Se încarcă...' : 'Intră în cont'}
           </button>
         </form>
 
         <p className="text-center mt-4 text-sm text-gray-600">
-          {isLogin ? 'Nu ai cont?' : 'Ai deja cont?'}{' '}
-          <button
-            onClick={() => setIsLogin(!isLogin)}
-            className="text-blue-600 hover:underline"
-          >
-            {isLogin ? 'Creează unul' : 'Autentifică-te'}
-          </button>
+          Nu ai cont? Cere unul administratorului.
         </p>
       </div>
     </div>

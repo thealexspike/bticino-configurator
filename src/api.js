@@ -54,13 +54,6 @@ export const api = {
     return session;
   },
 
-  async signUp(email, password) {
-    const { user } = await request('/auth/signup', { method: 'POST', body: { email, password } });
-    const session = toSession(user);
-    notifyAuthChange(session);
-    return session;
-  },
-
   async signOut() {
     try { await request('/auth/logout', { method: 'POST' }); } catch {}
     notifyAuthChange(null);

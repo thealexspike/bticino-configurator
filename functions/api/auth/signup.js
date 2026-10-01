@@ -3,8 +3,17 @@ import {
   normalizeEmail, validCredentials,
 } from '../../_shared/auth.js';
 
+// POST /api/auth/signup — înregistrarea publică este închisă.
+// Funcționează doar pentru primul cont (bază de date goală); restul conturilor
+// le creează un administrator din pagina „Conturi" (POST /api/admin/users).
 export async function onRequestPost(context) {
   const { env } = context;
+
+  const anyUser = await env.DB.prepare('SELECT id FROM users LIMIT 1').first();
+  if (anyUser) {
+    return json({ error: 'Înregistrarea este închisă — cere un cont administratorului' }, 403);
+  }
+
   const body = await readJson(context.request);
   const email = normalizeEmail(body?.email);
   const password = body?.password || '';
