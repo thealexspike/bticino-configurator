@@ -345,7 +345,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               backgroundSize: '4px 4px',
               backgroundPosition: '0 0, 0 2px, 2px -2px, -2px 0px',
             } : {
-              backgroundColor: '#f7f0e0',
+              backgroundColor: '#e3f2e6',
               backgroundImage: 'none',
             }}
           >

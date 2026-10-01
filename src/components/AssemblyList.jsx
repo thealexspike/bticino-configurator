@@ -360,8 +360,8 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               onClick={(e) => e.stopPropagation()}
               className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
               style={{
-                backgroundColor: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#fee2e2' : '#fef3c7',
-                color: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#991b1b' : '#92400e',
+                backgroundColor: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#fee2e2' : '#dcfce7',
+                color: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#991b1b' : '#166534',
               }}
               title={t.wallBoxType}
             >
