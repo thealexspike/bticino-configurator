@@ -1,0 +1,512 @@
+export const FRAME_SIZES = [2, 3, 4, 6]; // For wall boxes, install faces, decor faces (min 2M)
+
+export const COLORS = [
+  { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+  { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#1a1a1a' },
+];
+
+// Available systems registry
+export const SYSTEMS = [
+  { id: 'bticino', nameEn: 'BTicino Living Now', nameRo: 'BTicino Living Now' },
+  { id: 'gewiss', nameEn: 'Gewiss Chorus', nameRo: 'Gewiss Chorus' },
+  { id: 'schneider', nameEn: 'Schneider Noua Unica', nameRo: 'Schneider Noua Unica' },
+  { id: 'generic', nameEn: 'Generic Modular (estimate)', nameRo: 'Sistem modular generic (estimativ)' },
+];
+
+// Default library data - will be overridden by localStorage
+export const DEFAULT_LIBRARY = {
+  systemId: 'bticino',
+  systemName: 'BTicino Living Now',
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#1a1a1a' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: '504E', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: '506E', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: '508E', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: '510E', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: 'PB504', purchasePrice: 12, markup: 25, price: 18.15 },
+    3: { sku: 'PB506', purchasePrice: 14, markup: 25, price: 21.18 },
+    4: { sku: 'PB508', purchasePrice: 17, markup: 25, price: 25.71 },
+    6: { sku: 'PB510', purchasePrice: 22, markup: 25, price: 33.28 },
+  },
+  installFaces: {
+    2: { sku: 'KG2202', purchasePrice: 7, markup: 25, price: 10.59 },
+    3: { sku: 'KG2203', purchasePrice: 8, markup: 25, price: 12.1 },
+    4: { sku: 'KG2204', purchasePrice: 10, markup: 25, price: 15.13 },
+    6: { sku: 'KG2206', purchasePrice: 14, markup: 25, price: 21.18 },
+  },
+  decorFaces: {
+    '2-white': { sku: 'KA4802M2', purchasePrice: 10, markup: 25, price: 15.13 }, 
+    '2-black': { sku: 'KG4802M2', purchasePrice: 12, markup: 25, price: 18.15 },
+    '3-white': { sku: 'KA4802M3', purchasePrice: 12, markup: 25, price: 18.15 }, 
+    '3-black': { sku: 'KG4802M3', purchasePrice: 15, markup: 25, price: 22.69 },
+    '4-white': { sku: 'KA4802M4', purchasePrice: 15, markup: 25, price: 22.69 }, 
+    '4-black': { sku: 'KG4802M4', purchasePrice: 18, markup: 25, price: 27.23 },
+    '6-white': { sku: 'KA4802M6', purchasePrice: 19, markup: 25, price: 28.74 }, 
+    '6-black': { sku: 'KG4802M6', purchasePrice: 22, markup: 25, price: 33.28 },
+  },
+  modules: [
+    { 
+      id: 'schuko',
+      standardType: 'schuko',
+      moduleHasColorVariants: true,
+      faceHasColorVariants: true,
+      moduleSku: { white: 'K4802', black: 'KG4802' },
+      nameEn: 'Schuko Outlet',
+      nameRo: 'Priză Schuko',
+      size: 2, 
+      category: 'outlet',
+      faceSku: { white: 'KW4702', black: 'KG4702' },
+      modulePurchasePrice: { white: 30, black: 32 },
+      moduleMarkup: { white: 25, black: 25 },
+      modulePrice: { white: 45.38, black: 48.4 },
+      facePurchasePrice: { white: 5, black: 7 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 7.56, black: 10.59 },
+    },
+    { 
+      id: 'italian',
+      standardType: 'italian',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'K4801',
+      nameEn: 'Italian Outlet',
+      nameRo: 'Priză Italiană',
+      size: 1, 
+      category: 'outlet',
+      faceSku: { white: 'KW4701', black: 'KG4701' },
+      modulePurchasePrice: 24,
+      moduleMarkup: 25,
+      modulePrice: 36.3,
+      facePurchasePrice: { white: 4, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 6.05, black: 7.56 },
+    },
+    { 
+      id: 'usb',
+      standardType: 'usb',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'K4285C2',
+      nameEn: 'USB Outlet',
+      nameRo: 'Priză USB',
+      size: 1, 
+      category: 'outlet',
+      faceSku: { white: 'KW4285', black: 'KG4285' },
+      modulePurchasePrice: 44,
+      moduleMarkup: 25,
+      modulePrice: 66.55,
+      facePurchasePrice: { white: 4, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 6.05, black: 7.56 },
+    },
+    { 
+      id: 'switch_simple',
+      standardType: 'switch_simple',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'K4001AS',
+      nameEn: 'Simple Switch',
+      nameRo: 'Întrerupător Simplu',
+      size: 1, 
+      category: 'switch',
+      faceSku: { white: 'KW01', black: 'KG01' },
+      modulePurchasePrice: 19,
+      moduleMarkup: 25,
+      modulePrice: 28.74,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
+    },
+    { 
+      id: 'switch_stair',
+      standardType: 'switch_stair',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'K4003AS',
+      nameEn: 'Stair Switch',
+      nameRo: 'Întrerupător Cap Scară',
+      size: 1, 
+      category: 'switch',
+      faceSku: { white: 'KW01', black: 'KG01' },
+      modulePurchasePrice: 22,
+      moduleMarkup: 25,
+      modulePrice: 33.28,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
+    },
+    { 
+      id: 'switch_cross',
+      standardType: 'switch_cross',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'K4004AS',
+      nameEn: 'Cross Switch',
+      nameRo: 'Întrerupător Cap Cruce',
+      size: 1, 
+      category: 'switch',
+      faceSku: { white: 'KW01', black: 'KG01' },
+      modulePurchasePrice: 26,
+      moduleMarkup: 25,
+      modulePrice: 39.33,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
+    },
+    { 
+      id: 'dimmer',
+      standardType: 'dimmer',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'K4401',
+      nameEn: 'Dimmer / Potentiometer',
+      nameRo: 'Potențiometru',
+      size: 2, 
+      category: 'switch',
+      faceSku: { white: 'KW4401', black: 'KG4401' },
+      modulePurchasePrice: 58,
+      moduleMarkup: 25,
+      modulePrice: 87.73,
+      facePurchasePrice: { white: 7, black: 8 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 10.59, black: 12.1 },
+    },
+    { 
+      id: 'blank',
+      standardType: 'blank',
+      moduleHasColorVariants: false,
+      faceHasColorVariants: true,
+      moduleSku: 'KW01M',
+      nameEn: 'Blank Cover',
+      nameRo: 'Tastă Falsă',
+      size: 1, 
+      category: 'other',
+      faceSku: { white: 'KW01', black: 'KG01' },
+      modulePurchasePrice: 3,
+      moduleMarkup: 25,
+      modulePrice: 4.54,
+      facePurchasePrice: { white: 3, black: 5 },
+      faceMarkup: { white: 25, black: 25 },
+      facePrice: { white: 4.54, black: 7.56 },
+    },
+  ],
+  presets: [
+    {
+      id: 'double_schuko',
+      nameEn: 'Double Schuko Outlet',
+      nameRo: 'Priză Dublă Schuko',
+      type: 'outlet',
+      size: 4,
+      modules: ['schuko', 'schuko'],
+    },
+    {
+      id: 'single_schuko',
+      nameEn: 'Single Schuko Outlet',
+      nameRo: 'Priză Simplă Schuko',
+      type: 'outlet',
+      size: 2,
+      modules: ['schuko'],
+    },
+    {
+      id: 'schuko_usb',
+      nameEn: 'Schuko + USB',
+      nameRo: 'Schuko + USB',
+      type: 'outlet',
+      size: 3,
+      modules: ['schuko', 'usb'],
+    },
+    {
+      id: 'double_switch',
+      nameEn: 'Double Switch',
+      nameRo: 'Întrerupător Dublu',
+      type: 'switch',
+      size: 2,
+      modules: ['switch_simple', 'switch_simple'],
+    },
+    {
+      id: 'single_switch',
+      nameEn: 'Single Switch',
+      nameRo: 'Întrerupător Simplu',
+      type: 'switch',
+      size: 2,
+      modules: ['switch_simple', 'blank'],
+    },
+    {
+      id: 'triple_switch',
+      nameEn: 'Triple Switch',
+      nameRo: 'Întrerupător Triplu',
+      type: 'switch',
+      size: 3,
+      modules: ['switch_simple', 'switch_simple', 'switch_simple'],
+    },
+    {
+      id: 'stair_switch',
+      nameEn: 'Stair Switch (Cap-Scară)',
+      nameRo: 'Întrerupător Cap Scară',
+      type: 'switch',
+      size: 2,
+      modules: ['switch_stair', 'blank'],
+    },
+    {
+      id: 'dimmer_single',
+      nameEn: 'Dimmer',
+      nameRo: 'Variator (Dimmer)',
+      type: 'switch',
+      size: 2,
+      modules: ['dimmer'],
+    },
+  ],
+};
+
+// Gewiss Chorus default library
+export const DEFAULT_LIBRARY_GEWISS = {
+  systemId: 'gewiss',
+  systemName: 'Gewiss Chorus',
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#333333' },
+    { id: 'titanium', name: 'Titanium', nameEn: 'Titanium', nameRo: 'Titan', hex: '#8C8C8C' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: 'GW24402', purchasePrice: 8, markup: 25, price: 12.1 },
+    3: { sku: 'GW24403', purchasePrice: 10, markup: 25, price: 15.13 },
+    4: { sku: 'GW24404', purchasePrice: 13, markup: 25, price: 19.66 },
+    6: { sku: 'GW24406', purchasePrice: 17, markup: 25, price: 25.71 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: 'GW24402PM', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: 'GW24403PM', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: 'GW24404PM', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: 'GW24406PM', purchasePrice: 20, markup: 25, price: 30.25 },
+  },
+  installFaces: {
+    2: { sku: 'GW16822', purchasePrice: 5, markup: 25, price: 7.56 },
+    3: { sku: 'GW16823', purchasePrice: 6, markup: 25, price: 9.08 },
+    4: { sku: 'GW16824', purchasePrice: 8, markup: 25, price: 12.1 },
+    6: { sku: 'GW16826', purchasePrice: 11, markup: 25, price: 16.64 },
+  },
+  decorFaces: {
+    '2-white': { sku: 'GW16102TB', purchasePrice: 8, markup: 25, price: 12.1 },
+    '2-black': { sku: 'GW16102TN', purchasePrice: 10, markup: 25, price: 15.13 },
+    '2-titanium': { sku: 'GW16102VT', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-white': { sku: 'GW16103TB', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-black': { sku: 'GW16103TN', purchasePrice: 12, markup: 25, price: 18.15 },
+    '3-titanium': { sku: 'GW16103VT', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-white': { sku: 'GW16104TB', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-black': { sku: 'GW16104TN', purchasePrice: 15, markup: 25, price: 22.69 },
+    '4-titanium': { sku: 'GW16104VT', purchasePrice: 15, markup: 25, price: 22.69 },
+    '6-white': { sku: 'GW16106TB', purchasePrice: 16, markup: 25, price: 24.2 },
+    '6-black': { sku: 'GW16106TN', purchasePrice: 19, markup: 25, price: 28.74 },
+    '6-titanium': { sku: 'GW16106VT', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  modules: [
+    { id: 'schuko', standardType: 'schuko', hasColorVariants: false, moduleSku: 'GW10241', nameEn: 'Schuko Outlet', nameRo: 'Priză Schuko', size: 2, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'italian', standardType: 'italian', hasColorVariants: false, moduleSku: 'GW10203', nameEn: 'Italian Outlet (Bivalent)', nameRo: 'Priză Bivalentă', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 12, moduleMarkup: 25, modulePrice: 18.15, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'usb', standardType: 'usb', hasColorVariants: false, moduleSku: 'GW10449', nameEn: 'USB Outlet (A+C)', nameRo: 'Priză USB (A+C)', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 45, moduleMarkup: 25, modulePrice: 68.06, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'switch_simple', standardType: 'switch_simple', hasColorVariants: false, moduleSku: 'GW10001', nameEn: 'Simple Switch', nameRo: 'Întrerupător Simplu', size: 1, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 10, moduleMarkup: 25, modulePrice: 15.13, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'switch_stair', standardType: 'switch_stair', hasColorVariants: false, moduleSku: 'GW10071', nameEn: 'Stair Switch', nameRo: 'Întrerupător Cap Scară', size: 2, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'switch_cross', standardType: 'switch_cross', hasColorVariants: false, moduleSku: 'GW10101', nameEn: 'Cross Switch', nameRo: 'Întrerupător Cap Cruce', size: 2, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'dimmer', standardType: 'dimmer', hasColorVariants: false, moduleSku: 'GW10673', nameEn: 'Dimmer (LED)', nameRo: 'Variator (Dimmer LED)', size: 1, category: 'switch', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 55, moduleMarkup: 25, modulePrice: 83.19, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'blank', standardType: 'blank', hasColorVariants: false, moduleSku: 'GW10195', nameEn: 'Blank Cover', nameRo: 'Obturator', size: 1, category: 'other', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 3, moduleMarkup: 25, modulePrice: 4.54, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'coax', standardType: 'coax', hasColorVariants: false, moduleSku: 'GW10361', nameEn: 'TV Coaxial Outlet', nameRo: 'Priză TV Coaxial', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 20, moduleMarkup: 25, modulePrice: 30.25, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+    { id: 'rj45', standardType: 'rj45', hasColorVariants: false, moduleSku: 'GW10421', nameEn: 'RJ45 Cat.5e UTP', nameRo: 'Priză RJ45 Cat.5e UTP', size: 1, category: 'outlet', faceSku: { white: '', black: '', titanium: '' }, modulePurchasePrice: 22, moduleMarkup: 25, modulePrice: 33.28, facePurchasePrice: { white: 0, black: 0, titanium: 0 }, faceMarkup: { white: 25, black: 25, titanium: 25 }, facePrice: { white: 0, black: 0, titanium: 0 } },
+  ],
+  presets: [
+    { id: 'double_schuko', nameEn: 'Double Schuko Outlet', nameRo: 'Priză Dublă Schuko', type: 'outlet', size: 4, modules: ['schuko', 'schuko'] },
+    { id: 'single_schuko', nameEn: 'Single Schuko Outlet', nameRo: 'Priză Simplă Schuko', type: 'outlet', size: 2, modules: ['schuko'] },
+    { id: 'schuko_usb', nameEn: 'Schuko + USB', nameRo: 'Schuko + USB', type: 'outlet', size: 3, modules: ['schuko', 'usb'] },
+    { id: 'double_switch', nameEn: 'Double Switch', nameRo: 'Întrerupător Dublu', type: 'switch', size: 2, modules: ['switch_simple', 'switch_simple'] },
+    { id: 'single_switch', nameEn: 'Single Switch', nameRo: 'Întrerupător Simplu', type: 'switch', size: 2, modules: ['switch_simple', 'blank'] },
+    { id: 'triple_switch', nameEn: 'Triple Switch', nameRo: 'Întrerupător Triplu', type: 'switch', size: 3, modules: ['switch_simple', 'switch_simple', 'switch_simple'] },
+  ],
+};
+
+// Schneider Noua Unica default library
+export const DEFAULT_LIBRARY_SCHNEIDER = {
+  systemId: 'schneider',
+  systemName: 'Schneider Noua Unica',
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'anthracite', name: 'Anthracite', nameEn: 'Anthracite', nameRo: 'Antracit', hex: '#383838' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: 'NU7002', purchasePrice: 8, markup: 25, price: 12.1 },
+    3: { sku: 'NU7003', purchasePrice: 10, markup: 25, price: 15.13 },
+    4: { sku: 'NU7004', purchasePrice: 13, markup: 25, price: 19.66 },
+    6: { sku: 'NU7006', purchasePrice: 17, markup: 25, price: 25.71 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: 'NU7002P', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: 'NU7003P', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: 'NU7004P', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: 'NU7006P', purchasePrice: 20, markup: 25, price: 30.25 },
+  },
+  installFaces: {
+    2: { sku: 'NU7102', purchasePrice: 5, markup: 25, price: 7.56 },
+    3: { sku: 'NU7103P', purchasePrice: 6, markup: 25, price: 9.08 },
+    4: { sku: 'NU7104P', purchasePrice: 8, markup: 25, price: 12.1 },
+    6: { sku: 'NU7106P', purchasePrice: 11, markup: 25, price: 16.64 },
+  },
+  decorFaces: {
+    '2-white': { sku: 'NU200218', purchasePrice: 8, markup: 25, price: 12.1 },
+    '2-anthracite': { sku: 'NU200254', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-white': { sku: 'NU200318', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-anthracite': { sku: 'NU200354', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-white': { sku: 'NU200418', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-anthracite': { sku: 'NU200454', purchasePrice: 15, markup: 25, price: 22.69 },
+    '6-white': { sku: 'NU200618', purchasePrice: 16, markup: 25, price: 24.2 },
+    '6-anthracite': { sku: 'NU200654', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  modules: [
+    { id: 'schuko', standardType: 'schuko', hasColorVariants: false, moduleSku: 'NU303618', nameEn: 'Schuko Outlet 2P+E', nameRo: 'Priză Schuko 2P+E', size: 2, category: 'outlet', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 20, moduleMarkup: 25, modulePrice: 30.25, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'italian', standardType: 'italian', hasColorVariants: false, moduleSku: 'NU303118', nameEn: 'Simple Outlet 2P', nameRo: 'Priză Simplă 2P', size: 1, category: 'outlet', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 10, moduleMarkup: 25, modulePrice: 15.13, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'usb', standardType: 'usb', hasColorVariants: false, moduleSku: 'NU301818', nameEn: 'USB Outlet A+C', nameRo: 'Priză USB A+C', size: 2, category: 'outlet', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 50, moduleMarkup: 25, modulePrice: 75.63, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'switch_simple', standardType: 'switch_simple', hasColorVariants: false, moduleSku: 'NU310118', nameEn: 'Simple Switch 1M', nameRo: 'Întrerupător Simplu 1M', size: 1, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 12, moduleMarkup: 25, modulePrice: 18.15, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'switch_stair', standardType: 'switch_stair', hasColorVariants: false, moduleSku: 'NU310318', nameEn: 'Stair Switch 1M', nameRo: 'Întrerupător Cap Scară 1M', size: 1, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'switch_cross', standardType: 'switch_cross', hasColorVariants: false, moduleSku: 'NU320518', nameEn: 'Cross Switch 2M', nameRo: 'Întrerupător Cap Cruce 2M', size: 2, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'dimmer', standardType: 'dimmer', hasColorVariants: false, moduleSku: 'NU351418', nameEn: 'LED Dimmer 2M', nameRo: 'Variator LED 2M', size: 2, category: 'switch', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 60, moduleMarkup: 25, modulePrice: 90.75, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+    { id: 'blank', standardType: 'blank', hasColorVariants: false, moduleSku: 'NU986518', nameEn: 'Blank Cover', nameRo: 'Tastă Falsă', size: 1, category: 'other', faceSku: { white: '', anthracite: '' }, modulePurchasePrice: 3, moduleMarkup: 25, modulePrice: 4.54, facePurchasePrice: { white: 0, anthracite: 0 }, faceMarkup: { white: 25, anthracite: 25 }, facePrice: { white: 0, anthracite: 0 } },
+  ],
+  presets: [
+    { id: 'double_schuko', nameEn: 'Double Schuko Outlet', nameRo: 'Priză Dublă Schuko', type: 'outlet', size: 4, modules: ['schuko', 'schuko'] },
+    { id: 'single_schuko', nameEn: 'Single Schuko Outlet', nameRo: 'Priză Simplă Schuko', type: 'outlet', size: 2, modules: ['schuko'] },
+    { id: 'double_switch', nameEn: 'Double Switch', nameRo: 'Întrerupător Dublu', type: 'switch', size: 2, modules: ['switch_simple', 'switch_simple'] },
+    { id: 'single_switch', nameEn: 'Single Switch', nameRo: 'Întrerupător Simplu', type: 'switch', size: 2, modules: ['switch_simple', 'blank'] },
+  ],
+};
+
+// Generic modular placeholder library - brand-agnostic, for estimates
+// No SKUs; prices are indicative (same as the Gewiss defaults) and editable in the Library.
+// Module IDs, sizes and colors match the Gewiss defaults so a project can later be switched to a real system.
+// hasModuleFaces: false -> modules are single pieces, no separate face/key lines in BOQ, quote or profit.
+export const DEFAULT_LIBRARY_GENERIC = {
+  systemId: 'generic',
+  systemName: 'Generic Modular',
+  hasModuleFaces: false,
+  availableColors: [
+    { id: 'white', name: 'White', nameEn: 'White', nameRo: 'Alb', hex: '#FFFFFF' },
+    { id: 'black', name: 'Black', nameEn: 'Black', nameRo: 'Negru', hex: '#333333' },
+  ],
+  availableSizes: [2, 3, 4, 6],
+  wallBoxesMasonry: {
+    2: { sku: '', purchasePrice: 8, markup: 25, price: 12.1 },
+    3: { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    4: { sku: '', purchasePrice: 13, markup: 25, price: 19.66 },
+    6: { sku: '', purchasePrice: 17, markup: 25, price: 25.71 },
+  },
+  wallBoxesDrywall: {
+    2: { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    3: { sku: '', purchasePrice: 12, markup: 25, price: 18.15 },
+    4: { sku: '', purchasePrice: 15, markup: 25, price: 22.69 },
+    6: { sku: '', purchasePrice: 20, markup: 25, price: 30.25 },
+  },
+  installFaces: {
+    2: { sku: '', purchasePrice: 5, markup: 25, price: 7.56 },
+    3: { sku: '', purchasePrice: 6, markup: 25, price: 9.08 },
+    4: { sku: '', purchasePrice: 8, markup: 25, price: 12.1 },
+    6: { sku: '', purchasePrice: 11, markup: 25, price: 16.64 },
+  },
+  decorFaces: {
+    '2-white': { sku: '', purchasePrice: 8, markup: 25, price: 12.1 },
+    '2-black': { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-white': { sku: '', purchasePrice: 10, markup: 25, price: 15.13 },
+    '3-black': { sku: '', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-white': { sku: '', purchasePrice: 12, markup: 25, price: 18.15 },
+    '4-black': { sku: '', purchasePrice: 15, markup: 25, price: 22.69 },
+    '6-white': { sku: '', purchasePrice: 16, markup: 25, price: 24.2 },
+    '6-black': { sku: '', purchasePrice: 19, markup: 25, price: 28.74 },
+  },
+  modules: [
+    { id: 'schuko', standardType: 'schuko', hasColorVariants: false, moduleSku: '', nameEn: 'Schuko Outlet', nameRo: 'Priză Schuko', size: 2, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'italian', standardType: 'italian', hasColorVariants: false, moduleSku: '', nameEn: 'Bivalent Outlet', nameRo: 'Priză Bivalentă', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 12, moduleMarkup: 25, modulePrice: 18.15, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'usb', standardType: 'usb', hasColorVariants: false, moduleSku: '', nameEn: 'USB Outlet', nameRo: 'Priză USB', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 45, moduleMarkup: 25, modulePrice: 68.06, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_simple', standardType: 'switch_simple', hasColorVariants: false, moduleSku: '', nameEn: 'Simple Switch', nameRo: 'Întrerupător Simplu', size: 1, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 10, moduleMarkup: 25, modulePrice: 15.13, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_stair_1m', standardType: 'switch_stair', hasColorVariants: false, moduleSku: '', nameEn: 'Stair Switch 1M', nameRo: 'Întrerupător Cap Scară 1M', size: 1, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_cross_1m', standardType: 'switch_cross', hasColorVariants: false, moduleSku: '', nameEn: 'Cross Switch 1M', nameRo: 'Întrerupător Cap Cruce 1M', size: 1, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_stair', standardType: 'switch_stair', hasColorVariants: false, moduleSku: '', nameEn: 'Stair Switch 2M', nameRo: 'Întrerupător Cap Scară 2M', size: 2, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 14, moduleMarkup: 25, modulePrice: 21.18, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'switch_cross', standardType: 'switch_cross', hasColorVariants: false, moduleSku: '', nameEn: 'Cross Switch 2M', nameRo: 'Întrerupător Cap Cruce 2M', size: 2, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 18, moduleMarkup: 25, modulePrice: 27.23, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'dimmer', standardType: 'dimmer', hasColorVariants: false, moduleSku: '', nameEn: 'Dimmer', nameRo: 'Variator (Dimmer)', size: 1, category: 'switch', faceSku: { white: '', black: '' }, modulePurchasePrice: 55, moduleMarkup: 25, modulePrice: 83.19, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'blank', standardType: 'blank', hasColorVariants: false, moduleSku: '', nameEn: 'Blank Cover', nameRo: 'Obturator', size: 1, category: 'other', faceSku: { white: '', black: '' }, modulePurchasePrice: 3, moduleMarkup: 25, modulePrice: 4.54, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'coax', standardType: 'coax', hasColorVariants: false, moduleSku: '', nameEn: 'TV Coaxial Outlet', nameRo: 'Priză TV Coaxial', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 20, moduleMarkup: 25, modulePrice: 30.25, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+    { id: 'rj45', standardType: 'rj45', hasColorVariants: false, moduleSku: '', nameEn: 'RJ45 Data Outlet', nameRo: 'Priză Date RJ45', size: 1, category: 'outlet', faceSku: { white: '', black: '' }, modulePurchasePrice: 22, moduleMarkup: 25, modulePrice: 33.28, facePurchasePrice: { white: 0, black: 0 }, faceMarkup: { white: 25, black: 25 }, facePrice: { white: 0, black: 0 } },
+  ],
+  presets: [
+    { id: 'double_schuko', nameEn: 'Double Schuko Outlet', nameRo: 'Priză Dublă Schuko', type: 'outlet', size: 4, modules: ['schuko', 'schuko'] },
+    { id: 'single_schuko', nameEn: 'Single Schuko Outlet', nameRo: 'Priză Simplă Schuko', type: 'outlet', size: 2, modules: ['schuko'] },
+    { id: 'schuko_usb', nameEn: 'Schuko + USB', nameRo: 'Schuko + USB', type: 'outlet', size: 3, modules: ['schuko', 'usb'] },
+    { id: 'tv_data', nameEn: 'TV + Data', nameRo: 'TV + Date', type: 'outlet', size: 2, modules: ['coax', 'rj45'] },
+    { id: 'double_switch', nameEn: 'Double Switch', nameRo: 'Întrerupător Dublu', type: 'switch', size: 2, modules: ['switch_simple', 'switch_simple'] },
+    { id: 'single_switch', nameEn: 'Single Switch', nameRo: 'Întrerupător Simplu', type: 'switch', size: 2, modules: ['switch_simple', 'blank'] },
+    { id: 'triple_switch', nameEn: 'Triple Switch', nameRo: 'Întrerupător Triplu', type: 'switch', size: 3, modules: ['switch_simple', 'switch_simple', 'switch_simple'] },
+    { id: 'stair_switch', nameEn: 'Stair Switch', nameRo: 'Întrerupător Cap Scară', type: 'switch', size: 2, modules: ['switch_stair'] },
+  ],
+};
+
+export const DEFAULT_LIBRARIES = {
+  bticino: DEFAULT_LIBRARY,
+  gewiss: DEFAULT_LIBRARY_GEWISS,
+  schneider: DEFAULT_LIBRARY_SCHNEIDER,
+  generic: DEFAULT_LIBRARY_GENERIC,
+};
+
+// Each system has different physical proportions for frames and modules.
+// Units are abstract but proportional to real products.
+//
+// BTicino Living Now: tall narrow modules, thin side margins, support bars
+// Gewiss Chorus: wide short modules, thick side/top/bottom margins, no support bars
+// Schneider Unica: similar to BTicino proportions with slight differences
+
+export const SYSTEM_PROPORTIONS = {
+  bticino: {
+    moduleWidth1M: 8.5,   // Width of 1 module slot
+    moduleHeight: 31,      // Height of module area
+    sideMargin: 10.5,      // Left/right frame margin
+    topMargin: 0,          // Top margin above modules (BTicino has support bars instead)
+    bottomMargin: 0,       // Bottom margin below modules
+    cornerRadius: 0,       // Frame corner radius
+    hasSupportBars: true,  // BTicino has metal support bars top/bottom
+    supportBarHeight: 5,
+    supportBarOffset: 4,
+    moduleCornerRadius: 0, // Square module corners
+  },
+  gewiss: {
+    moduleWidth1M: 40,     // From photo: 120px / 3 modules
+    moduleHeight: 80,      // From photo: 170 - 45 - 45
+    sideMargin: 50,        // From photo: 50px each side
+    topMargin: 45,         // From photo: 45px top
+    bottomMargin: 45,      // From photo: 45px bottom
+    cornerRadius: 4,       // Slight rounded corners on frame
+    hasSupportBars: false,  // Gewiss has no visible support bars
+    supportBarHeight: 0,
+    supportBarOffset: 0,
+    moduleCornerRadius: 2, // Slightly rounded module corners
+  },
+  schneider: {
+    moduleWidth1M: 8.5,   // Similar to BTicino for now
+    moduleHeight: 31,
+    sideMargin: 10.5,
+    topMargin: 0,
+    bottomMargin: 0,
+    cornerRadius: 2,
+    hasSupportBars: true,
+    supportBarHeight: 5,
+    supportBarOffset: 4,
+    moduleCornerRadius: 1,
+  },
+};
+
+// Generic placeholder system looks like Gewiss
+SYSTEM_PROPORTIONS.generic = SYSTEM_PROPORTIONS.gewiss;
+
+export const getSystemProportions = (library) => {
+  const sysId = library?.systemId || 'bticino';
+  return SYSTEM_PROPORTIONS[sysId] || SYSTEM_PROPORTIONS.bticino;
+};
