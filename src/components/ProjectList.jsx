@@ -4,6 +4,7 @@ import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { getSystemName } from '../lib/library';
 import { useReadOnly } from '../readOnly';
+import { WhatsNew } from './WhatsNew';
 
 export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibrary, title }) {
   const readOnly = useReadOnly();
@@ -40,6 +41,8 @@ export function ProjectList({ projects, onSelect, onCreate, onDelete, onOpenLibr
         </div>
         )}
       </div>
+
+      {!readOnly && <WhatsNew />}
 
       {!readOnly && (
       <div className="bg-white rounded-lg shadow p-4 mb-6">

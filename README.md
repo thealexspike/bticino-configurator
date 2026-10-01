@@ -71,6 +71,8 @@ Librăriile default din `src/data/libraries.js` sunt folosite când D1 nu are r�
 
 **Regula id-urilor de module.** Același produs are același `id` în toate sistemele, ca un proiect să poată fi mutat de pe un sistem pe altul fără remapare. Întrerupătorul simplu, cap scară și cap cruce sunt module separate pe 1M și 2M (`switch_simple` = 1M, `switch_simple_2m`, `switch_stair_1m`, `switch_stair_2m`, `switch_cross_1m`, `switch_cross_2m`); `coax` și `rj45` există peste tot. Un modul nou comun tuturor sistemelor se adaugă în `scripts/lib/moduleIdMigration.mjs`, apoi `node scripts/sync-default-libraries.mjs` actualizează default-urile din cod. La schimbarea sistemului unui proiect, modulele rămân pe același id, iar culorile care nu există în sistemul nou sunt înlocuite cu o culoare aleasă din sistemul nou. `scripts/migrate-module-ids.mjs` aplică aceste reguli pe D1 (raport fără `--apply`, scriere cu `--apply`, backup automat în `scripts/backup-*.json`).
 
+**Noutăți (patch notes).** Panoul de pe pagina principală citește `src/data/changelog.js`. Pentru o actualizare vizibilă utilizatorilor, adaugă o intrare la începutul listei, în română și engleză, apoi publică. Eticheta „Nou" reapare automat pentru toți la fiecare intrare nouă.
+
 **Grafica unui modul.** Câmpul opțional `graphic` pe un modul alege desenul dintre cele predefinite în `src/graphics/moduleGraphics.jsx` (`GRAPHIC_TYPES`). Fără el, desenul se deduce din id. Se alege din editorul de librărie, cu previzualizare.
 
 ## Rulare locală
