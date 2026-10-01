@@ -2815,6 +2815,13 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
     const colorInfo = availableColors.find(c => c.id === assembly.color);
     const isDragging = draggedId === assembly.id;
     const isDragOver = !groupByRoom && dragOverIndex === index && draggedId !== assembly.id;
+    // Collapse consecutive identical modules into one chip (e.g. 3x Switch), keeping left-to-right order
+    const moduleGroups = assembly.modules.reduce((groups, mod) => {
+      const last = groups[groups.length - 1];
+      if (last && last.moduleId === mod.moduleId) last.count++;
+      else groups.push({ moduleId: mod.moduleId, count: 1 });
+      return groups;
+    }, []);
 
     return (
       <li
@@ -2837,7 +2844,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
           </div>
         </div>
 
-        <div className="flex-1">
+        <div className="flex-1 min-w-0">
           <div className="flex items-center gap-3 flex-wrap">
             {/* Code (position) editor */}
             {editingCodeId === assembly.id ? (
@@ -2989,17 +2996,18 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
             <span>{assembly.modules.length} {t.modules}</span>
             {/* Module quick view */}
             {assembly.modules.length > 0 && (
-              <div className="flex items-center gap-1 ml-2">
-                {assembly.modules.map((mod, idx) => {
-                  const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
-                  const moduleName = catalogItem ? getModuleName(catalogItem, lang) : mod.moduleId;
+              <div className="flex items-center gap-1 ml-2 flex-wrap">
+                {moduleGroups.map((group, idx) => {
+                  const catalogItem = MODULE_CATALOG.find(c => c.id === group.moduleId);
+                  const moduleName = catalogItem ? getModuleName(catalogItem, lang) : group.moduleId;
                   const moduleSize = catalogItem?.size || 1;
                   return (
                     <span
-                      key={mod.id || idx}
-                      className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-1.5 py-0.5 rounded"
-                      title={moduleName}
+                      key={idx}
+                      className="inline-flex items-center gap-1 bg-blue-50 text-blue-700 text-xs px-1.5 py-0.5 rounded whitespace-nowrap"
+                      title={group.count > 1 ? `${group.count}x ${moduleName}` : moduleName}
                     >
+                      {group.count > 1 && <span className="font-bold">{group.count}x</span>}
                       {moduleName.length > 12 ? moduleName.substring(0, 10) + '...' : moduleName}
                       <span className="text-blue-400 text-[10px]">{moduleSize}M</span>
                     </span>
@@ -3036,7 +3044,7 @@ function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, on
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 ml-3 flex-shrink-0">
           {/* Assembly Preview Thumbnail */}
           <div className="hidden sm:block">
             <AssemblyThumbnail assembly={assembly} library={library} />
