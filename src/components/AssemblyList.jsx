@@ -263,29 +263,16 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
       return groups;
     }, []);
 
-    return (
-      <li
-        key={assembly.id}
-        draggable={!readOnly}
-        onDragStart={(e) => handleDragStart(e, assembly)}
-        onDragOver={(e) => !groupByRoom && handleDragOver(e, index)}
-        onDragLeave={!groupByRoom ? handleDragLeave : undefined}
-        onDrop={(e) => !groupByRoom && handleDrop(e, index)}
-        onDragEnd={handleDragEnd}
-        className={`flex items-center justify-between p-4 border-b last:border-b-0 hover:bg-gray-50 ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'} transition-all ${
-          isDragging ? 'opacity-50 bg-blue-50' : ''
-        } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
-      >
-        <div className="flex items-center gap-3 mr-3">
-          <div className="text-gray-300 hover:text-gray-500">
-            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
-            </svg>
-          </div>
-        </div>
+    // Cu planul deschis lista are doar ~30% din lățime: rând compact pe două linii
+    // (acțiunile sus în dreapta, fără schiță — se vede pe plan, la hover și în fișă).
+    const compact = !!planLink.active;
+    const selCls = compact
+      ? 'text-xs px-1 py-0 rounded border-0 cursor-pointer'
+      : 'text-sm px-2 py-0.5 rounded border-0 cursor-pointer';
+    const btnPad = compact ? 'p-1' : 'p-2';
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
+    const pinEl = (
+          <>
             {/* Pe plan: iconiță; click = arată pe plan */}
             {assembly.planId && planLink.planNames?.[assembly.planId] && (
               <button
@@ -298,6 +285,10 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 <MapPin className="w-4 h-4" />
               </button>
             )}
+          </>
+        );
+    const codeEl = (
+          <>
             {/* Code (position) editor */}
             {editingCodeId === assembly.id ? (
               <div className="flex items-center" onClick={(e) => e.stopPropagation()}>
@@ -315,7 +306,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               </div>
             ) : (
               <span 
-                className="font-mono font-bold text-lg hover:bg-blue-100 px-1 rounded cursor-text"
+                className={`font-mono font-bold ${compact ? 'text-base' : 'text-lg'} hover:bg-blue-100 px-1 rounded cursor-text`}
                 onClick={(e) => startEditingCode(assembly, e)}
                 title="Click to change position"
               >
@@ -323,6 +314,10 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               </span>
             )}
 
+          </>
+        );
+    const sizeEl = (
+          <>
             {/* Size selector */}
             <select
               value={assembly.size}
@@ -332,7 +327,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 handleSizeChange(assembly, e.target.value);
               }}
               onClick={(e) => e.stopPropagation()}
-              className="text-sm bg-gray-100 px-2 py-0.5 rounded border-0 cursor-pointer hover:bg-gray-200"
+              className={`${selCls} bg-gray-100 hover:bg-gray-200`}
               title="Change size"
             >
               {getAvailableSizes(library).map(s => (
@@ -340,6 +335,10 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               ))}
             </select>
 
+          </>
+        );
+    const colorEl = (
+          <>
             {/* Color selector */}
             <select
               value={assembly.color}
@@ -351,7 +350,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
+              className={`${selCls} hover:opacity-80`}
               style={{ 
                 backgroundColor: colorInfo?.hex,
                 color: isDarkColor(assembly.color, library) ? '#fff' : '#333'
@@ -363,6 +362,10 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               ))}
             </select>
 
+          </>
+        );
+    const wallEl = (
+          <>
             {/* Wall box type selector */}
             <select
               value={assembly.wallBoxType || 'masonry'}
@@ -374,7 +377,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 }
               }}
               onClick={(e) => e.stopPropagation()}
-              className="text-sm px-2 py-0.5 rounded border-0 cursor-pointer hover:opacity-80"
+              className={`${selCls} hover:opacity-80`}
               style={{
                 backgroundColor: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#fee2e2' : '#dcfce7',
                 color: (assembly.wallBoxType || 'masonry') === 'masonry' ? '#991b1b' : '#166534',
@@ -385,16 +388,20 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               <option value="drywall">{t.drywall}</option>
             </select>
 
+          </>
+        );
+    const capacityEl = (
+          <>
             {/* Capacity indicator */}
-            <span className={`text-sm px-2 py-0.5 rounded ${
+            <span className={`${compact ? 'text-xs px-1.5' : 'text-sm px-2'} py-0.5 rounded whitespace-nowrap ${
               usedSize > assembly.size ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
             }`}>
               {usedSize}/{assembly.size}M
             </span>
-          </div>
-
-          {/* Room editor - only show if not grouped */}
-          <div className="text-sm text-gray-500 flex items-center gap-1 mt-1 flex-wrap">
+          </>
+        );
+    const roomEl = (
+          <>
             {showRoom && (
               <>
                 <Home className="w-3 h-3" />
@@ -448,10 +455,14 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 <span className="text-gray-400">·</span>
               </>
             )}
-            <span>{assembly.modules.length} {t.modules}</span>
+          </>
+        );
+    const modulesCountEl = <span className="whitespace-nowrap">{assembly.modules.length} {t.modules}</span>;
+    const chipsEl = (
+          <>
             {/* Module quick view */}
             {assembly.modules.length > 0 && (
-              <div className="flex items-center gap-1 ml-2 flex-wrap">
+              <div className={`flex items-center gap-1 ${compact ? 'ml-1 flex-nowrap overflow-hidden min-w-0' : 'ml-2 flex-wrap'}`}>
                 {moduleGroups.map((group, idx) => {
                   const catalogItem = MODULE_CATALOG.find(c => c.id === group.moduleId);
                   const moduleName = catalogItem ? getModuleName(catalogItem, lang) : group.moduleId;
@@ -470,10 +481,12 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 })}
               </div>
             )}
-          </div>
-
+          </>
+        );
+    const notesEl = (
+          <>
           {/* Notes editor */}
-          <div className="text-sm flex items-center gap-1 mt-1">
+          <div className={`flex items-center gap-1 ${compact ? 'text-xs mt-0.5 min-w-0' : 'text-sm mt-1'}`}>
             <MessageSquare className="w-3 h-3 text-gray-400 flex-shrink-0" />
             {editingNotesId === assembly.id ? (
               <input
@@ -489,22 +502,18 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               />
             ) : (
               <span
-                className={`hover:bg-blue-100 px-1 rounded cursor-text ${assembly.notes ? 'text-gray-700' : 'text-gray-400 italic'}`}
+                className={`hover:bg-blue-100 px-1 rounded cursor-text ${compact ? 'truncate min-w-0' : ''} ${assembly.notes ? 'text-gray-700' : 'text-gray-400 italic'}`}
                 onClick={(e) => startEditingNotes(assembly, e)}
-                title={t.notes}
+                title={compact && assembly.notes ? assembly.notes : t.notes}
               >
                 {assembly.notes || t.addNote}
               </span>
             )}
           </div>
-        </div>
-
-        <div className="flex items-center gap-3 ml-3 flex-shrink-0">
-          {/* Assembly Preview Thumbnail */}
-          <div className="hidden sm:block">
-            <AssemblyThumbnail assembly={assembly} library={library} />
-          </div>
-          
+          </>
+        );
+    const actionsEl = (
+          <>
           <div className="flex items-center gap-1">
             {(() => {
               const count = planLink.photosByAssembly?.[assembly.id]?.length || 0;
@@ -512,7 +521,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               return (
                 <button
                   onClick={(e) => { e.stopPropagation(); planLink.openPhotos(assembly.id); }}
-                  className={`p-2 flex items-center gap-0.5 ${count ? 'text-sky-600 hover:text-sky-800' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`${btnPad} flex items-center gap-0.5 ${count ? 'text-sky-600 hover:text-sky-800' : 'text-gray-400 hover:text-gray-600'}`}
                   title={lang === 'ro' ? 'Poze de pe șantier' : 'Site photos'}
                 >
                   <Camera className="w-4 h-4" />
@@ -522,7 +531,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             })()}
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(assembly); }}
-              className="text-blue-500 hover:text-blue-700 p-2"
+              className={`text-blue-500 hover:text-blue-700 ${btnPad}`}
               title={t.edit + ' ' + t.modules}
             >
               <Settings className="w-4 h-4" />
@@ -530,7 +539,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             {onMoveToType && !readOnly && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
-                className="text-purple-500 hover:text-purple-700 p-2"
+                className={`text-purple-500 hover:text-purple-700 ${btnPad}`}
                 title={type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}
               >
                 <ArrowRightLeft className="w-4 h-4" />
@@ -557,7 +566,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                   e.stopPropagation();
                   onDuplicate(assembly.id);
                 }}
-                className="text-green-500 hover:text-green-700 p-2"
+                className={`text-green-500 hover:text-green-700 ${btnPad}`}
                 title={t.duplicate}
               >
                 <Copy className="w-4 h-4" />
@@ -566,13 +575,106 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             {!readOnly && (
             <button
               onClick={(e) => { e.stopPropagation(); onDelete(assembly.id); }}
-              className="text-red-500 hover:text-red-700 p-2"
+              className={`text-red-500 hover:text-red-700 ${btnPad}`}
             >
               <Trash2 className="w-4 h-4" />
             </button>
             )}
           </div>
+          </>
+        );
+    const editingRoomHere = editingRoomId === assembly.id;
+    const editingNotesHere = editingNotesId === assembly.id;
+
+    return (
+      <li
+        key={assembly.id}
+        draggable={!readOnly}
+        onDragStart={(e) => handleDragStart(e, assembly)}
+        onDragOver={(e) => !groupByRoom && handleDragOver(e, index)}
+        onDragLeave={!groupByRoom ? handleDragLeave : undefined}
+        onDrop={(e) => !groupByRoom && handleDrop(e, index)}
+        onDragEnd={handleDragEnd}
+        className={`flex ${compact ? 'items-start px-2 py-2' : 'items-center justify-between p-4'} border-b last:border-b-0 hover:bg-gray-50 ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'} transition-all ${
+          isDragging ? 'opacity-50 bg-blue-50' : ''
+        } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
+      >
+        {compact ? (
+          <>
+            <div className="text-gray-300 hover:text-gray-500 pt-1 mr-1 flex-shrink-0">
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+              </svg>
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5 flex-wrap gap-y-1">
+                {pinEl}
+                {codeEl}
+                {sizeEl}
+                {colorEl}
+                {wallEl}
+                {capacityEl}
+                <div className="ml-auto flex items-center flex-shrink-0">
+                  {actionsEl}
+                </div>
+              </div>
+              <div className={`text-xs text-gray-500 flex items-center gap-1 mt-0.5 min-w-0 whitespace-nowrap ${editingRoomHere ? '' : 'overflow-hidden'}`}>
+                {roomEl}
+                {modulesCountEl}
+                {chipsEl}
+                {!readOnly && !editingNotesHere && !assembly.notes && (
+                  <button
+                    type="button"
+                    onClick={(e) => startEditingNotes(assembly, e)}
+                    className="ml-auto pl-1 text-gray-300 hover:text-gray-600 flex-shrink-0"
+                    title={t.addNote}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+              {(editingNotesHere || assembly.notes) && notesEl}
+            </div>
+          </>
+        ) : (
+          <>
+        <div className="flex items-center gap-3 mr-3">
+          <div className="text-gray-300 hover:text-gray-500">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M7 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM7 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 2a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 8a2 2 0 1 0 0 4 2 2 0 0 0 0-4zM13 14a2 2 0 1 0 0 4 2 2 0 0 0 0-4z"/>
+            </svg>
+          </div>
         </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            {pinEl}
+            {codeEl}
+            {sizeEl}
+            {colorEl}
+            {wallEl}
+            {capacityEl}
+          </div>
+
+          {/* Room editor - only show if not grouped */}
+          <div className="text-sm text-gray-500 flex items-center gap-1 mt-1 flex-wrap">
+            {roomEl}
+            {modulesCountEl}
+            {chipsEl}
+          </div>
+
+          {notesEl}
+        </div>
+
+        <div className="flex items-center gap-3 ml-3 flex-shrink-0">
+          {/* Assembly Preview Thumbnail */}
+          <div className="hidden sm:block">
+            <AssemblyThumbnail assembly={assembly} library={library} />
+          </div>
+          {actionsEl}
+        </div>
+          </>
+        )}
       </li>
     );
   };
