@@ -104,7 +104,7 @@ export default function AdminUsers({ onBack, currentUserId, onViewProjects }) {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
+    <div className="max-w-6xl mx-auto p-4">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold">Administrare conturi</h1>
         <button onClick={onBack} className="text-blue-600 hover:underline">
@@ -157,7 +157,7 @@ export default function AdminUsers({ onBack, currentUserId, onViewProjects }) {
               <tr className="border-b bg-gray-50 text-left">
                 <th className="p-3">Email</th>
                 <th className="p-3">Creat</th>
-                <th className="p-3">Ultimul login</th>
+                <th className="p-3 whitespace-nowrap">Ultimul login</th>
                 <th className="p-3">Proiecte</th>
                 <th className="p-3">Parolă</th>
                 <th className="p-3 text-right">Acțiuni</th>
@@ -171,7 +171,7 @@ export default function AdminUsers({ onBack, currentUserId, onViewProjects }) {
                     {group.key || 'Fără firmă (email personal)'}
                     <span className="ml-2 font-normal text-gray-500">
                       {group.users.length} {group.users.length === 1 ? 'cont' : 'conturi'}
-                      {' · '}{group.users.reduce((sum, u) => sum + (u.project_count || 0), 0)} proiecte
+                      {' · '}{(() => { const n = group.users.reduce((sum, u) => sum + (u.project_count || 0), 0); return `${n} ${n === 1 ? 'proiect' : 'proiecte'}`; })()}
                     </span>
                   </td>
                 </tr>
@@ -184,8 +184,8 @@ export default function AdminUsers({ onBack, currentUserId, onViewProjects }) {
                       <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-1.5 py-0.5 rounded">admin</span>
                     )}
                   </td>
-                  <td className="p-3 text-gray-600">{formatDate(u.created_at)}</td>
-                  <td className="p-3 text-gray-600">{formatDate(u.last_login)}</td>
+                  <td className="p-3 text-gray-600 whitespace-nowrap">{formatDate(u.created_at)}</td>
+                  <td className="p-3 text-gray-600 whitespace-nowrap">{formatDate(u.last_login)}</td>
                   <td className="p-3">{u.project_count}</td>
                   <td className="p-3">
                     {u.has_password
