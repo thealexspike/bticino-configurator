@@ -102,7 +102,13 @@ npm run build
 
 ## Deploy
 
-Push pe `main` declanșează build-ul pe Cloudflare Pages (`npm run build`, output `dist/`). Pe proiectul Pages trebuie setate:
+Proiectul Cloudflare Pages **nu** este legat de GitHub: push-ul pe `main` nu publică nimic. Publicarea se face manual, după commit:
+
+```bash
+npm run deploy
+```
+
+Scriptul face build și urcă `dist/` plus `functions/` în producție (`configurator.atelierazimut.com`). Necesită `npx wrangler login`. Pe proiectul Pages trebuie setate:
 
 - binding D1 `DB` → `bticino-configurator-db` (din `wrangler.toml`)
 - secretul `ANTHROPIC_API_KEY` pentru importul AI (fără el endpoint-ul răspunde 503, restul aplicației merge)
