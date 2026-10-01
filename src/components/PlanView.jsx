@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useImperativeHandle } from 'react';
-import { Plus, Trash2, Pencil, ZoomIn, ZoomOut, Maximize, PanelRightClose, X, MapPin } from 'lucide-react';
+import { Plus, Trash2, Pencil, ZoomIn, ZoomOut, Maximize, PanelRightClose, X, MapPin, Camera } from 'lucide-react';
 import { api } from '../api';
 import { useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
-import { ASSEMBLY_DRAG_TYPE } from '../planLink';
+import { ASSEMBLY_DRAG_TYPE, usePlanLink } from '../planLink';
+import { photoUrl } from './AssemblyPhotos';
+import { PhotoPasteInput } from './PhotoPasteInput';
 import { PLAN_FILE_ACCEPT } from '../lib/planImport';
 import { getModuleName, LibraryContext } from '../lib/library';
 import { AssemblyThumbnail } from './visual/ModuleVisuals';
@@ -26,11 +28,14 @@ export function PlanView({
   const readOnly = useReadOnly();
   const library = React.useContext(LibraryContext);
   const L = (ro, en) => (lang === 'ro' ? ro : en);
+  const planLink = usePlanLink();
+  const photosOf = (assemblyId) => planLink.photosByAssembly?.[assemblyId] || [];
 
   const plan = plans.find(p => p.id === activePlanId) || plans[0] || null;
   const [view, setView] = useState({ zoom: 0.2, x: 0, y: 0 });
   const [selectedId, setSelectedId] = useState(null);
   const [liveMarker, setLiveMarker] = useState(null); // { id, x, y } în timpul mutării
+  const [hoverId, setHoverId] = useState(null);
   const viewportRef = useRef(null);
   const fileInputRef = useRef(null);
   const panRef = useRef(null);
@@ -367,7 +372,8 @@ export function PlanView({
                   onPointerDown={(e) => handleMarkerPointerDown(e, a)}
                   onPointerMove={handleMarkerPointerMove}
                   onPointerUp={handleMarkerPointerUp}
-                  title={`${a.code}${a.room ? ` · ${a.room}` : ''}`}
+                  onPointerEnter={(e) => { if (e.pointerType === 'mouse') setHoverId(a.id); }}
+                  onPointerLeave={() => setHoverId(h => (h === a.id ? null : h))}
                   className="absolute rounded-full bg-white flex items-center justify-center font-bold text-gray-900 leading-none"
                   style={{
                     left: x - markerSize / 2,
@@ -383,6 +389,18 @@ export function PlanView({
                   }}
                 >
                   {a.code}
+                  {photosOf(a.id).length > 0 && (
+                    <span
+                      className="absolute rounded-full bg-sky-500 border-white"
+                      style={{
+                        width: markerSize * 0.28,
+                        height: markerSize * 0.28,
+                        right: -markerSize * 0.04,
+                        top: -markerSize * 0.04,
+                        borderWidth: Math.max(1, markerSize * 0.04),
+                      }}
+                    />
+                  )}
                 </div>
               );
             })}
@@ -406,6 +424,45 @@ export function PlanView({
             <span className="bg-white shadow rounded px-4 py-2">⏳ {importStatus}</span>
           </div>
         )}
+
+        {/* Previzualizare la hover: cod, cameră, pozele de șantier */}
+        {(() => {
+          const a = hoverId && !liveMarker ? onPlan.find(x => x.id === hoverId) : null;
+          if (!a) return null;
+          const sx = view.x + a.planX * plan.width * view.zoom;
+          const sy = view.y + a.planY * plan.height * view.zoom;
+          const r = (markerSize * view.zoom) / 2;
+          const above = sy > 220;
+          const list = photosOf(a.id);
+          return (
+            <div
+              className="absolute bg-white rounded-lg shadow-lg p-2 text-xs pointer-events-none"
+              style={{
+                left: sx,
+                top: above ? sy - r - 8 : sy + r + 8,
+                transform: `translate(-50%, ${above ? '-100%' : '0'})`,
+                width: list.length ? 232 : 'auto',
+                zIndex: 5,
+              }}
+            >
+              <div className="font-semibold text-sm whitespace-nowrap">
+                {a.code}{a.room ? <span className="font-normal text-gray-500"> · {a.room}</span> : null}
+              </div>
+              {list.length > 0 ? (
+                <div className="mt-1.5">
+                  <img src={photoUrl(project.id, list[list.length - 1].id, true)} alt={a.code} className="w-full h-36 object-cover rounded bg-gray-100" />
+                  {list.length > 1 && (
+                    <div className="mt-1 text-gray-500 flex items-center gap-1">
+                      <Camera className="w-3 h-3" /> {list.length} {L('poze', 'photos')}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-gray-400 mt-0.5 whitespace-nowrap">{L('Fără poze', 'No photos')}</div>
+              )}
+            </div>
+          );
+        })()}
 
         {/* Fișa aparatului selectat */}
         {selected && selected.planId === plan?.id && (
@@ -432,6 +489,38 @@ export function PlanView({
               }).join(', ') || L('Fără module', 'No modules')}
             </div>
             {selected.notes && <div className="text-xs text-gray-500 italic mb-2">{selected.notes}</div>}
+            {(photosOf(selected.id).length > 0 || !readOnly) && (
+              <div className="mb-2">
+                {photosOf(selected.id).length > 0 && (
+                  <div className="flex gap-1 mb-1 overflow-x-auto">
+                    {photosOf(selected.id).map(p => (
+                      <button key={p.id} onClick={() => planLink.openPhotos?.(selected.id)} className="shrink-0">
+                        <img src={photoUrl(project.id, p.id, true)} alt={selected.code} className="w-14 h-14 object-cover rounded border" />
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {!readOnly && planLink.uploadPhotos && (
+                  <PhotoPasteInput
+                    key={selected.id}
+                    autoFocus
+                    className="mb-1"
+                    disabled={!!planLink.photoUploadStatus}
+                    onImages={(files) => planLink.uploadPhotos(selected.id, files)}
+                    placeholder={planLink.photoUploadStatus || L('Lipește poza de pe șantier (Ctrl+V)', 'Paste site photo (Ctrl+V)')}
+                  />
+                )}
+                {photosOf(selected.id).length > 0 && (
+                  <button
+                    onClick={() => planLink.openPhotos?.(selected.id)}
+                    className="text-sky-700 hover:underline text-xs flex items-center gap-1"
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    {L(`Toate pozele (${photosOf(selected.id).length})`, `All photos (${photosOf(selected.id).length})`)}
+                  </button>
+                )}
+              </div>
+            )}
             {!readOnly && (
               <button
                 onClick={() => { setPlacement(selected.id, null, null, null); setSelectedId(null); }}

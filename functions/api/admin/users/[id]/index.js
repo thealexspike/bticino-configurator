@@ -1,4 +1,5 @@
 import { json, readJson, requireAdmin, hashPassword } from '../../../../_shared/auth.js';
+import { fileKeysForUser, deleteKeys } from '../../../../_shared/files.js';
 
 // PUT /api/admin/users/:id — resetare parolă
 export async function onRequestPut(context) {
@@ -36,9 +37,14 @@ export async function onRequestDelete(context) {
   const user = await env.DB.prepare('SELECT id FROM users WHERE id = ?1').bind(params.id).first();
   if (!user) return json({ error: 'Cont inexistent' }, 404);
 
+  const fileKeys = await fileKeysForUser(env.DB, user.id);
+
   await env.DB.batch([
     env.DB.prepare(
       'DELETE FROM assemblies WHERE project_id IN (SELECT id FROM projects WHERE user_id = ?1)'
+    ).bind(user.id),
+    env.DB.prepare(
+      'DELETE FROM photos WHERE project_id IN (SELECT id FROM projects WHERE user_id = ?1)'
     ).bind(user.id),
     env.DB.prepare(
       'DELETE FROM plans WHERE project_id IN (SELECT id FROM projects WHERE user_id = ?1)'
@@ -47,6 +53,7 @@ export async function onRequestDelete(context) {
     env.DB.prepare('DELETE FROM sessions WHERE user_id = ?1').bind(user.id),
     env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(user.id),
   ]);
+  await deleteKeys(env, fileKeys);
 
   return json({ ok: true });
 }

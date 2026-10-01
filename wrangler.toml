@@ -6,3 +6,8 @@ pages_build_output_dir = "dist"
 binding = "DB"
 database_name = "bticino-configurator-db"
 database_id = "14808654-9992-4146-88a2-0dc2f4e9a405"
+
+# Fișierele proiectelor: imaginile planurilor (plans/...) și pozele de șantier (photos/...)
+[[r2_buckets]]
+binding = "FILES"
+bucket_name = "bticino-configurator-files"

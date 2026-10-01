@@ -9,6 +9,8 @@ import { QuoteView } from './QuoteView';
 import { PlanView } from './PlanView';
 import { PlanLinkContext } from '../planLink';
 import { filesToPlans, PLAN_FILE_ACCEPT } from '../lib/planImport';
+import { preparePhoto } from '../lib/photoImport';
+import { AssemblyPhotos } from './AssemblyPhotos';
 import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
@@ -46,6 +48,9 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
     try { return localStorage.getItem(planOpenKey) !== '0'; } catch { return true; }
   });
   const [planImportStatus, setPlanImportStatus] = useState(null);
+  const [photos, setPhotos] = useState([]);
+  const [photoAssemblyId, setPhotoAssemblyId] = useState(null);
+  const [photoUploadStatus, setPhotoUploadStatus] = useState(null);
   const planViewRef = useRef(null);
   const planFileInputRef = useRef(null);
 
@@ -58,8 +63,44 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         setActivePlanId(current => (list.some(p => p.id === current) ? current : list[0]?.id || null));
       })
       .catch(err => console.error('Error loading plans:', err));
+    api.listPhotos(project.id)
+      .then(list => { if (!cancelled) setPhotos(list); })
+      .catch(err => console.error('Error loading photos:', err));
     return () => { cancelled = true; };
   }, [project.id]);
+
+  // Pozele de șantier, grupate pe aparataj
+  const photosByAssembly = useMemo(() => {
+    const map = {};
+    for (const p of photos) (map[p.assembly_id] ||= []).push(p);
+    return map;
+  }, [photos]);
+
+  const uploadPhotos = async (assemblyId, files) => {
+    try {
+      for (let i = 0; i < files.length; i++) {
+        setPhotoUploadStatus(files.length > 1
+          ? `${lang === 'ro' ? 'Se încarcă poza' : 'Uploading photo'} ${i + 1}/${files.length}`
+          : (lang === 'ro' ? 'Se încarcă poza...' : 'Uploading photo...'));
+        const prepared = await preparePhoto(files[i]);
+        const created = await api.uploadPhoto(project.id, assemblyId, prepared);
+        setPhotos(prev => [...prev, created]);
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setPhotoUploadStatus(null);
+    }
+  };
+
+  const deletePhoto = async (photo) => {
+    try {
+      await api.deletePhoto(project.id, photo.id);
+      setPhotos(prev => prev.filter(p => p.id !== photo.id));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
 
   const setPlanPanelOpen = (open) => {
     setPlanOpen(open);
@@ -94,7 +135,13 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
     active: planVisible,
     locate: (assemblyId) => planViewRef.current?.focusAssembly(assemblyId),
     planNames: Object.fromEntries(plans.map(p => [p.id, p.name])),
+    projectId: project.id,
+    photosByAssembly,
+    openPhotos: setPhotoAssemblyId,
+    uploadPhotos,
+    photoUploadStatus,
   };
+  const photoAssembly = photoAssemblyId ? project.assemblies.find(a => a.id === photoAssemblyId) : null;
 
   const outlets = project.assemblies.filter(a => a.type === 'outlet');
   const switches = project.assemblies.filter(a => a.type === 'switch');
@@ -758,6 +805,18 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         </div>
       )}
       </div>
+
+      {photoAssembly && (
+        <AssemblyPhotos
+          projectId={project.id}
+          assembly={photoAssembly}
+          photos={photosByAssembly[photoAssembly.id] || []}
+          uploadStatus={photoUploadStatus}
+          onUpload={(files) => uploadPhotos(photoAssembly.id, files)}
+          onDelete={deletePhoto}
+          onClose={() => setPhotoAssemblyId(null)}
+        />
+      )}
 
       {planVisible && (
         <div className="flex-1 min-w-0 sticky top-16" style={{ height: 'calc(100vh - 5rem)' }}>

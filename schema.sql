@@ -59,9 +59,25 @@ CREATE TABLE IF NOT EXISTS plans (
   height INTEGER NOT NULL,
   marker_scale REAL NOT NULL DEFAULT 0.022,
   mime TEXT NOT NULL DEFAULT 'image/jpeg',
-  image TEXT NOT NULL,
+  image TEXT NOT NULL DEFAULT '',
+  image_key TEXT,
   created_at TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS photos (
+  id TEXT PRIMARY KEY,
+  project_id TEXT NOT NULL,
+  assembly_id TEXT NOT NULL,
+  image_key TEXT NOT NULL,
+  thumb_key TEXT,
+  width INTEGER,
+  height INTEGER,
+  created_by TEXT,
+  created_at TEXT NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_photos_project ON photos(project_id);
+CREATE INDEX IF NOT EXISTS idx_photos_assembly ON photos(assembly_id);
 
 CREATE INDEX IF NOT EXISTS idx_plans_project ON plans(project_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_user ON sessions(user_id);

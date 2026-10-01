@@ -13,11 +13,11 @@
 
 export const CHANGELOG = [
   {
-    id: '2026-10-01-plan',
+    id: '2026-10-01-plan-photos',
     date: '2026-10-01',
     title: {
-      ro: 'Planul electric pe proiect',
-      en: 'Electrical plan in the project',
+      ro: 'Planul electric și pozele de pe șantier',
+      en: 'Electrical plan and site photos',
     },
     items: {
       ro: [
@@ -25,12 +25,16 @@ export const CHANGELOG = [
         'Cu planul deschis, lista stă în stânga și planul în dreapta. Planul se poate ascunde oricând, iar lista rămâne ca înainte.',
         'Trage prizele și întrerupătoarele din listă pe plan. Apar ca cerculețe albe cu codul lor (P01, I01) și se pot muta oricând.',
         'Iconița de lângă cod arată că aparatul e pe plan. Un clic pe ea îl găsește pe plan.',
+        'Fiecare aparat poate avea poze de pe șantier, de exemplu peretele cu notițele despre aparataj și doză. Copiezi poza și o lipești cu Ctrl+V, din butonul cu aparat foto din listă sau din fișa aparatului de pe plan.',
+        'Pe plan, când treci cu mouse-ul peste un cerculeț, vezi camera și poza aparatului. Cerculețele cu poze au un punct albastru.',
       ],
       en: [
         'The "Import plan" button in a project loads a JPEG, PNG or PDF plan. Each PDF page becomes a separate plan, for example one per floor.',
         'With the plan open, the list sits on the left and the plan on the right. The plan can be hidden at any time and the list stays as before.',
         'Drag outlets and switches from the list onto the plan. They show as white circles with their code (P01, I01) and can be moved at any time.',
         'The icon next to the code shows the assembly is on the plan. Clicking it finds it on the plan.',
+        'Each assembly can have site photos, for example the wall with notes about the device and the wall box. Copy the photo and paste it with Ctrl+V, from the camera button in the list or from the assembly card on the plan.',
+        'On the plan, hovering over a circle shows the room and the assembly photo. Circles with photos have a blue dot.',
       ],
     },
   },

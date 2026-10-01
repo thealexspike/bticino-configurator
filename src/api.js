@@ -27,6 +27,19 @@ async function request(path, { method = 'GET', body } = {}) {
   return data;
 }
 
+// Încărcare de fișiere (multipart). Browserul pune singur Content-Type cu boundary.
+async function upload(path, form) {
+  const res = await fetch(`/api${path}`, { method: 'POST', body: form, credentials: 'same-origin' });
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    const err = new Error(data?.error || (res.status === 413 ? 'Fișierul este prea mare' : `Eroare de server (${res.status})`));
+    err.status = res.status;
+    throw err;
+  }
+  return data;
+}
+
 function toSession(user) {
   return user ? { user } : null;
 }
@@ -96,8 +109,14 @@ export const api = {
     return plans;
   },
 
+  // plan: { name, width, height, blob }
   async createPlan(projectId, plan) {
-    const { plan: created } = await request(`/projects/${projectId}/plans`, { method: 'POST', body: plan });
+    const form = new FormData();
+    form.append('file', plan.blob, 'plan.jpg');
+    form.append('name', plan.name || '');
+    form.append('width', String(plan.width));
+    form.append('height', String(plan.height));
+    const { plan: created } = await upload(`/projects/${projectId}/plans`, form);
     return created;
   },
 
@@ -107,6 +126,28 @@ export const api = {
 
   async deletePlan(projectId, planId) {
     return request(`/projects/${projectId}/plans/${planId}`, { method: 'DELETE' });
+  },
+
+  // --- Poze de șantier ---
+  async listPhotos(projectId) {
+    const { photos } = await request(`/projects/${projectId}/photos`);
+    return photos;
+  },
+
+  // photo: { file, thumb, width, height } (vezi lib/photoImport)
+  async uploadPhoto(projectId, assemblyId, photo) {
+    const form = new FormData();
+    form.append('assembly_id', assemblyId);
+    form.append('file', photo.file, 'photo.jpg');
+    if (photo.thumb) form.append('thumb', photo.thumb, 'thumb.jpg');
+    form.append('width', String(photo.width || ''));
+    form.append('height', String(photo.height || ''));
+    const { photo: created } = await upload(`/projects/${projectId}/photos`, form);
+    return created;
+  },
+
+  async deletePhoto(projectId, photoId) {
+    return request(`/projects/${projectId}/photos/${photoId}`, { method: 'DELETE' });
   },
 
   // --- Librărie globală ---

@@ -12,6 +12,7 @@ Suportă mai multe sisteme de aparataj, fiecare cu librărie proprie de SKU-uri,
 | PDF | jsPDF + jspdf-autotable (generare în browser) |
 | Backend | Cloudflare Pages Functions (`functions/`) |
 | Bază de date | Cloudflare D1 (SQLite), schema în `schema.sql` |
+| Fișiere | Cloudflare R2, bucket `bticino-configurator-files` (binding `FILES`): `plans/<proiect>/<plan>.jpg`, `photos/<proiect>/<poză>.jpg` și `-thumb.jpg` |
 | Autentificare | cookie de sesiune HttpOnly, parole PBKDF2, sesiuni 30 zile |
 | Import AI | endpoint propriu care apelează Claude pentru a extrage ansambluri dintr-un PDF |
 
@@ -66,6 +67,8 @@ Regula de dependențe: `data` și `i18n` nu importă nimic din aplicație; `lib`
 - **assemblies**: `id, project_id, type (outlet|switch), code (P01/I01), room, size (2|3|4|6), color, wall_box_type (masonry|drywall), modules (JSON: [{id, moduleId}]), notes, created_at`
 - **global_library**: `id` (`main` = bticino, altfel id-ul sistemului), `library_data` (JSON cu toată librăria), `updated_at, updated_by`
 - **users**, **sessions**: conturi și sesiuni; emailurile `@atelierazimut.com` sunt admini (vezi `isAdminEmail` în `functions/_shared/auth.js`)
+
+Schema se completează și automat: la primul request după deploy, `functions/_shared/schema.js` creează tabelele `plans` și `photos` și coloanele de poziție pe plan, dacă lipsesc.
 
 Librăriile default din `src/data/libraries.js` sunt folosite când D1 nu are rând pentru sistemul respectiv. Un admin le poate edita din aplicație; salvarea se face automat la fiecare modificare.
 

@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft , MapPin } from 'lucide-react';
+import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft , MapPin, Camera } from 'lucide-react';
 import { AssemblyThumbnail } from './visual/ModuleVisuals';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
@@ -506,6 +506,20 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
           </div>
           
           <div className="flex items-center gap-1">
+            {(() => {
+              const count = planLink.photosByAssembly?.[assembly.id]?.length || 0;
+              if (!planLink.openPhotos || (readOnly && count === 0)) return null;
+              return (
+                <button
+                  onClick={(e) => { e.stopPropagation(); planLink.openPhotos(assembly.id); }}
+                  className={`p-2 flex items-center gap-0.5 ${count ? 'text-sky-600 hover:text-sky-800' : 'text-gray-400 hover:text-gray-600'}`}
+                  title={lang === 'ro' ? 'Poze de pe șantier' : 'Site photos'}
+                >
+                  <Camera className="w-4 h-4" />
+                  {count > 0 && <span className="text-xs font-medium">{count}</span>}
+                </button>
+              );
+            })()}
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(assembly); }}
               className="text-blue-500 hover:text-blue-700 p-2"

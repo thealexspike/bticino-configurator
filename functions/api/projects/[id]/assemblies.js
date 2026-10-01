@@ -1,4 +1,5 @@
 import { json, readJson, requireUser, uuid, nowIso } from '../../../_shared/auth.js';
+import { deleteKeys } from '../../../_shared/files.js';
 
 // PUT /api/projects/:id/assemblies — sincronizează întreaga listă de ansambluri
 // Body: { assemblies: [{ id, type, code, room, size, color, wall_box_type, modules, notes }] }
@@ -24,7 +25,7 @@ export async function onRequestPut(context) {
   const statements = [];
   const mapping = {};
 
-  // Șterge ansamblurile care nu mai există în proiect
+  // Șterge ansamblurile care nu mai există în proiect (pozele lor se șterg după batch)
   for (const oldId of existingIds) {
     if (!incomingIds.has(oldId)) {
       statements.push(env.DB.prepare('DELETE FROM assemblies WHERE id = ?1').bind(oldId));
@@ -74,6 +75,16 @@ export async function onRequestPut(context) {
       }
       await env.DB.batch(statements);
     }
+  }
+
+  // Pozele de șantier ale ansamblurilor șterse (subinterogare: fără limită de parametri)
+  const orphanCondition = 'project_id = ?1 AND assembly_id NOT IN (SELECT id FROM assemblies WHERE project_id = ?1)';
+  const { results: orphans } = await env.DB.prepare(
+    `SELECT image_key, thumb_key FROM photos WHERE ${orphanCondition}`
+  ).bind(project.id).all();
+  if (orphans.length > 0) {
+    await env.DB.prepare(`DELETE FROM photos WHERE ${orphanCondition}`).bind(project.id).run();
+    await deleteKeys(env, orphans.flatMap(p => [p.image_key, p.thumb_key]));
   }
 
   return json({ ok: true, mapping });

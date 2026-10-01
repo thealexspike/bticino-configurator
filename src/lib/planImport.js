@@ -1,16 +1,17 @@
 // Transformă fișierele încărcate (JPEG, PNG, PDF) în imagini de plan gata de salvat.
 // Totul se face în browser: imaginea se redimensionează la max MAX_SIDE px pe latura
-// lungă și se comprimă JPEG până intră sub limita serverului (MAX_BASE64).
+// lungă și se comprimă JPEG până intră sub limita serverului (MAX_BYTES). Fișierul
+// rezultat se urcă în R2.
 // Fiecare pagină dintr-un PDF devine un plan separat (ex. un etaj pe pagină).
 
-const MAX_SIDE = 3000;
-const MAX_BASE64 = 1_850_000; // sub limita serverului (1.9 MB), cu marjă
+const MAX_SIDE = 4500;
+const MAX_BYTES = 15 * 1024 * 1024; // sub limita serverului (20 MB)
 const MAX_PDF_PAGES = 20;
 const QUALITIES = [0.85, 0.75, 0.65, 0.55];
 
 const baseName = (fileName) => String(fileName || 'Plan').replace(/\.[^.]+$/, '');
 
-function canvasFor(width, height) {
+export function canvasFor(width, height) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(width));
   canvas.height = Math.max(1, Math.round(height));
@@ -20,25 +21,26 @@ function canvasFor(width, height) {
   return { canvas, ctx };
 }
 
-// Comprimă canvas-ul la JPEG; scade calitatea, apoi rezoluția, până încape
-function encode(sourceCanvas) {
+const toBlob = (canvas, quality) => new Promise((resolve) => canvas.toBlob(resolve, 'image/jpeg', quality));
+
+// Comprimă canvas-ul la JPEG; scade calitatea, apoi rezoluția, până încape în maxBytes
+export async function encodeJpeg(sourceCanvas, maxBytes = MAX_BYTES, qualities = QUALITIES) {
   let canvas = sourceCanvas;
   for (let attempt = 0; attempt < 6; attempt++) {
-    for (const q of QUALITIES) {
-      const dataUrl = canvas.toDataURL('image/jpeg', q);
-      const data = dataUrl.slice(dataUrl.indexOf(',') + 1);
-      if (data.length <= MAX_BASE64) {
-        return { width: canvas.width, height: canvas.height, mime: 'image/jpeg', data };
+    for (const q of qualities) {
+      const blob = await toBlob(canvas, q);
+      if (blob && blob.size <= maxBytes) {
+        return { width: canvas.width, height: canvas.height, blob };
       }
     }
     const { canvas: smaller, ctx } = canvasFor(canvas.width * 0.8, canvas.height * 0.8);
     ctx.drawImage(canvas, 0, 0, smaller.width, smaller.height);
     canvas = smaller;
   }
-  throw new Error('Imaginea planului este prea mare, chiar și comprimată.');
+  throw new Error('Imaginea este prea mare, chiar și comprimată.');
 }
 
-function loadImage(file) {
+export function loadImage(file) {
   return new Promise((resolve, reject) => {
     const url = URL.createObjectURL(file);
     const img = new Image();
@@ -53,7 +55,7 @@ async function imageToPlan(file) {
   const scale = Math.min(1, MAX_SIDE / Math.max(img.naturalWidth, img.naturalHeight));
   const { canvas, ctx } = canvasFor(img.naturalWidth * scale, img.naturalHeight * scale);
   ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-  return [{ name: baseName(file.name), ...encode(canvas) }];
+  return [{ name: baseName(file.name), ...(await encodeJpeg(canvas)) }];
 }
 
 async function pdfToPlans(file, onProgress) {
@@ -74,7 +76,7 @@ async function pdfToPlans(file, onProgress) {
     const { canvas, ctx } = canvasFor(viewport.width, viewport.height);
     await page.render({ canvasContext: ctx, viewport, canvas }).promise;
     const name = pdf.numPages > 1 ? `${baseName(file.name)} - pag. ${n}` : baseName(file.name);
-    plans.push({ name, ...encode(canvas) });
+    plans.push({ name, ...(await encodeJpeg(canvas)) });
     page.cleanup();
   }
   await pdf.destroy();

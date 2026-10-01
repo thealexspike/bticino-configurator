@@ -1,4 +1,5 @@
 import { json, readJson, requireUser } from '../../../_shared/auth.js';
+import { fileKeysForProject, deleteKeys } from '../../../_shared/files.js';
 
 async function getOwnedProject(env, userId, projectId) {
   return env.DB.prepare('SELECT * FROM projects WHERE id = ?1 AND user_id = ?2')
@@ -42,11 +43,14 @@ export async function onRequestDelete(context) {
   const project = await getOwnedProject(env, context.data.user.id, params.id);
   if (!project) return json({ error: 'Proiect inexistent' }, 404);
 
+  const fileKeys = await fileKeysForProject(env.DB, project.id);
   await env.DB.batch([
     env.DB.prepare('DELETE FROM assemblies WHERE project_id = ?1').bind(project.id),
     env.DB.prepare('DELETE FROM plans WHERE project_id = ?1').bind(project.id),
+    env.DB.prepare('DELETE FROM photos WHERE project_id = ?1').bind(project.id),
     env.DB.prepare('DELETE FROM projects WHERE id = ?1').bind(project.id),
   ]);
+  await deleteKeys(env, fileKeys);
 
   return json({ ok: true });
 }
