@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 
 // Reusable price input component that doesn't format while typing
 export const PriceInput = ({ value, onChange, step = "0.01", className = "", decimals = 2 }) => {

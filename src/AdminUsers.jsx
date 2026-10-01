@@ -11,18 +11,19 @@ export default function AdminUsers({ onBack, currentUserId }) {
   const [newPassword, setNewPassword] = useState('');
   const [creating, setCreating] = useState(false);
 
+  const fetchUsers = () => api.adminListUsers()
+    .then(list => setUsers(list))
+    .catch(err => setError(err.message))
+    .finally(() => setLoading(false));
+
+  // Reîncărcare după o acțiune (creare, resetare, ștergere)
   const load = async () => {
     setLoading(true);
     setError('');
-    try {
-      setUsers(await api.adminListUsers());
-    } catch (err) {
-      setError(err.message);
-    }
-    setLoading(false);
+    await fetchUsers();
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { fetchUsers(); }, []);
 
   const flash = (msg) => {
     setNotice(msg);

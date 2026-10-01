@@ -8,11 +8,11 @@ export function RoomSelector({ value, onChange, existingRooms }) {
   const t = useTranslation();
 
   // Common room suggestions as fallback (translated)
-  const defaultRooms = [
+  const defaultRooms = useMemo(() => [
     t.livingRoom, t.kitchen, `${t.bedroom} 1`, `${t.bedroom} 2`, `${t.bedroom} 3`,
     `${t.bathroom} 1`, `${t.bathroom} 2`, t.hallway, t.entrance, t.office,
     t.diningRoom, t.garage, t.laundry, t.storage, t.balcony
-  ];
+  ], [t]);
 
   // Combine existing rooms with defaults, existing first
   const allSuggestions = useMemo(() => {

@@ -10,12 +10,61 @@ import { DEFAULT_LIBRARY, DEFAULT_LIBRARY_GEWISS, DEFAULT_LIBRARY_SCHNEIDER, DEF
 import { TRANSLATIONS, LanguageContext } from './i18n';
 import { saveLibrary, LibraryContext } from './lib/library';
 
+// --- Mapare rânduri API -> modelul folosit în UI ---
+
+const parseExcluded = (raw) => {
+  try {
+    const parsed = JSON.parse(raw || '{}');
+    return parsed && typeof parsed === 'object' ? parsed : {};
+  } catch { return {}; }
+};
+
+const projectFromApi = (project) => ({
+  ...project,
+  id: project.id,
+  name: project.name,
+  clientName: project.client_name,
+  clientContact: project.client_contact,
+  system: project.system || 'bticino',
+  excludedItems: parseExcluded(project.excluded_items),
+  createdAt: project.created_at,
+  assemblies: (project.assemblies || []).map(a => ({
+    id: a.id,
+    type: a.type,
+    code: a.code,
+    room: a.room,
+    size: a.size,
+    color: a.color,
+    wallBoxType: a.wall_box_type || 'masonry',
+    notes: a.notes || '',
+    modules: a.modules || [],
+  })),
+});
+
+// Default-urile tuturor sistemelor, suprascrise de rândurile salvate în D1
+const librariesFromRows = (rows) => {
+  const libs = {
+    bticino: { ...DEFAULT_LIBRARY },
+    gewiss: { ...DEFAULT_LIBRARY_GEWISS },
+    schneider: { ...DEFAULT_LIBRARY_SCHNEIDER },
+    generic: { ...DEFAULT_LIBRARY_GENERIC },
+  };
+  (rows || []).forEach(row => {
+    const libData = row.library_data || {};
+    const systemId = row.id === 'main' ? 'bticino' : row.id;
+    if (libData.modules && libData.modules.length > 0) {
+      if (!libData.systemId) libData.systemId = systemId;
+      libs[systemId] = libData;
+    }
+  });
+  return libs;
+};
+
 export default function App() {
   const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({ projects: [] });
-const [library, setLibrary] = useState(DEFAULT_LIBRARY);
-const [libraryLoaded, setLibraryLoaded] = useState(false);
+  const [library, setLibrary] = useState(DEFAULT_LIBRARY);
   const [selectedProject, setSelectedProject] = useState(null);
   const [showLibrary, setShowLibrary] = useState(false);
   const [showAdminUsers, setShowAdminUsers] = useState(false);
@@ -46,82 +95,29 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     return unsubscribe;
   }, []);
 
-  const loadProjects = async () => {
-    let projects;
-    try {
-      projects = await api.listProjects();
-    } catch (error) {
-      console.error('Error loading projects:', error);
-      return;
-    }
-
-    const parseExcluded = (raw) => {
-      try {
-        const parsed = JSON.parse(raw || '{}');
-        return parsed && typeof parsed === 'object' ? parsed : {};
-      } catch { return {}; }
-    };
-
-    const projectsWithAssemblies = projects.map(project => ({
-      ...project,
-      id: project.id,
-      name: project.name,
-      clientName: project.client_name,
-      clientContact: project.client_contact,
-      system: project.system || 'bticino',
-      excludedItems: parseExcluded(project.excluded_items),
-      createdAt: project.created_at,
-      assemblies: (project.assemblies || []).map(a => ({
-        id: a.id,
-        type: a.type,
-        code: a.code,
-        room: a.room,
-        size: a.size,
-        color: a.color,
-        wallBoxType: a.wall_box_type || 'masonry',
-        notes: a.notes || '',
-        modules: a.modules || [],
-      })),
-    }));
-
-    setData({ projects: projectsWithAssemblies });
-  };
-
-  // All system libraries in state
+  // Librăriile tuturor sistemelor (default-uri suprascrise de ce e salvat pe server)
   const [libraries, setLibraries] = useState({});
 
-  const loadLibraryFromServer = async () => {
-    // Start with ALL default libraries pre-populated
-    const libs = {
-      bticino: { ...DEFAULT_LIBRARY },
-      gewiss: { ...DEFAULT_LIBRARY_GEWISS },
-      schneider: { ...DEFAULT_LIBRARY_SCHNEIDER },
-      generic: { ...DEFAULT_LIBRARY_GENERIC },
-    };
+  // Încarcă proiectele și librăriile la autentificare
+  useEffect(() => {
+    if (!session?.user) return;
+    let cancelled = false;
 
-    // Load from D1 — overlay defaults with saved data
-    let rows = [];
-    try {
-      rows = await api.getLibraryRows();
-    } catch (error) {
-      console.error('Error loading library:', error);
-    }
+    api.listProjects()
+      .then(rows => { if (!cancelled) setData({ projects: rows.map(projectFromApi) }); })
+      .catch(error => console.error('Error loading projects:', error));
 
-    if (rows && rows.length > 0) {
-      rows.forEach(row => {
-        const libData = row.library_data || {};
-        const systemId = row.id === 'main' ? 'bticino' : row.id;
-        if (libData.modules && libData.modules.length > 0) {
-          if (!libData.systemId) libData.systemId = systemId;
-          libs[systemId] = libData;
-        }
+    api.getLibraryRows()
+      .catch(error => { console.error('Error loading library:', error); return []; })
+      .then(rows => {
+        if (cancelled) return;
+        const libs = librariesFromRows(rows);
+        setLibraries(libs);
+        setLibrary(libs.bticino);
       });
-    }
 
-    setLibraries(libs);
-    setLibrary(libs.bticino);
-    setLibraryLoaded(true);
-  };
+    return () => { cancelled = true; };
+  }, [session]);
 
   const getLibraryForSystem = (systemId) => {
     return libraries[systemId] || DEFAULT_LIBRARIES[systemId] || library;
@@ -139,12 +135,14 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
     }
   };
 
-  useEffect(() => {
-    if (session?.user) {
-      loadProjects();
-      loadLibraryFromServer();
-    }
-  }, [session]);
+  // Orice editare din LibraryPage: actualizează starea și salvează (local + server)
+  const handleLibraryUpdate = (nextLibrary) => {
+    setLibrary(nextLibrary);
+    if (!nextLibrary?.systemId) return;
+    setLibraries(prev => ({ ...prev, [nextLibrary.systemId]: nextLibrary }));
+    if (nextLibrary.systemId === 'bticino') saveLibrary(nextLibrary);
+    saveLibraryToServer(nextLibrary, nextLibrary.systemId);
+  };
 
   const saveProject = async (project) => {
   try {
@@ -181,13 +179,6 @@ const [libraryLoaded, setLibraryLoaded] = useState(false);
   }
 };
 
-useEffect(() => {
-  if (session?.user && libraryLoaded && library?.systemId) {
-    if (library.systemId === 'bticino') saveLibrary(library);
-    saveLibraryToServer(library, library.systemId);
-    setLibraries(prev => ({ ...prev, [library.systemId]: library }));
-  }
-}, [library, session, libraryLoaded]);
 
   useEffect(() => {
     try {
@@ -291,9 +282,6 @@ const deleteProject = async (id) => {
   // Show Library page
   if (showLibrary) {
     const handleSwitchLibrarySystem = (systemId) => {
-      if (library.systemId && library.systemId !== systemId) {
-        saveLibraryToServer(library, library.systemId);
-      }
       const targetLib = libraries[systemId] || DEFAULT_LIBRARIES[systemId] || DEFAULT_LIBRARY;
       setLibrary(targetLib);
     };
@@ -306,7 +294,7 @@ const deleteProject = async (id) => {
             <div className="pt-16">
               <LibraryPage
                 library={library}
-                onUpdate={setLibrary}
+                onUpdate={handleLibraryUpdate}
                 onBack={() => setShowLibrary(false)}
                 isAdmin={isAdmin}
                 onSwitchSystem={handleSwitchLibrarySystem}

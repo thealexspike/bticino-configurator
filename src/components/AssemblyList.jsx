@@ -27,7 +27,6 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   const MODULE_CATALOG = getModuleCatalog(library);
 
   const sortedAssemblies = [...assemblies].sort((a, b) => a.code.localeCompare(b.code));
-  const typeName = type === 'outlet' ? t.outlet : t.switch;
   const addLabel = type === 'outlet' ? t.addOutlet : t.addSwitch;
   const noItemsLabel = type === 'outlet' ? t.noOutlets : t.noSwitches;
   const prefix = type === 'outlet' ? 'P' : 'I';
@@ -52,11 +51,11 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   }, [sortedAssemblies, t.noRoom]);
 
   // Common room suggestions (translated)
-  const defaultRooms = [
+  const defaultRooms = useMemo(() => [
     t.livingRoom, t.kitchen, `${t.bedroom} 1`, `${t.bedroom} 2`, `${t.bedroom} 3`,
     `${t.bathroom} 1`, `${t.bathroom} 2`, t.hallway, t.entrance, t.office,
     t.diningRoom, t.garage, t.laundry, t.storage, t.balcony
-  ];
+  ], [t]);
 
   const allRoomSuggestions = useMemo(() => {
     const existing = existingRooms.filter(r => r && r.trim());
@@ -230,7 +229,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
     setEditingNotesValue('');
   };
 
-  const handleNotesKeyDown = (e, assembly) => {
+  const handleNotesKeyDown = (e) => {
     if (e.key === 'Enter') {
       e.target.blur();
     } else if (e.key === 'Escape') {
@@ -458,7 +457,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 value={editingNotesValue}
                 onChange={(e) => setEditingNotesValue(e.target.value)}
                 onBlur={() => handleNotesSubmit(assembly)}
-                onKeyDown={(e) => handleNotesKeyDown(e, assembly)}
+                onKeyDown={(e) => handleNotesKeyDown(e)}
                 onClick={(e) => e.stopPropagation()}
                 placeholder={t.addNote}
                 className="border rounded px-2 py-0.5 text-sm flex-1 max-w-md"

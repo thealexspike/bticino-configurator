@@ -9,7 +9,7 @@ import { QuoteView } from './QuoteView';
 import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { generateId, generateAssemblyCode, reorderAssembly, createAssembly, createModuleInstance } from '../lib/assemblies';
-import { getAvailableColors, getSystemName, getColorName, LibraryContext, getModuleName } from '../lib/library';
+import { getAvailableColors, getSystemName, getColorName, LibraryContext } from '../lib/library';
 
 export function ProjectDetail({ project, onBack, onUpdate }) {
   const [activeTab, setActiveTab] = useState('outlets');

@@ -1,28 +1,6 @@
 import React from 'react';
 import { svgPalette, resolveColorHex } from './colors';
 
-// Image base URL for Bticino DAR CDN
-export const BTICINO_IMG_BASE = 'https://dar.bticino.it/asset/Pictures/md/';
-
-// Face plate images
-export const FACE_PLATE_IMAGES = {
-  '2_white': `${BTICINO_IMG_BASE}BT-KA4802KW-WEB-R.jpg`,
-  '3_white': `${BTICINO_IMG_BASE}BT-KA4803KW-WEB-R.jpg`,
-  '4_white': `${BTICINO_IMG_BASE}BT-KA4804KW-WEB-R.jpg`,
-  '6_white': `${BTICINO_IMG_BASE}BT-KA4806KW-WEB-R.jpg`,
-  '2_black': `${BTICINO_IMG_BASE}BT-KA4802KG-WEB-R.jpg`,
-  '3_black': `${BTICINO_IMG_BASE}BT-KA4803KG-WEB-R.jpg`,
-  '4_black': `${BTICINO_IMG_BASE}BT-KA4804KG-WEB-R.jpg`,
-  '6_black': `${BTICINO_IMG_BASE}BT-KA4806KG-WEB-R.jpg`,
-};
-
-// Get face plate image URL  
-export const getFacePlateImageUrl = (size, color) => {
-  const key = `${size}_${color}`;
-  return FACE_PLATE_IMAGES[key] || null;
-};
-
-
 // Graphics definitions by type
 // Each receives colorHex (e.g. '#C2A878') and derives all SVG fill colors from it
 

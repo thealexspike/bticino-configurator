@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Trash2, ChevronLeft, Box, Layers } from 'lucide-react';
 import { RoomSelector } from './RoomSelector';
 import { ModuleImage } from './visual/ModuleVisuals';
@@ -117,7 +117,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
         if (data) {
           dragData = JSON.parse(data);
         }
-      } catch (err) {
+      } catch {
         console.log('Could not parse drag data');
       }
     }
@@ -220,7 +220,6 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
   const colorInfo = availableColors.find(c => c.id === assembly.color);
   const _detailDark = isDarkColor(assembly.color, library);
   const faceBgColor = colorInfo?.hex || (_detailDark ? '#454545' : '#f0f0f0');
-  const faceTextColor = _detailDark ? '#ffffff' : '#333333';
 
   const _wbMasonry = (assembly.wallBoxType || 'masonry') === 'masonry';
 
@@ -498,7 +497,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               <span>{usedSize}/{assembly.size}M ({remainingSize}M {t.free})</span>
             </div>
             <div className="h-3 bg-gray-200 rounded overflow-hidden flex">
-              {moduleSlots.map((slot, idx) => (
+              {moduleSlots.map((slot) => (
                 <div
                   key={slot.id}
                   className="h-full bg-blue-500 border-r border-blue-600 last:border-r-0"

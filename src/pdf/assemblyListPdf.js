@@ -26,7 +26,6 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     const modHeight = sysProps.moduleHeight * s;
     const sideMargin = sysProps.sideMargin * s;
     const topMargin = sysProps.topMargin * s;
-    const bottomMargin = sysProps.bottomMargin * s;
     const totalHeight = (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin) * s
       || (sysProps.moduleHeight + (sysProps.supportBarHeight + sysProps.supportBarOffset) * 2) * s;
     const cr = sysProps.cornerRadius * s;

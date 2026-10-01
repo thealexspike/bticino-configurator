@@ -9,7 +9,7 @@ export function ProfitView({ project }) {
   const t = useTranslation();
   const lang = useLanguage();
   const MODULE_CATALOG = getModuleCatalog(library);
-  const excluded = project.excludedItems || {};
+  const excluded = useMemo(() => project.excludedItems || {}, [project.excludedItems]);
 
   const profitDataAll = useMemo(() => {
     const items = {

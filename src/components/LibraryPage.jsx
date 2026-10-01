@@ -13,7 +13,6 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
   const [showAddModule, setShowAddModule] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [showAddPreset, setShowAddPreset] = useState(false);
-  const [editingPreset, setEditingPreset] = useState(null);
   const [editingColorId, setEditingColorId] = useState(null);
   const [pendingColorHex, setPendingColorHex] = useState('');
   const [originalColorHex, setOriginalColorHex] = useState('');
@@ -179,15 +178,6 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
       modules: [],
     });
     setShowAddPreset(false);
-  };
-
-  const updatePreset = (presetId, updates) => {
-    safeOnUpdate({
-      ...library,
-      presets: (library.presets || []).map(p => 
-        p.id === presetId ? { ...p, ...updates } : p
-      ),
-    });
   };
 
   const deletePreset = (presetId) => {
@@ -1012,7 +1002,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
         <div className="bg-white rounded-lg shadow p-4">
           <h2 className="text-lg font-bold mb-4">🎨 {t.manageColors}</h2>
           <div className="space-y-2 mb-4">
-            {getAvailableColors(library).map((color, idx) => {
+            {getAvailableColors(library).map((color) => {
               const isEditingThis = editingColorId === color.id;
               return (
               <div key={color.id} className="flex items-center gap-3 p-2 border rounded">

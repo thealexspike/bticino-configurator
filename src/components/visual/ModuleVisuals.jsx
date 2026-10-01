@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { getSystemProportions } from '../../data/libraries';
-import { adjustBrightness, getLuminance, resolveColorHex } from '../../graphics/colors';
-import { getFacePlateImageUrl, ModuleGraphicsByType, getGraphicTypeFromId, getModuleGraphic } from '../../graphics/moduleGraphics';
+import { adjustBrightness } from '../../graphics/colors';
+import { ModuleGraphicsByType, getGraphicTypeFromId, getModuleGraphic } from '../../graphics/moduleGraphics';
 import { isDarkColor } from '../../lib/library';
 
 // Module image component
@@ -17,64 +17,6 @@ export const ModuleImage = ({ moduleId, color, colorHex, width = 60, height = 80
   );
 };
 
-// Face plate image component
-export const FacePlateImage = ({ size, color, width, height }) => {
-  const [imageError, setImageError] = useState(false);
-  const [useProxy, setUseProxy] = useState(false);
-  const imageUrl = getFacePlateImageUrl(size, color);
-  
-  const CORS_PROXY = 'https://corsproxy.io/?';
-  const finalUrl = useProxy && imageUrl ? `${CORS_PROXY}${encodeURIComponent(imageUrl)}` : imageUrl;
-
-  if (imageError || !imageUrl) {
-    return null; // Fall back to CSS styling
-  }
-
-  return (
-    <img
-      src={finalUrl}
-      alt={`${size}M ${color} face plate`}
-      style={{ 
-        position: 'absolute',
-        width: '100%',
-        height: '100%',
-        objectFit: 'contain',
-        opacity: 0.15,
-        pointerEvents: 'none',
-      }}
-      onError={() => {
-        if (!useProxy) {
-          setUseProxy(true);
-        } else {
-          setImageError(true);
-        }
-      }}
-    />
-  );
-};
-
-// Face plate frame SVG
-export const FacePlateFrame = ({ size, color, children, width, height }) => {
-  const hex = resolveColorHex(color);
-  const dark = getLuminance(hex) < 0.5;
-  const bg = dark ? adjustBrightness(hex, -20) : hex;
-  const border = dark ? adjustBrightness(hex, 30) : adjustBrightness(hex, -30);
-  const innerBg = dark ? adjustBrightness(hex, -10) : '#fff';
-  
-  return (
-    <svg width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
-      {/* Outer frame */}
-      <rect x="0" y="0" width={width} height={height} rx="8" fill={bg} stroke={border} strokeWidth="3"/>
-      {/* Inner recess */}
-      <rect x="8" y="8" width={width - 16} height={height - 16} rx="4" fill={innerBg} stroke={border} strokeWidth="1"/>
-      {/* Module area */}
-      <g transform="translate(12, 12)">
-        {children}
-      </g>
-    </svg>
-  );
-};
-
 // Thumbnail for module list in Library
 export const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
   const graphicType = getGraphicTypeFromId(moduleId, moduleSize);
@@ -84,8 +26,7 @@ export const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
   const height = size;
   const width = height * aspectRatio;
   
-  const Component = getModuleGraphic(moduleId, moduleSize);
-  if (!Component) return null;
+  const Graphic = ModuleGraphicsByType[graphicType] || ModuleGraphicsByType.generic1m;
   
   return (
     <div 
@@ -98,7 +39,7 @@ export const ModuleThumbnail = ({ moduleId, size = 40, moduleSize = 1 }) => {
         justifyContent: 'center',
       }}
     >
-      <Component color="white" width={width} height={height} />
+      <Graphic color="white" width={width} height={height} />
     </div>
   );
 };
@@ -125,7 +66,6 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
   const moduleHeight = props.moduleHeight * fitScale;
   const sideMargin = props.sideMargin * fitScale;
   const topMargin = props.topMargin * fitScale;
-  const bottomMargin = props.bottomMargin * fitScale;
   const totalHeight = (props.topMargin + props.moduleHeight + props.bottomMargin) * fitScale
     || (props.moduleHeight + (props.supportBarHeight + props.supportBarOffset) * 2) * fitScale;
   const cornerRadius = props.cornerRadius * fitScale;
