@@ -1,3 +1,4 @@
+import { DEFAULT_LIBRARY_GENERIC_POSTS, POSTS_PROPORTIONS } from './postsLibrary';
 export const FRAME_SIZES = [2, 3, 4, 6]; // For wall boxes, install faces, decor faces (min 2M)
 
 export const COLORS = [
@@ -11,6 +12,7 @@ export const SYSTEMS = [
   { id: 'gewiss', nameEn: 'Gewiss Chorus', nameRo: 'Gewiss Chorus' },
   { id: 'schneider', nameEn: 'Schneider Noua Unica', nameRo: 'Schneider Noua Unica' },
   { id: 'generic', nameEn: 'Generic Modular (estimate)', nameRo: 'Sistem modular generic (estimativ)' },
+  { id: 'generic_posts', nameEn: 'Generic Post System (estimate)', nameRo: 'Sistem cu posturi generic (estimativ)' },
 ];
 
 // Default library data - will be overridden by localStorage
@@ -1163,7 +1165,11 @@ export const DEFAULT_LIBRARIES = {
   gewiss: DEFAULT_LIBRARY_GEWISS,
   schneider: DEFAULT_LIBRARY_SCHNEIDER,
   generic: DEFAULT_LIBRARY_GENERIC,
+  generic_posts: DEFAULT_LIBRARY_GENERIC_POSTS,
 };
+
+// Sistemul cu posturi stă în fișier separat (nu e regenerat de sync-default-libraries)
+export { DEFAULT_LIBRARY_GENERIC_POSTS };
 
 // Each system has different physical proportions for frames and modules.
 // Units are abstract but proportional to real products.
@@ -1213,6 +1219,8 @@ export const SYSTEM_PROPORTIONS = {
 
 // Generic placeholder system looks like Gewiss
 SYSTEM_PROPORTIONS.generic = SYSTEM_PROPORTIONS.gewiss;
+// Sistem cu posturi: ramă de sticlă, ferestre pătrate la 71 mm (vezi postsLibrary.js)
+SYSTEM_PROPORTIONS.generic_posts = POSTS_PROPORTIONS;
 
 export const getSystemProportions = (library) => {
   const sysId = library?.systemId || 'bticino';

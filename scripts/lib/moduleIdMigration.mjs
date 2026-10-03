@@ -60,6 +60,8 @@ function makeModule(lib, id) {
 
 export function migrateLibrary(input) {
   const lib = JSON.parse(JSON.stringify(input));
+  // Sistemele cu posturi au mecanisme de 1 post; modulele comune de 1M nu se aplică
+  if (lib.mounting === 'posts') return { lib, map: { ...FIXED_RENAMES }, changes: [] };
   const map = renameMapFor(lib);
   const changes = [];
 

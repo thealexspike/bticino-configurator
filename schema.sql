@@ -40,6 +40,7 @@ CREATE TABLE IF NOT EXISTS assemblies (
   plan_id TEXT,
   plan_x REAL,
   plan_y REAL,
+  wall_box_mode TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 

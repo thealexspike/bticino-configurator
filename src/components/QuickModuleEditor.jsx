@@ -5,6 +5,7 @@ import { getModuleGraphic } from '../graphics/moduleGraphics';
 import { getSystemProportions } from '../data/libraries';
 import { getAvailableSizes, getModuleCatalog, getModuleName } from '../lib/library';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
+import { sizeLabel, capacityLabel, freeLabel } from '../lib/mounting';
 
 const TILE_HEIGHT = 30;
 
@@ -48,13 +49,13 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
           className="text-xs bg-gray-100 px-1 py-0.5 rounded border-0"
           title={L('Mărimea ramei', 'Frame size')}
         >
-          {getAvailableSizes(library).map(s => <option key={s} value={s}>{s}M</option>)}
+          {getAvailableSizes(library).map(s => <option key={s} value={s}>{sizeLabel(s, library, lang)}</option>)}
         </select>
         <span className={`text-xs px-1.5 py-0.5 rounded ${over ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`}>
-          {used}/{assembly.size}M
+          {capacityLabel(used, assembly.size, library, lang)}
         </span>
         {!readOnly && !over && free > 0 && (
-          <span className="text-xs text-gray-400">{L(`${free}M liber`, `${free}M free`)}</span>
+          <span className="text-xs text-gray-400">{L(`${freeLabel(free, library, lang)} liber`, `${freeLabel(free, library, lang)} free`)}</span>
         )}
       </div>
 
@@ -89,14 +90,14 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
                 key={mod.id}
                 onClick={() => addModule(mod)}
                 disabled={!fits}
-                title={fits ? `${name} (${mod.size}M)` : L(`${name}: nu mai încape (${free}M liber)`, `${name}: does not fit (${free}M free)`)}
+                title={fits ? `${name} (${sizeLabel(mod.size, library, lang)})` : L(`${name}: nu mai încape (${freeLabel(free, library, lang)} liber)`, `${name}: does not fit (${freeLabel(free, library, lang)} free)`)}
                 className="flex flex-col items-center gap-0.5 p-1 rounded border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 disabled:opacity-35 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:cursor-not-allowed"
               >
                 <div className="border border-gray-300" style={{ lineHeight: 0 }}>
                   <Graphic color="white" width={w} height={TILE_HEIGHT} />
                 </div>
                 <span className="text-[9px] leading-tight text-gray-700 text-center w-full truncate">{name}</span>
-                <span className="text-[9px] leading-none text-gray-400">{mod.size}M</span>
+                <span className="text-[9px] leading-none text-gray-400">{sizeLabel(mod.size, library, lang)}</span>
               </button>
             );
           })}

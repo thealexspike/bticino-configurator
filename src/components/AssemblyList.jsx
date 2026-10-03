@@ -5,6 +5,7 @@ import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
 import { usePlanLink, ASSEMBLY_DRAG_TYPE } from '../planLink';
 import { calculateModulesSize } from '../lib/assemblies';
+import { sizeLabel, capacityLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines } from '../lib/mounting';
 import { getAvailableColors, getAvailableSizes, isDarkColor, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
 import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
 
@@ -331,7 +332,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               title="Change size"
             >
               {getAvailableSizes(library).map(s => (
-                <option key={s} value={s}>{s}M</option>
+                <option key={s} value={s}>{sizeLabel(s, library, lang)}</option>
               ))}
             </select>
 
@@ -396,7 +397,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             <span className={`${compact ? 'text-xs px-1.5' : 'text-sm px-2'} py-0.5 rounded whitespace-nowrap ${
               usedSize > assembly.size ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
             }`}>
-              {usedSize}/{assembly.size}M
+              {capacityLabel(usedSize, assembly.size, library, lang)}
             </span>
           </>
         );
@@ -457,6 +458,23 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             )}
           </>
         );
+    // Sistem cu posturi: doze individuale sau o doză multi-post (doar pentru ramele de 2+ posturi)
+    const wbLines = isPostSystem(library) ? wallBoxLines(assembly, library, lang) : null;
+    const modeEl = isPostSystem(library) && postsOf(assembly.size, library) > 1 ? (
+      <select
+        value={wallBoxMode(assembly, library)}
+        disabled={readOnly}
+        onChange={(e) => { e.stopPropagation(); if (onUpdate) onUpdate({ ...assembly, wallBoxMode: e.target.value }); }}
+        onClick={(e) => e.stopPropagation()}
+        className={`${selCls} bg-gray-100 hover:bg-gray-200`}
+        title={wbLines?.[0]?.fallback
+          ? (lang === 'ro' ? 'Doza multi-post nu e definită în librărie pentru această mărime: se folosesc doze individuale' : 'No multi-post box defined for this size: individual boxes are used')
+          : (lang === 'ro' ? 'Tipul dozelor' : 'Wall box layout')}
+      >
+        <option value="single">{compact ? (lang === 'ro' ? 'Indiv.' : 'Single') : (lang === 'ro' ? 'Doze individuale' : 'Individual boxes')}</option>
+        <option value="multi">{compact ? 'Multi' : (lang === 'ro' ? 'Doză multi-post' : 'Multi-post box')}{wbLines?.[0]?.fallback ? ' ⚠' : ''}</option>
+      </select>
+    ) : null;
     const modulesCountEl = <span className="whitespace-nowrap">{assembly.modules.length} {t.modules}</span>;
     const chipsEl = (
           <>
@@ -475,7 +493,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                     >
                       {group.count > 1 && <span className="font-bold">{group.count}x</span>}
                       {moduleName.length > 12 ? moduleName.substring(0, 10) + '...' : moduleName}
-                      <span className="text-blue-400 text-[10px]">{moduleSize}M</span>
+                      <span className="text-blue-400 text-[10px]">{sizeLabel(moduleSize, library, lang)}</span>
                     </span>
                   );
                 })}
@@ -613,6 +631,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 {sizeEl}
                 {colorEl}
                 {wallEl}
+                {modeEl}
                 {capacityEl}
                 <div className="ml-auto flex items-center flex-shrink-0">
                   {actionsEl}
@@ -653,6 +672,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             {sizeEl}
             {colorEl}
             {wallEl}
+            {modeEl}
             {capacityEl}
           </div>
 

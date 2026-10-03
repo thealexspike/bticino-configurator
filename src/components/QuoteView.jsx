@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { FileText, Eye, EyeOff } from 'lucide-react';
 import { useTranslation, useLanguage } from '../i18n';
 import { isEntryExcluded } from '../lib/assemblies';
+import { wallBoxLines, hasSeparateSupports, sizeLabel } from '../lib/mounting';
 import { getColorName, LibraryContext, getWallBoxPrice, getInstallFacePrice, getDecorFacePrice, getModulePrice, getModuleFacePrice, getModuleName, getModuleCatalog } from '../lib/library';
 import { VAT_RATE } from '../lib/pricing';
 import { generateQuotePdf } from '../pdf/quotePdf';
@@ -50,47 +51,39 @@ export function QuoteView({ project, onUpdate }) {
       const colorName = getColorName(assembly.color, library, lang);
       const wallBoxType = assembly.wallBoxType || 'masonry';
 
-      // Wall Box - separate by type
-      const wbKey = `${assembly.size}M`;
-      const wbPrice = getWallBoxPrice(assembly.size, wallBoxType, library);
-      
-      if (wallBoxType === 'drywall') {
-        items.wallBoxesDrywall[wbKey] = items.wallBoxesDrywall[wbKey] || { 
-          name: `${t.wallBoxDrywallItem} ${assembly.size}M`, 
+      // Doze — la sistemele cu posturi: individuale (N × 1 post) sau multi-post (1 × N posturi)
+      const wbCategory = wallBoxType === 'drywall' ? 'wallBoxesDrywall' : 'wallBoxesMasonry';
+      const wbItemName = wallBoxType === 'drywall' ? t.wallBoxDrywallItem : t.wallBoxMasonryItem;
+      for (const line of wallBoxLines(assembly, library, lang)) {
+        const wbKey = `${line.size}M`;
+        items[wbCategory][wbKey] = items[wbCategory][wbKey] || {
+          name: `${wbItemName} ${line.label}`,
+          unitPrice: getWallBoxPrice(line.size, wallBoxType, library),
           color: '—',
-          unitPrice: wbPrice,
-          qty: 0 
+          qty: 0,
         };
-        items.wallBoxesDrywall[wbKey].qty++;
-      } else {
-        items.wallBoxesMasonry[wbKey] = items.wallBoxesMasonry[wbKey] || { 
-          name: `${t.wallBoxMasonryItem} ${assembly.size}M`, 
-          color: '—',
-          unitPrice: wbPrice,
-          qty: 0 
-        };
-        items.wallBoxesMasonry[wbKey].qty++;
+        items[wbCategory][wbKey].qty += line.qty;
       }
 
-      // Install Face
-      const ifKey = `${assembly.size}M`;
-      const ifPrice = getInstallFacePrice(assembly.size, library);
-      items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `${t.supportItem} ${assembly.size}M`, 
-        color: '—',
-        unitPrice: ifPrice,
-        qty: 0 
-      };
-      items.installFaces[ifKey].qty++;
+      // Ramă suport — lipsește când vine la pachet cu rama decor
+      if (hasSeparateSupports(library)) {
+        const ifKey = `${assembly.size}M`;
+        items.installFaces[ifKey] = items.installFaces[ifKey] || {
+          name: `${t.supportItem} ${sizeLabel(assembly.size, library, lang)}`,
+          unitPrice: getInstallFacePrice(assembly.size, library),
+          color: '—',
+          qty: 0,
+        };
+        items.installFaces[ifKey].qty++;
+      }
 
-      // Decor Face
+      // Ramă decor (+ montaj, la sistemele unde vin la pachet)
       const dfKey = `${assembly.size}M-${assembly.color}`;
-      const dfPrice = getDecorFacePrice(assembly.size, assembly.color, library);
-      items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `${t.coverPlateItem} ${assembly.size}M`, 
+      items.decorFaces[dfKey] = items.decorFaces[dfKey] || {
+        name: `${hasSeparateSupports(library) ? t.coverPlateItem : t.coverPlateWithSupportItem} ${sizeLabel(assembly.size, library, lang)}`,
+        unitPrice: getDecorFacePrice(assembly.size, assembly.color, library),
         color: colorName,
-        unitPrice: dfPrice,
-        qty: 0 
+        qty: 0,
       };
       items.decorFaces[dfKey].qty++;
 

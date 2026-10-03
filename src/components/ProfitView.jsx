@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation, useLanguage } from '../i18n';
 import { isEntryExcluded } from '../lib/assemblies';
 import { getColorName, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
+import { wallBoxLines, hasSeparateSupports, sizeLabel } from '../lib/mounting';
 import { VAT_RATE } from '../lib/pricing';
 
 export function ProfitView({ project }) {
@@ -25,58 +26,43 @@ export function ProfitView({ project }) {
       const colorName = getColorName(assembly.color, library, lang);
       const wallBoxType = assembly.wallBoxType || 'masonry';
 
-      // Wall Box
-      const wbKey = `${assembly.size}M`;
-      const wbData = wallBoxType === 'drywall' 
-        ? library.wallBoxesDrywall?.[assembly.size] 
-        : library.wallBoxesMasonry?.[assembly.size];
-      const wbPurchase = wbData?.purchasePrice || 0;
-      const wbPrice = wbData?.price || 0;
-      const wbSellingWithoutVat = wbPrice / (1 + VAT_RATE);
-      
+      // Doze — la sistemele cu posturi: individuale (N × 1 post) sau multi-post (1 × N posturi)
       const wbCategory = wallBoxType === 'drywall' ? 'wallBoxesDrywall' : 'wallBoxesMasonry';
-      const wbName = wallBoxType === 'drywall' 
-        ? `${t.wallBoxDrywallItem} ${assembly.size}M`
-        : `${t.wallBoxMasonryItem} ${assembly.size}M`;
-      
-      items[wbCategory][wbKey] = items[wbCategory][wbKey] || { 
-        name: wbName,
-        color: '—',
-        purchasePrice: wbPurchase,
-        sellingPrice: wbSellingWithoutVat,
-        qty: 0 
-      };
-      items[wbCategory][wbKey].qty++;
+      const wbItemName = wallBoxType === 'drywall' ? t.wallBoxDrywallItem : t.wallBoxMasonryItem;
+      const wbTable = wallBoxType === 'drywall' ? library.wallBoxesDrywall : library.wallBoxesMasonry;
+      for (const line of wallBoxLines(assembly, library, lang)) {
+        const wbKey = `${line.size}M`;
+        items[wbCategory][wbKey] = items[wbCategory][wbKey] || {
+          name: `${wbItemName} ${line.label}`,
+          purchasePrice: wbTable?.[line.size]?.purchasePrice || 0,
+          sellingPrice: (wbTable?.[line.size]?.price || 0) / (1 + VAT_RATE),
+          color: '—',
+          qty: 0,
+        };
+        items[wbCategory][wbKey].qty += line.qty;
+      }
 
-      // Install Face
-      const ifKey = `${assembly.size}M`;
-      const ifData = library.installFaces?.[assembly.size];
-      const ifPurchase = ifData?.purchasePrice || 0;
-      const ifPrice = ifData?.price || 0;
-      const ifSellingWithoutVat = ifPrice / (1 + VAT_RATE);
-      
-      items.installFaces[ifKey] = items.installFaces[ifKey] || { 
-        name: `${t.supportItem} ${assembly.size}M`,
-        color: '—',
-        purchasePrice: ifPurchase,
-        sellingPrice: ifSellingWithoutVat,
-        qty: 0 
-      };
-      items.installFaces[ifKey].qty++;
+      // Ramă suport — lipsește când vine la pachet cu rama decor
+      if (hasSeparateSupports(library)) {
+        const ifKey = `${assembly.size}M`;
+        items.installFaces[ifKey] = items.installFaces[ifKey] || {
+          name: `${t.supportItem} ${sizeLabel(assembly.size, library, lang)}`,
+          purchasePrice: library.installFaces?.[assembly.size]?.purchasePrice || 0,
+          sellingPrice: (library.installFaces?.[assembly.size]?.price || 0) / (1 + VAT_RATE),
+          color: '—',
+          qty: 0,
+        };
+        items.installFaces[ifKey].qty++;
+      }
 
-      // Decor Face
+      // Ramă decor (+ montaj, la sistemele unde vin la pachet)
       const dfKey = `${assembly.size}M-${assembly.color}`;
-      const dfData = library.decorFaces?.[`${assembly.size}-${assembly.color}`];
-      const dfPurchase = dfData?.purchasePrice || 0;
-      const dfPrice = dfData?.price || 0;
-      const dfSellingWithoutVat = dfPrice / (1 + VAT_RATE);
-      
-      items.decorFaces[dfKey] = items.decorFaces[dfKey] || { 
-        name: `${t.coverPlateItem} ${assembly.size}M`,
+      items.decorFaces[dfKey] = items.decorFaces[dfKey] || {
+        name: `${hasSeparateSupports(library) ? t.coverPlateItem : t.coverPlateWithSupportItem} ${sizeLabel(assembly.size, library, lang)}`,
+        purchasePrice: library.decorFaces?.[`${assembly.size}-${assembly.color}`]?.purchasePrice || 0,
+        sellingPrice: (library.decorFaces?.[`${assembly.size}-${assembly.color}`]?.price || 0) / (1 + VAT_RATE),
         color: colorName,
-        purchasePrice: dfPurchase,
-        sellingPrice: dfSellingWithoutVat,
-        qty: 0 
+        qty: 0,
       };
       items.decorFaces[dfKey].qty++;
 

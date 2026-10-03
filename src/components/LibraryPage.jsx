@@ -3,6 +3,7 @@ import { Plus, Trash2, ChevronLeft, Package, Zap, Settings } from 'lucide-react'
 import { PriceInput } from './PriceInput';
 import { GraphicPicker } from './GraphicPicker';
 import { FRAME_SIZES, SYSTEMS } from '../data/libraries';
+import { sizeLabel, hasSeparateSupports, isPostSystem } from '../lib/mounting';
 import { getModuleGraphic } from '../graphics/moduleGraphics';
 import { useTranslation, useLanguage } from '../i18n';
 import { getAvailableColors, getAvailableSizes, buildColorObj, getColorName, getModuleName } from '../lib/library';
@@ -257,17 +258,19 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
         >
           {t.wallBoxes}
         </button>
+        {hasSeparateSupports(library) && (
         <button
           onClick={() => setActiveTab('installfaces')}
           className={`px-4 py-2 rounded ${activeTab === 'installfaces' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
         >
           {t.installFaces}
         </button>
+        )}
         <button
           onClick={() => setActiveTab('decorfaces')}
           className={`px-4 py-2 rounded ${activeTab === 'decorfaces' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
         >
-          {t.decorFacesTab}
+          {hasSeparateSupports(library) ? t.decorFacesTab : (lang === 'ro' ? 'Rame decor + montaj' : 'Cover + mounting frames')}
         </button>
         <button
           onClick={() => setActiveTab('presets')}
@@ -1191,6 +1194,13 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
       )}
 
       {/* Wall Boxes Tab */}
+      {activeTab === 'wallboxes' && isPostSystem(library) && (
+        <div className="mb-3 text-sm text-gray-600 bg-blue-50 border border-blue-100 rounded p-3">
+          {lang === 'ro'
+            ? 'Sistem cu posturi: rândul „1 post" e doza individuală; rândurile de 2-4 posturi sunt dozele multi-post. Dacă o doză multi-post nu are cod sau preț, aparatul folosește automat doze individuale.'
+            : 'Post system: the "1 post" row is the individual box; the 2-4 post rows are multi-post boxes. If a multi-post box has no code or price, individual boxes are used automatically.'}
+        </div>
+      )}
       {activeTab === 'wallboxes' && (
         <div className="space-y-6">
           {/* Masonry Wall Boxes */}
@@ -1221,7 +1231,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     
                     return (
                       <tr key={size} className="border-t">
-                        <td className="p-2 font-medium">{size}M</td>
+                        <td className="p-2 font-medium">{sizeLabel(size, library, lang)}</td>
                         <td className="p-2">
                           <input
                             type="text"
@@ -1337,7 +1347,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     
                     return (
                       <tr key={size} className="border-t">
-                        <td className="p-2 font-medium">{size}M</td>
+                        <td className="p-2 font-medium">{sizeLabel(size, library, lang)}</td>
                         <td className="p-2">
                           <input
                             type="text"
@@ -1428,7 +1438,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
       )}
 
       {/* Install Faces Tab */}
-      {activeTab === 'installfaces' && (
+      {activeTab === 'installfaces' && hasSeparateSupports(library) && (
         <div className="bg-white rounded-lg shadow">
           <div className="p-4 border-b">
             <h2 className="font-semibold">{t.installFaces} ({t.supports})</h2>
@@ -1456,7 +1466,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   
                   return (
                     <tr key={size} className="border-t">
-                      <td className="p-2 font-medium">{size}M</td>
+                      <td className="p-2 font-medium">{sizeLabel(size, library, lang)}</td>
                       <td className="p-2">
                         <input
                           type="text"
@@ -1578,7 +1588,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     return (
                       <tr key={key} className={colorIdx === 0 ? 'border-t' : ''}>
                         {colorIdx === 0 && (
-                          <td className="p-2 font-medium" rowSpan={getAvailableColors(library).length}>{size}M</td>
+                          <td className="p-2 font-medium" rowSpan={getAvailableColors(library).length}>{sizeLabel(size, library, lang)}</td>
                         )}
                         <td className="p-2">
                           <div className="flex items-center gap-2">

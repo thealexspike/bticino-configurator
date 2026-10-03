@@ -57,6 +57,7 @@ async function apply(db) {
     ['plan_id', 'TEXT'],
     ['plan_x', 'REAL'],
     ['plan_y', 'REAL'],
+    ['wall_box_mode', 'TEXT'],
   ]);
 }
 

@@ -3,6 +3,7 @@ import { getSystemProportions } from '../data/libraries';
 import { adjustBrightness } from '../graphics/colors';
 import { getModuleGraphicType } from '../graphics/moduleGraphics';
 import { isDarkColor, getColorName, getModuleName } from '../lib/library';
+import { sizeLabel, isPostSystem, wallBoxLines } from '../lib/mounting';
 import { removeDiacritics, svgToImage } from './common';
 
 export async function generateAssemblyListPdf({ type, lang, project, library, assemblies, moduleCatalog }) {
@@ -31,6 +32,7 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       || (sysProps.moduleHeight + (sysProps.supportBarHeight + sysProps.supportBarOffset) * 2) * s;
     const cr = sysProps.cornerRadius * s;
     const mcr = sysProps.moduleCornerRadius * s;
+    const inset = (sysProps.slotInset || 0) * s; // ferestrele posturilor
     
     const moduleAreaWidth = assembly.size * moduleWidth1M;
     const totalWidth = moduleAreaWidth + (sideMargin * 2);
@@ -70,7 +72,7 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       const centerY = centerYAbs;
       
       // Module background
-      svg += `<rect x="${moduleX}" y="${moduleTop}" width="${modWidth}" height="${modHeight}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
+      svg += `<rect x="${moduleX + inset}" y="${moduleTop + inset}" width="${modWidth - 2 * inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
       
       if (catalogItem) {
         const g = getModuleGraphicType(catalogItem);
@@ -91,6 +93,11 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
         } else if (g === 'usb') {
           svg += `<rect x="${centerX - 3 * s}" y="${centerY - 5.5 * s}" width="${6 * s}" height="${3.2 * s}" rx="0.5" fill="${holeColor}"/>`;
           svg += `<rect x="${centerX - 3 * s}" y="${centerY + 0.8 * s}" width="${6 * s}" height="${3.2 * s}" rx="0.5" fill="${holeColor}"/>`;
+        } else if (g === 'switch_double') {
+          for (const dx of [-5 * s, 5 * s]) {
+            svg += `<line x1="${centerX + dx - 3 * s}" y1="${centerY}" x2="${centerX + dx + 3 * s}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+            svg += `<line x1="${centerX + dx}" y1="${centerY - 3 * s}" x2="${centerX + dx}" y2="${centerY + 3 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
+          }
         } else if (g === 'switch' || g === 'switch_stair' || g === 'switch_cross') {
           svg += `<line x1="${centerX - 4 * s}" y1="${centerY}" x2="${centerX + 4 * s}" y2="${centerY}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
           svg += `<line x1="${centerX}" y1="${centerY - 4 * s}" x2="${centerX}" y2="${centerY + 4 * s}" stroke="${symbolColor}" stroke-width="${sw}" stroke-linecap="round"/>`;
@@ -122,7 +129,13 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       return sum + (catalogItem?.size || 1);
     }, 0);
     
-    if (usedSize < assembly.size) {
+    if (usedSize < assembly.size && inset > 0) {
+      // Sistem cu posturi: câte o fereastră goală pe fiecare post liber
+      const postW = (sysProps.postSize || 2) * moduleWidth1M;
+      for (let x = moduleX; x + postW <= sideMargin + assembly.size * moduleWidth1M + 0.01; x += postW) {
+        svg += `<rect x="${x + inset}" y="${moduleTop + inset}" width="${postW - 2 * inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+      }
+    } else if (usedSize < assembly.size) {
       const emptyWidth = (assembly.size - usedSize) * moduleWidth1M;
       svg += `<rect x="${moduleX}" y="${moduleTop}" width="${emptyWidth}" height="${modHeight}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
     }
@@ -231,7 +244,10 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(90, 90, 90);
-      doc.text(`${assembly.size}M | ${wallBoxLabel} | ${colorLabel}`, 13, yPos + 12);
+      const boxesLabel = isPostSystem(library)
+      ? ' (' + wallBoxLines(assembly, library, lang).map(l => `${l.qty} x ${removeDiacritics(l.label)}`).join(', ') + ')'
+      : '';
+    doc.text(`${removeDiacritics(sizeLabel(assembly.size, library, lang))} | ${wallBoxLabel}${boxesLabel} | ${colorLabel}`, 13, yPos + 12);
       
       // Info line 2: Modules
       const moduleNames = assembly.modules.map(mod => {

@@ -225,6 +225,7 @@ export const TRANSLATIONS = {
     wallBoxDrywallItem: 'Wall Box Drywall',
     supportItem: 'Support Frame',
     coverPlateItem: 'Cover Plate',
+    coverPlateWithSupportItem: 'Cover Plate + Mounting Frame',
     
     // Wall Box Types
     wallBoxType: 'Wall Box Type',
@@ -463,6 +464,7 @@ export const TRANSLATIONS = {
     wallBoxDrywallItem: 'Doza Gips-carton',
     supportItem: 'Rama Suport',
     coverPlateItem: 'Rama Decor',
+    coverPlateWithSupportItem: 'Rama Decor + Montaj',
     
     // Wall Box Types
     wallBoxType: 'Tip Doză',

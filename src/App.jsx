@@ -6,7 +6,7 @@ import { GlobalHeader } from './components/GlobalHeader';
 import { LibraryPage } from './components/LibraryPage';
 import { ProjectDetail } from './components/ProjectDetail';
 import { ProjectList } from './components/ProjectList';
-import { DEFAULT_LIBRARY, DEFAULT_LIBRARY_GEWISS, DEFAULT_LIBRARY_SCHNEIDER, DEFAULT_LIBRARY_GENERIC, DEFAULT_LIBRARIES } from './data/libraries';
+import { DEFAULT_LIBRARY, DEFAULT_LIBRARY_GEWISS, DEFAULT_LIBRARY_SCHNEIDER, DEFAULT_LIBRARY_GENERIC, DEFAULT_LIBRARIES, DEFAULT_LIBRARY_GENERIC_POSTS } from './data/libraries';
 import { TRANSLATIONS, LanguageContext } from './i18n';
 import { saveLibrary, LibraryContext } from './lib/library';
 import { ReadOnlyContext } from './readOnly';
@@ -37,6 +37,7 @@ const projectFromApi = (project) => ({
     size: a.size,
     color: a.color,
     wallBoxType: a.wall_box_type || 'masonry',
+    wallBoxMode: a.wall_box_mode || null,
     notes: a.notes || '',
     modules: a.modules || [],
     planId: a.plan_id || null,
@@ -52,6 +53,7 @@ const librariesFromRows = (rows) => {
     gewiss: { ...DEFAULT_LIBRARY_GEWISS },
     schneider: { ...DEFAULT_LIBRARY_SCHNEIDER },
     generic: { ...DEFAULT_LIBRARY_GENERIC },
+    generic_posts: { ...DEFAULT_LIBRARY_GENERIC_POSTS },
   };
   (rows || []).forEach(row => {
     const libData = row.library_data || {};
@@ -237,6 +239,7 @@ export default function App() {
       size: a.size,
       color: a.color,
       wall_box_type: a.wallBoxType || 'masonry',
+      wall_box_mode: a.wallBoxMode || null,
       notes: a.notes || '',
       modules: a.modules,
       plan_id: a.planId || null,

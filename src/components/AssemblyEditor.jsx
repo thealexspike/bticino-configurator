@@ -3,6 +3,7 @@ import { Plus, Trash2, ChevronLeft, Box, Layers } from 'lucide-react';
 import { RoomSelector } from './RoomSelector';
 import { ModuleImage } from './visual/ModuleVisuals';
 import { getSystemProportions } from '../data/libraries';
+import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports } from '../lib/mounting';
 import { adjustBrightness } from '../graphics/colors';
 import { useTranslation, useLanguage } from '../i18n';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
@@ -66,14 +67,14 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
     if (catalogItem && catalogItem.size <= remainingSize) {
       e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'catalog', moduleId }));
       e.dataTransfer.effectAllowed = 'copy';
-      
+
       // Find the ModuleImage container in the dragged row and use it as drag image
       const moduleImageContainer = e.currentTarget.querySelector('.module-drag-preview');
       if (moduleImageContainer) {
         const rect = moduleImageContainer.getBoundingClientRect();
         e.dataTransfer.setDragImage(moduleImageContainer, rect.width / 2, rect.height / 2);
       }
-      
+
       setDraggedModule({ type: 'catalog', moduleId });
     }
   };
@@ -107,9 +108,9 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
   const handleDrop = (e, dropIndex = null) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     let dragData = draggedModule;
-    
+
     // Try to get data from dataTransfer if state is lost
     if (!dragData) {
       try {
@@ -133,20 +134,20 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
       if (catalogItem && catalogItem.size <= remainingSize) {
         const newModule = createModuleInstance(dragData.moduleId);
         let newModules = [...assembly.modules];
-        
+
         if (dropIndex !== null && dropIndex >= 0) {
           newModules.splice(dropIndex, 0, newModule);
         } else {
           newModules.push(newModule);
         }
-        
+
         onUpdate({ ...assembly, modules: newModules });
       }
     } else if (dragData.type === 'installed') {
       // Reorder existing module
       const fromIndex = dragData.index;
       let toIndex = dropIndex !== null ? dropIndex : assembly.modules.length - 1;
-      
+
       if (fromIndex !== toIndex && fromIndex >= 0 && fromIndex < assembly.modules.length) {
         const newModules = [...assembly.modules];
         const [moved] = newModules.splice(fromIndex, 1);
@@ -185,7 +186,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
   // Normalize so modules are similar pixel size across systems (match BTicino module height of 31)
   const normalizedScale = 31 / props.moduleHeight;
   const effectiveScale = baseScale * normalizedScale;
-  
+
   const moduleWidth1M = props.moduleWidth1M * effectiveScale;
   const moduleHeight = props.moduleHeight * effectiveScale;
   const sideMargin = props.sideMargin * effectiveScale;
@@ -194,6 +195,8 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
   const faceHeight = topMargin + moduleHeight + bottomMargin;
   const cornerRadius = props.cornerRadius * effectiveScale;
   const moduleCornerRadius = props.moduleCornerRadius * effectiveScale;
+  const slotInset = (props.slotInset || 0) * effectiveScale; // ferestrele posturilor
+  const postCount = isPostSystem(library) ? postsOf(assembly.size, library) : 0;
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const faceWidth = moduleAreaWidth + (sideMargin * 2);
 
@@ -238,7 +241,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
           <span className={`px-3 py-1 rounded text-sm font-medium ${
             isOverCapacity ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
           }`}>
-            {usedSize}/{assembly.size}M {t.used}
+            {capacityLabel(usedSize, assembly.size, library, lang)} {t.used}
             {isOverCapacity && ` (${t.overCapacity})`}
           </span>
         </div>
@@ -261,7 +264,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               className="w-full border rounded px-3 py-2"
             >
               {getAvailableSizes(library).map(s => (
-                <option key={s} value={s}>{s}M</option>
+                <option key={s} value={s}>{sizeLabel(s, library, lang)}</option>
               ))}
             </select>
           </div>
@@ -288,6 +291,19 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               <option value="drywall">{t.drywall}</option>
             </select>
           </div>
+          {isPostSystem(library) && postsOf(assembly.size, library) > 1 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">{lang === 'ro' ? 'Doze' : 'Wall boxes'}</label>
+              <select
+                value={wallBoxMode(assembly, library)}
+                onChange={(e) => updateField('wallBoxMode', e.target.value)}
+                className="w-full border rounded px-3 py-2"
+              >
+                <option value="single">{lang === 'ro' ? 'Doze individuale' : 'Individual boxes'}</option>
+                <option value="multi">{lang === 'ro' ? 'Doză multi-post' : 'Multi-post box'}</option>
+              </select>
+            </div>
+          )}
         </div>
 
         <div className="mb-6">
@@ -312,16 +328,28 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
             <Box className="w-4 h-4" /> {t.assemblyComponents}
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+            {isPostSystem(library) ? wallBoxLines(assembly, library, lang).map((line, i) => (
+              <div key={i} className="flex justify-between p-2 bg-white rounded border">
+                <span className="text-gray-600">
+                  {line.qty} × {t.wallBox} {line.label} ({wallBoxTypeLabel})
+                  {line.fallback && <span className="text-amber-700" title={lang === 'ro' ? 'Doza multi-post nu e definită pentru această mărime' : 'No multi-post box defined for this size'}> ⚠</span>}
+                </span>
+                <span className="font-mono text-gray-400">{getWallBoxSku(line.size, assembly.wallBoxType || 'masonry', library) || '—'}</span>
+              </div>
+            )) : (
             <div className="flex justify-between p-2 bg-white rounded border">
               <span className="text-gray-600">{t.wallBox} {assembly.size}M ({wallBoxTypeLabel})</span>
               <span className="font-mono text-gray-400">{wallBoxSku || '—'}</span>
             </div>
+            )}
+            {hasSeparateSupports(library) && (
             <div className="flex justify-between p-2 bg-white rounded border">
-              <span className="text-gray-600">{t.installFace} {assembly.size}M</span>
+              <span className="text-gray-600">{t.installFace} {sizeLabel(assembly.size, library, lang)}</span>
               <span className="font-mono text-gray-400">{installFaceSku || '—'}</span>
             </div>
+            )}
             <div className="flex justify-between p-2 bg-white rounded border">
-              <span className="text-gray-600">{t.decorFace} {assembly.size}M {getColorName(assembly.color, library, lang)}</span>
+              <span className="text-gray-600">{hasSeparateSupports(library) ? t.decorFace : t.coverPlateWithSupportItem} {sizeLabel(assembly.size, library, lang)} {getColorName(assembly.color, library, lang)}</span>
               <span className="font-mono text-gray-400">{decorFaceSku || '—'}</span>
             </div>
           </div>
@@ -335,11 +363,11 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
           <h2 className="font-semibold mb-4 flex items-center gap-2">
             <Layers className="w-4 h-4" /> {t.visualAssembly}
           </h2>
-          
-          <div 
+
+          <div
             ref={facePlateContainerRef}
             className="flex justify-center mb-4 p-6 rounded-lg"
-            style={_wbMasonry ? { 
+            style={_wbMasonry ? {
               backgroundColor: '#f0d4d0',
               backgroundImage: 'linear-gradient(45deg, #e8ccc8 25%, transparent 25%), linear-gradient(-45deg, #e8ccc8 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #e8ccc8 75%), linear-gradient(-45deg, transparent 75%, #e8ccc8 75%)',
               backgroundSize: '4px 4px',
@@ -377,11 +405,11 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   <div className="absolute left-0 right-0 bottom-0 pointer-events-none" style={{ height: bottomMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
                 </>
               )}
-              
+
               {/* Side margins (face plate edges) */}
               <div className="absolute top-0 bottom-0 left-0 pointer-events-none" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
               <div className="absolute top-0 bottom-0 right-0 pointer-events-none" style={{ width: sideMargin, backgroundColor: faceBgColor, zIndex: 3 }} />
-              
+
               {/* Support frame bars - only for systems that have them (BTicino) */}
               {props.hasSupportBars && (
                 <>
@@ -389,13 +417,17 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   <div className="absolute" style={{ left: sideMargin, right: sideMargin, bottom: bottomMargin + 10, height: 16, backgroundColor: '#4a4a4a', zIndex: 0 }} />
                 </>
               )}
-              
+
               {/* Slot grid background */}
-              <div 
+              <div
                 className="absolute flex"
                 style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, gap: 0, zIndex: 1 }}
               >
-                {Array.from({ length: assembly.size }).map((_, i) => (
+                {slotInset > 0 ? Array.from({ length: postCount }).map((_, i) => (
+                  <div key={i} className="flex-shrink-0" style={{ width: (props.postSize || 2) * moduleWidth1M, height: moduleHeight, padding: slotInset, boxSizing: 'border-box' }}>
+                    <div className="border border-dashed w-full h-full" style={{ borderColor: _detailDark ? '#555' : '#ccc', borderRadius: moduleCornerRadius }} />
+                  </div>
+                )) : Array.from({ length: assembly.size }).map((_, i) => (
                   <div
                     key={i}
                     className="border border-dashed flex-shrink-0"
@@ -410,14 +442,14 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               </div>
 
               {/* Installed modules */}
-              <div 
+              <div
                 className="absolute flex"
                 style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, zIndex: 5 }}
               >
                 {moduleSlots.map((slot, idx) => {
                   const isDragging = draggedModule?.type === 'installed' && draggedModule?.index === idx;
                   const isDragOver = dragOverSlot === idx;
-                  
+
                   return (
                     <div
                       key={slot.id}
@@ -429,7 +461,10 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                       className={`relative flex-shrink-0 cursor-grab active:cursor-grabbing transition-all duration-150 group ${
                         isDragging ? 'opacity-40 scale-95' : 'hover:scale-110 hover:z-20 hover:shadow-xl'
                       } ${isDragOver ? 'ring-2 ring-blue-500 ring-offset-1' : ''}`}
-                      style={{
+                      style={slotInset > 0 ? {
+                        width: slot.size * moduleWidth1M,
+                        height: moduleHeight,
+                      } : {
                         width: slot.size * moduleWidth1M,
                         height: moduleHeight,
                         backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
@@ -437,21 +472,29 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                         borderRadius: moduleCornerRadius,
                       }}
                     >
-                      {/* Module image with real Bticino graphics - fills entire module */}
-                      <div className="absolute inset-0 flex items-center justify-center">
-                        <ModuleImage 
-                          moduleId={slot.moduleId} 
+                      {/* Module image - fills the module (at post systems: the post window, inset in the step) */}
+                      <div
+                        className={`absolute flex items-center justify-center overflow-hidden ${slotInset > 0 ? '' : 'inset-0'}`}
+                        style={slotInset > 0 ? {
+                          inset: slotInset,
+                          backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
+                          border: `1.5px solid ${_detailDark ? adjustBrightness(colorInfo?.hex || '#3a3a3a', 30) : adjustBrightness(colorInfo?.hex || '#f5f5f5', -25)}`,
+                          borderRadius: moduleCornerRadius,
+                        } : undefined}
+                      >
+                        <ModuleImage
+                          moduleId={slot.moduleId}
                           graphic={slot.catalogItem?.graphic}
                           color={assembly.color}
                           colorHex={colorInfo?.hex}
-                          width={slot.size * moduleWidth1M}
-                          height={moduleHeight}
+                          width={slot.size * moduleWidth1M - 2 * slotInset}
+                          height={moduleHeight - 2 * slotInset}
                         />
                       </div>
-                      
+
                       {/* Hover overlay - on top of module image */}
                       <div className="absolute inset-0 bg-blue-400 opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none z-10" />
-                      
+
                       {/* Remove button - visible on hover */}
                       <button
                         onClick={(e) => {
@@ -495,7 +538,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
           <div className="mt-4">
             <div className="flex justify-between text-sm text-gray-600 mb-1">
               <span>{t.capacity}</span>
-              <span>{usedSize}/{assembly.size}M ({remainingSize}M {t.free})</span>
+              <span>{capacityLabel(usedSize, assembly.size, library, lang)} ({freeLabel(remainingSize, library, lang)} {t.free})</span>
             </div>
             <div className="h-3 bg-gray-200 rounded overflow-hidden flex">
               {moduleSlots.map((slot) => (
@@ -524,7 +567,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   const faceSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
                   return (
                     <li key={mod.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span>{idx + 1}. {getModuleName(catalogItem, lang)} ({catalogItem?.size}M)</span>
+                      <span>{idx + 1}. {getModuleName(catalogItem, lang)} ({sizeLabel(catalogItem?.size || 1, library, lang)})</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400 font-mono">
                           {moduleSku || '—'} / {faceSku || '—'}
@@ -548,7 +591,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
         <div className="bg-white rounded-lg shadow p-4">
           <h2 className="font-semibold mb-3">{t.availableModules}</h2>
           <p className="text-sm text-gray-500 mb-3">
-            {t.remainingCapacity}: <span className="font-medium">{Math.max(0, remainingSize)}M</span>
+            {t.remainingCapacity}: <span className="font-medium">{freeLabel(Math.max(0, remainingSize), library, lang)}</span>
           </p>
           <div className="space-y-2">
             {MODULE_CATALOG.map((mod) => {
@@ -566,22 +609,22 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div 
+                    <div
                       className="flex items-center justify-center"
                       style={{
                         width: 40, // Fixed container width for text alignment
                         height: 56,
                       }}
                     >
-                      <div 
+                      <div
                         className="module-drag-preview rounded bg-gray-50 flex items-center justify-center overflow-hidden border border-gray-300"
                         style={{
                           width: (() => { const p = getSystemProportions(library); const ar = mod.size === 2 ? (p.moduleWidth1M * 2 / p.moduleHeight) : (p.moduleWidth1M / p.moduleHeight); return Math.round(52 * ar); })(),
                           height: 52,
                         }}
                       >
-                        <ModuleImage 
-                          moduleId={mod.id} 
+                        <ModuleImage
+                          moduleId={mod.id}
                           graphic={mod.graphic}
                           moduleSize={mod.size}
                           color="white"
@@ -599,7 +642,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium bg-gray-100 px-2 py-0.5 rounded">
-                      {mod.size}M
+                      {sizeLabel(mod.size, library, lang)}
                     </span>
                     <button
                       onClick={() => addModule(mod.id)}

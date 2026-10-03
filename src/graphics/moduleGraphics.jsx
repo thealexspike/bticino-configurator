@@ -72,6 +72,15 @@ export const ModuleGraphicsByType = {
       <circle cx="15" cy="70" r="3" fill="#f97316"/>
     </>
   )),
+  switch_double: makeGraphic(44, (p) => (
+    <>
+      <line x1="22" y1="8" x2="22" y2="72" stroke={p.divider} strokeWidth="1"/>
+      <path d="M6 40 L16 40 M11 35 L11 45" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round"/>
+      <path d="M28 40 L38 40 M33 35 L33 45" stroke={p.symbol} strokeWidth="2.5" strokeLinecap="round"/>
+      <circle cx="11" cy="70" r="3" fill="#4ade80"/>
+      <circle cx="33" cy="70" r="3" fill="#4ade80"/>
+    </>
+  )),
   dimmer: makeGraphic(60, (p) => (
     <>
       <line x1="30" y1="5" x2="30" y2="75" stroke={p.divider} strokeWidth="1"/>
@@ -143,6 +152,7 @@ export const GRAPHIC_TYPES = [
   { id: 'coax', nameEn: 'TV coaxial', nameRo: 'TV coaxial' },
   { id: 'utp', nameEn: 'RJ45 / data', nameRo: 'RJ45 / date' },
   { id: 'switch', nameEn: 'Simple switch', nameRo: 'Întrerupător simplu' },
+  { id: 'switch_double', nameEn: 'Double switch', nameRo: 'Întrerupător dublu' },
   { id: 'switch_stair', nameEn: 'Stair switch', nameRo: 'Cap scară' },
   { id: 'switch_cross', nameEn: 'Cross switch', nameRo: 'Cap cruce' },
   { id: 'dimmer', nameEn: 'Dimmer', nameRo: 'Variator' },

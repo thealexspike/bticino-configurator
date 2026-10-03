@@ -70,6 +70,7 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
     || (props.moduleHeight + (props.supportBarHeight + props.supportBarOffset) * 2) * fitScale;
   const cornerRadius = props.cornerRadius * fitScale;
   const moduleCornerRadius = props.moduleCornerRadius * fitScale;
+  const inset = (props.slotInset || 0) * fitScale; // ferestrele posturilor (sisteme cu posturi)
   
   const moduleAreaWidth = assembly.size * moduleWidth1M;
   const totalWidth = moduleAreaWidth + (sideMargin * 2);
@@ -121,7 +122,10 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
             <div
               key={slot.id || idx}
               className="relative flex-shrink-0 flex items-center justify-center"
-              style={{
+              style={inset > 0 ? {
+                width: slot.size * moduleWidth1M,
+                height: '100%',
+              } : {
                 width: slot.size * moduleWidth1M,
                 height: '100%',
                 borderLeft: idx === 0 ? `1px solid ${moduleBorderColor}` : 'none',
@@ -129,12 +133,24 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
                 borderRadius: moduleCornerRadius,
               }}
             >
-              {ModuleGraphic && (
+              {inset > 0 ? (
+                <div className="overflow-hidden" style={{ lineHeight: 0, border: `1px solid ${moduleBorderColor}`, borderRadius: moduleCornerRadius }}>
+                  {ModuleGraphic && (
+                    <ModuleGraphic color={colorHex || assembly.color} width={Math.max(1, slot.size * moduleWidth1M - 2 * inset - 2)} height={Math.max(1, moduleHeight - 2 * inset - 2)} />
+                  )}
+                </div>
+              ) : ModuleGraphic && (
                 <ModuleGraphic color={colorHex || assembly.color} width={slot.size * moduleWidth1M - 2} height={moduleHeight} />
               )}
             </div>
           );
         })}
+        {/* Sistem cu posturi: ferestre goale pe posturile libere */}
+        {inset > 0 && Array.from({ length: Math.max(0, Math.floor((assembly.size - currentPos) / (props.postSize || 2))) }).map((_, i) => (
+          <div key={`empty-${i}`} className="relative flex-shrink-0 flex items-center justify-center" style={{ width: (props.postSize || 2) * moduleWidth1M, height: '100%' }}>
+            <div style={{ width: (props.postSize || 2) * moduleWidth1M - 2 * inset, height: moduleHeight - 2 * inset, border: `1px dashed ${moduleBorderColor}`, borderRadius: moduleCornerRadius }} />
+          </div>
+        ))}
       </div>
     </div>
   );

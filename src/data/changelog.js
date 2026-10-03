@@ -13,6 +13,30 @@
 
 export const CHANGELOG = [
   {
+    id: '2026-10-03-posts',
+    date: '2026-10-03',
+    title: {
+      ro: 'Sistem nou: aparataj cu posturi',
+      en: 'New system: post-type wiring devices',
+    },
+    items: {
+      ro: [
+        'Sistem nou „Sistem cu posturi generic (estimativ)", pentru aparataj cu rame de sticlă pe posturi (tip Livolo, Tosyco). Un post ține un mecanism, iar ramele au 1-4 posturi.',
+        'Pentru fiecare aparat alegi doze individuale (câte una pe post) sau o doză multi-post. Implicit: individuale la zidărie, multi-post la gips-carton.',
+        'Rama decor vine la pachet cu rama de montaj, deci în necesar și ofertă apare un singur rând pentru ramă.',
+        'Desenul arată rama cu câte o fereastră pe fiecare post, în editor, în listă, pe plan și în PDF.',
+        'Presetele care nu se potrivesc cu ramele sistemului apar estompate, cu motivul.',
+      ],
+      en: [
+        'New "Generic Post System (estimate)" for glass-frame post devices (Livolo, Tosyco style). Each post holds one device; frames have 1-4 posts.',
+        'For each assembly choose individual boxes (one per post) or a single multi-post box. Default: individual for masonry, multi-post for drywall.',
+        'The cover plate comes with its mounting frame, so the quantities and the quote show a single frame line.',
+        'The drawing shows the frame with one window per post, in the editor, the list, the plan and the PDF.',
+        'Presets that do not fit the system frames are shown greyed out, with the reason.',
+      ],
+    },
+  },
+  {
     id: '2026-10-01-plan-photos',
     date: '2026-10-01',
     title: {

@@ -15,7 +15,8 @@ import { SYSTEMS } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
 import { generateId, generateAssemblyCode, reorderAssembly, createAssembly, createModuleInstance } from '../lib/assemblies';
-import { getAvailableColors, getSystemName, getColorName, LibraryContext } from '../lib/library';
+import { getAvailableColors, getAvailableSizes, getSystemName, getColorName, LibraryContext } from '../lib/library';
+import { sizeLabel } from '../lib/mounting';
 
 export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }) {
   const [activeTab, setActiveTab] = useState('outlets');
@@ -415,17 +416,26 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
             {presets.map(preset => {
               // Presetele sunt comune; un modul poate lipsi din sistemul acestui proiect
               const missing = preset.modules.filter(id => !modules.some(m => m.id === id));
+              // ...sau poate să nu încapă (ex. module de 1M într-un sistem cu posturi)
+              const usedByPreset = preset.modules.reduce((sum, id) => sum + (modules.find(m => m.id === id)?.size || 0), 0);
+              const notFitting = missing.length === 0
+                && (!getAvailableSizes(library).includes(preset.size) || usedByPreset > preset.size);
               return (
                 <button
                   key={preset.id}
                   onClick={() => onSelect(preset.id)}
-                  disabled={missing.length > 0}
+                  disabled={missing.length > 0 || notFitting}
                   className="w-full text-left p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 hover:bg-blue-50 mb-2 transition-colors disabled:opacity-50 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:cursor-not-allowed"
                 >
                   <div className="font-medium">{getPresetName(preset)}</div>
                   <div className="text-sm text-gray-500">
-                    {preset.size}M · {preset.modules.map(m => getModuleName(m)).join(' + ')}
+                    {sizeLabel(preset.size, library, lang)} · {preset.modules.map(m => getModuleName(m)).join(' + ')}
                   </div>
+                  {notFitting && (
+                    <div className="text-xs text-amber-700 mt-0.5">
+                      {lang === 'ro' ? 'Nu se potrivește cu ramele acestui sistem' : 'Does not fit the frames of this system'}
+                    </div>
+                  )}
                   {missing.length > 0 && (
                     <div className="text-xs text-amber-700 mt-0.5">
                       {lang === 'ro' ? 'Lipsește în acest sistem: ' : 'Missing in this system: '}{[...new Set(missing)].join(', ')}
