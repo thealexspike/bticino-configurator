@@ -64,24 +64,45 @@ export function wallBoxLines(assembly, library, lang = 'ro') {
   return [{ size: one, qty: posts, label: sizeLabel(one, library, lang), fallback: false }];
 }
 
-// Așezarea modulelor pe posturi, în ordinea din ramă:
-//   halfPosts  - câte posturi conțin module de jumătate (1M) → câte suporturi pentru module 1/2
-//   straddling - un modul de un post întreg (sau mai mare) începe la jumătatea unui post,
-//                adică ar trece peste granița dintre două posturi (fizic imposibil)
+// Așezarea modulelor în ramă, în ordinea din listă. La sistemele cu posturi, un modul de un
+// post întreg (sau mai mare) începe mereu la începutul unui post: dacă postul curent e ocupat
+// pe jumătate, sare în postul următor, iar jumătatea rămasă liberă devine gol (gapBefore).
+// Rezultat: [{ ...modul, index, startPos, size, gapBefore, catalogItem }], pozițiile în module.
+export function layoutModules(modules, library) {
+  const catalog = library?.modules || [];
+  const step = isPostSystem(library) ? postSizeM(library) : 0;
+  let pos = 0;
+  return (modules || []).map((m, index) => {
+    const catalogItem = catalog.find(c => c.id === m.moduleId);
+    const size = catalogItem?.size || 1;
+    const gapBefore = step && size >= step && pos % step !== 0 ? step - (pos % step) : 0;
+    pos += gapBefore;
+    const slot = { ...m, index, startPos: pos, size, gapBefore, catalogItem };
+    pos += size;
+    return slot;
+  });
+}
+
+// Cât ocupă modulele în ramă, cu tot cu golurile de aliniere
+export function usedSizeOf(modules, library) {
+  const slots = layoutModules(modules, library);
+  const last = slots[slots.length - 1];
+  return last ? last.startPos + last.size : 0;
+}
+
+// Încape lista de module în ramă? (la posturi: pe subtotaluri de post, nu pe sumă)
+export const fitsInFrame = (modules, frameSize, library) => usedSizeOf(modules, library) <= frameSize;
+
+// Posturile cu module de jumătate (1M) → câte suporturi pentru module 1/2.
+// straddling rămâne pentru compatibilitate; cu alinierea automată nu mai apare.
 export function postLayout(modules, library) {
   if (!isPostSystem(library)) return { halfPosts: 0, straddling: false };
   const step = postSizeM(library);
-  const catalog = library?.modules || [];
   const half = new Set();
-  let pos = 0;
-  let straddling = false;
-  for (const m of modules || []) {
-    const size = catalog.find(c => c.id === m.moduleId)?.size || 1;
-    if (size < step) half.add(Math.floor(pos / step));
-    else if (pos % step !== 0) straddling = true;
-    pos += size;
+  for (const slot of layoutModules(modules, library)) {
+    if (slot.size < step) half.add(Math.floor(slot.startPos / step));
   }
-  return { halfPosts: half.size, straddling };
+  return { halfPosts: half.size, straddling: false };
 }
 
 export const halfPostSupportOf = (library) => library?.halfPostSupport || null;

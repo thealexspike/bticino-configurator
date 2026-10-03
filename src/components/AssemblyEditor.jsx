@@ -3,7 +3,7 @@ import { Plus, Trash2, ChevronLeft, Box, Layers } from 'lucide-react';
 import { RoomSelector } from './RoomSelector';
 import { ModuleImage } from './visual/ModuleVisuals';
 import { getSystemProportions } from '../data/libraries';
-import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel, layoutModules, fitsInFrame } from '../lib/mounting';
 import { adjustBrightness } from '../graphics/colors';
 import { useTranslation, useLanguage } from '../i18n';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
@@ -31,40 +31,30 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
     onUpdate({ ...assembly, [field]: value });
   };
 
+  // Încape modulul? La sistemele cu posturi, pe subtotaluri de post (un post întreg sare
+  // în postul următor dacă cel curent e început), nu doar pe suma modulelor
+  const canAddModuleId = (moduleId, atIndex = assembly.modules.length) => {
+    const next = [...assembly.modules];
+    next.splice(atIndex, 0, { moduleId });
+    return fitsInFrame(next, assembly.size, library);
+  };
+
   // Quick add module
   const addModule = (moduleId) => {
     const catalogItem = MODULE_CATALOG.find(c => c.id === moduleId);
-    if (catalogItem && catalogItem.size <= remainingSize) {
+    if (catalogItem && canAddModuleId(moduleId)) {
       const newModule = createModuleInstance(moduleId);
       onUpdate({ ...assembly, modules: [...assembly.modules, newModule] });
     }
   };
 
-  // Calculate slot positions for modules
-  const getModuleSlots = () => {
-    const slots = [];
-    let currentPos = 0;
-    assembly.modules.forEach((mod, index) => {
-      const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
-      const size = catalogItem?.size || 1;
-      slots.push({
-        ...mod,
-        index,
-        startPos: currentPos,
-        size,
-        catalogItem,
-      });
-      currentPos += size;
-    });
-    return slots;
-  };
-
-  const moduleSlots = getModuleSlots();
+  // Pozițiile modulelor în ramă (la posturi: cu goluri de aliniere, gapBefore)
+  const moduleSlots = layoutModules(assembly.modules, library);
 
   // Drag from catalog
   const handleCatalogDragStart = (e, moduleId) => {
     const catalogItem = MODULE_CATALOG.find(c => c.id === moduleId);
-    if (catalogItem && catalogItem.size <= remainingSize) {
+    if (catalogItem && canAddModuleId(moduleId)) {
       e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'catalog', moduleId }));
       e.dataTransfer.effectAllowed = 'copy';
 
@@ -131,7 +121,8 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
     if (dragData.type === 'catalog') {
       // Add new module from catalog
       const catalogItem = MODULE_CATALOG.find(c => c.id === dragData.moduleId);
-      if (catalogItem && catalogItem.size <= remainingSize) {
+      const insertAt = dropIndex !== null && dropIndex >= 0 ? dropIndex : assembly.modules.length;
+      if (catalogItem && canAddModuleId(dragData.moduleId, insertAt)) {
         const newModule = createModuleInstance(dragData.moduleId);
         let newModules = [...assembly.modules];
 
@@ -477,9 +468,11 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                       style={slotInset > 0 ? {
                         width: slot.size * moduleWidth1M,
                         height: moduleHeight,
+                        marginLeft: slot.gapBefore * moduleWidth1M,
                       } : {
                         width: slot.size * moduleWidth1M,
                         height: moduleHeight,
+                        marginLeft: slot.gapBefore * moduleWidth1M,
                         backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
                         border: `1.5px solid ${_detailDark ? adjustBrightness(colorInfo?.hex || '#3a3a3a', 30) : adjustBrightness(colorInfo?.hex || '#f5f5f5', -25)}`,
                         borderRadius: moduleCornerRadius,
@@ -561,7 +554,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                 <div
                   key={slot.id}
                   className="h-full bg-blue-500 border-r border-blue-600 last:border-r-0"
-                  style={{ width: `${(slot.size / assembly.size) * 100}%` }}
+                  style={{ width: `${(slot.size / assembly.size) * 100}%`, marginLeft: `${(slot.gapBefore / assembly.size) * 100}%` }}
                   title={getModuleName(slot.catalogItem, lang)}
                 />
               ))}
@@ -611,7 +604,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
           </p>
           <div className="space-y-2">
             {MODULE_CATALOG.map((mod) => {
-              const canAdd = mod.size <= remainingSize;
+              const canAdd = canAddModuleId(mod.id);
               return (
                 <div
                   key={mod.id}

@@ -3,6 +3,7 @@ import { getSystemProportions } from '../../data/libraries';
 import { adjustBrightness } from '../../graphics/colors';
 import { ModuleGraphicsByType, getGraphicTypeFromId, getModuleGraphic } from '../../graphics/moduleGraphics';
 import { isDarkColor } from '../../lib/library';
+import { layoutModules } from '../../lib/mounting';
 
 // Module image component
 export const ModuleImage = ({ moduleId, graphic, color, colorHex, width = 60, height = 80, className = '' }) => {
@@ -86,14 +87,10 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
   const moduleBorderColor = _dark ? adjustBrightness(colorHex || '#3a3a3a', 30) : adjustBrightness(colorHex || '#f5f5f5', -25);
 
   // Module slots
-  const moduleSlots = [];
-  let currentPos = 0;
-  (assembly.modules || []).forEach((mod, index) => {
-    const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
-    const size = catalogItem?.size || 1;
-    moduleSlots.push({ ...mod, index, startPos: currentPos, size, catalogItem });
-    currentPos += size;
-  });
+  // Pozițiile modulelor (la posturi: cu goluri de aliniere, gapBefore)
+  const moduleSlots = layoutModules(assembly.modules, { ...library, modules: MODULE_CATALOG });
+  const lastSlot = moduleSlots[moduleSlots.length - 1];
+  const currentPos = lastSlot ? lastSlot.startPos + lastSlot.size : 0;
 
   return (
     <div
@@ -122,8 +119,14 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
           const insetL = inset > 0 && slot.startPos % postStep === 0 ? inset : 0;
           const insetR = inset > 0 && (slot.startPos + slot.size) % postStep === 0 ? inset : 0;
           return (
+            <React.Fragment key={slot.id || idx}>
+            {/* Gol de aliniere: jumătatea liberă a unui post început */}
+            {slot.gapBefore > 0 && (
+              <div className="relative flex-shrink-0" style={{ width: slot.gapBefore * moduleWidth1M, height: '100%', paddingTop: inset, paddingBottom: inset, paddingRight: inset, boxSizing: 'border-box' }}>
+                {inset > 0 && <div style={{ width: '100%', height: '100%', border: `1px dashed ${moduleBorderColor}`, borderRadius: moduleCornerRadius }} />}
+              </div>
+            )}
             <div
-              key={slot.id || idx}
               className="relative flex-shrink-0 flex items-center justify-center"
               style={inset > 0 ? {
                 width: slot.size * moduleWidth1M,
@@ -151,6 +154,7 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
                 <ModuleGraphic color={colorHex || assembly.color} width={slot.size * moduleWidth1M - 2} height={moduleHeight} />
               )}
             </div>
+            </React.Fragment>
           );
         })}
         {/* Sistem cu posturi: ferestre goale pe posturile libere */}

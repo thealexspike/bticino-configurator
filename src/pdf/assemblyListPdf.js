@@ -69,6 +69,13 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     (assembly.modules || []).forEach((mod) => {
       const catalogItem = moduleCatalog.find(c => c.id === mod.moduleId);
       const size = catalogItem?.size || 1;
+      // Sistem cu posturi: un post întreg sare în postul următor dacă cel curent e început
+      if (inset > 0 && size >= postStep && posM % postStep !== 0) {
+        const gap = postStep - (posM % postStep);
+        svg += `<rect x="${moduleX}" y="${moduleTop + inset}" width="${gap * moduleWidth1M - inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+        moduleX += gap * moduleWidth1M;
+        posM += gap;
+      }
       const modWidth = size * moduleWidth1M;
       const centerX = moduleX + modWidth / 2;
       const centerY = centerYAbs;
@@ -129,10 +136,7 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     });
 
     // Empty slots
-    const usedSize = (assembly.modules || []).reduce((sum, mod) => {
-      const catalogItem = moduleCatalog.find(c => c.id === mod.moduleId);
-      return sum + (catalogItem?.size || 1);
-    }, 0);
+    const usedSize = posM; // cu tot cu golurile de aliniere
 
     if (usedSize < assembly.size && inset > 0) {
       // Sistem cu posturi: câte o fereastră goală pe fiecare post liber

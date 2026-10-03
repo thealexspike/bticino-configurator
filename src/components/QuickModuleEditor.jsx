@@ -5,7 +5,7 @@ import { getModuleGraphic } from '../graphics/moduleGraphics';
 import { getSystemProportions } from '../data/libraries';
 import { getAvailableSizes, getModuleCatalog, getModuleName } from '../lib/library';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
-import { sizeLabel, capacityLabel, freeLabel, moduleSizeLabel, postLayout } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, moduleSizeLabel, postLayout, fitsInFrame } from '../lib/mounting';
 
 const TILE_HEIGHT = 30;
 
@@ -27,7 +27,7 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
   };
 
   const addModule = (mod) => {
-    if (readOnly || mod.size > free) return;
+    if (readOnly || !fitsInFrame([...(assembly.modules || []), { moduleId: mod.id }], assembly.size, library)) return;
     onChange({ ...assembly, modules: [...(assembly.modules || []), createModuleInstance(mod.id)] });
   };
   const removeModule = (instanceId) => {
@@ -86,7 +86,7 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
       {!readOnly && (
         <div className="grid grid-cols-4 gap-1">
           {palette.map(mod => {
-            const fits = mod.size <= free;
+            const fits = fitsInFrame([...(assembly.modules || []), { moduleId: mod.id }], assembly.size, library);
             const Graphic = getModuleGraphic(mod);
             const w = Math.max(8, Math.round(TILE_HEIGHT * (props.moduleWidth1M * mod.size) / props.moduleHeight));
             const name = getModuleName(mod, lang);
