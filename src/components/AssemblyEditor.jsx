@@ -3,7 +3,7 @@ import { Plus, Trash2, ChevronLeft, Box, Layers } from 'lucide-react';
 import { RoomSelector } from './RoomSelector';
 import { ModuleImage } from './visual/ModuleVisuals';
 import { getSystemProportions } from '../data/libraries';
-import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel } from '../lib/mounting';
 import { adjustBrightness } from '../graphics/colors';
 import { useTranslation, useLanguage } from '../i18n';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
@@ -244,6 +244,9 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
             {capacityLabel(usedSize, assembly.size, library, lang)} {t.used}
             {isOverCapacity && ` (${t.overCapacity})`}
           </span>
+          {postLayout(assembly.modules, library).straddling && (
+            <span className="text-sm text-amber-700">⚠ {lang === 'ro' ? 'Un mecanism de un post întreg nu poate sta între două posturi. Pune modulele de 1/2 în perechi, pe același post.' : 'A full-post device cannot sit across two posts. Put half modules in pairs on the same post.'}</span>
+          )}
         </div>
 
         {/* Basic Settings */}
@@ -348,6 +351,12 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               <span className="font-mono text-gray-400">{installFaceSku || '—'}</span>
             </div>
             )}
+            {postLayout(assembly.modules, library).halfPosts > 0 && halfPostSupportOf(library) && (
+            <div className="flex justify-between p-2 bg-white rounded border">
+              <span className="text-gray-600">{postLayout(assembly.modules, library).halfPosts} × {t.halfPostSupportItem}</span>
+              <span className="font-mono text-gray-400">{halfPostSupportOf(library).sku || '—'}</span>
+            </div>
+            )}
             <div className="flex justify-between p-2 bg-white rounded border">
               <span className="text-gray-600">{hasSeparateSupports(library) ? t.decorFace : t.coverPlateWithSupportItem} {sizeLabel(assembly.size, library, lang)} {getColorName(assembly.color, library, lang)}</span>
               <span className="font-mono text-gray-400">{decorFaceSku || '—'}</span>
@@ -448,6 +457,10 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               >
                 {moduleSlots.map((slot, idx) => {
                   const isDragging = draggedModule?.type === 'installed' && draggedModule?.index === idx;
+                  // Fereastra postului: marginea ramei doar spre exteriorul postului (jumătățile se ating la mijloc)
+                  const postStep = props.postSize || 2;
+                  const insetL = slotInset > 0 && slot.startPos % postStep === 0 ? slotInset : 0;
+                  const insetR = slotInset > 0 && (slot.startPos + slot.size) % postStep === 0 ? slotInset : 0;
                   const isDragOver = dragOverSlot === idx;
 
                   return (
@@ -476,7 +489,10 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                       <div
                         className={`absolute flex items-center justify-center overflow-hidden ${slotInset > 0 ? '' : 'inset-0'}`}
                         style={slotInset > 0 ? {
-                          inset: slotInset,
+                          top: slotInset,
+                          bottom: slotInset,
+                          left: insetL,
+                          right: insetR,
                           backgroundColor: colorInfo?.hex || (_detailDark ? '#3a3a3a' : '#f5f5f5'),
                           border: `1.5px solid ${_detailDark ? adjustBrightness(colorInfo?.hex || '#3a3a3a', 30) : adjustBrightness(colorInfo?.hex || '#f5f5f5', -25)}`,
                           borderRadius: moduleCornerRadius,
@@ -487,7 +503,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                           graphic={slot.catalogItem?.graphic}
                           color={assembly.color}
                           colorHex={colorInfo?.hex}
-                          width={slot.size * moduleWidth1M - 2 * slotInset}
+                          width={slot.size * moduleWidth1M - insetL - insetR}
                           height={moduleHeight - 2 * slotInset}
                         />
                       </div>
@@ -567,7 +583,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   const faceSku = getModuleFaceSku(mod.moduleId, assembly.color, library);
                   return (
                     <li key={mod.id} className="flex justify-between items-center p-2 bg-gray-50 rounded">
-                      <span>{idx + 1}. {getModuleName(catalogItem, lang)} ({sizeLabel(catalogItem?.size || 1, library, lang)})</span>
+                      <span>{idx + 1}. {getModuleName(catalogItem, lang)} ({moduleSizeLabel(catalogItem?.size || 1)})</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-gray-400 font-mono">
                           {moduleSku || '—'} / {faceSku || '—'}
@@ -642,7 +658,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-sm font-medium bg-gray-100 px-2 py-0.5 rounded">
-                      {sizeLabel(mod.size, library, lang)}
+                      {moduleSizeLabel(mod.size)}
                     </span>
                     <button
                       onClick={() => addModule(mod.id)}

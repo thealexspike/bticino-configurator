@@ -111,7 +111,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
   const updateModule = (moduleId, updates) => {
     safeOnUpdate({
       ...library,
-      modules: library.modules.map(m => 
+      modules: library.modules.map(m =>
         m.id === moduleId ? { ...m, ...updates } : m
       ),
     });
@@ -359,7 +359,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   </div>
                 </div>
               </div>
-              
+
               {/* Module selection */}
               <div className="mb-4">
                 <label className="block text-xs text-gray-600 mb-2">{t.presetModules}</label>
@@ -397,7 +397,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   ))}
                 </select>
               </div>
-              
+
               <div className="flex gap-2">
                 <button
                   onClick={addPreset}
@@ -469,7 +469,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                 </div>
               )}
             </div>
-            
+
             {/* Switch Presets */}
             <div className="p-4">
               <h3 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
@@ -600,7 +600,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   </div>
                 </div>
               </div>
-              
+
               <div className="mb-4">
                 <GraphicPicker value={newModule.graphic} onChange={(g) => setNewModule({ ...newModule, graphic: g })} size={newModule.size} moduleId={newModule.id} library={library} />
               </div>
@@ -648,7 +648,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   <span className="text-sm text-gray-700">{t.faceHasColorVariants}</span>
                 </label>
               </div>
-              
+
               {/* SKU & Price Table - dynamic colors */}
               <div className="overflow-x-auto">
               <table className="w-full text-sm mb-4 border rounded bg-white">
@@ -709,7 +709,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                 </tbody>
               </table>
               </div>
-              
+
               <div className="flex gap-2">
                 <button
                   onClick={addModule}
@@ -738,7 +738,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   // Edit mode - Table format
                   <div>
                     <div className="flex items-center gap-4 mb-4">
-                      <div 
+                      <div
                         className="flex items-center justify-center"
                         style={{
                           width: 56, // Fixed width for alignment
@@ -747,11 +747,11 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                       >
                         {GraphicComponent && (
                           <div className="border border-gray-300" style={{ lineHeight: 0 }}>
-                            {React.createElement(GraphicComponent, { 
-                              color: 'white', 
+                            {React.createElement(GraphicComponent, {
+                              color: 'white',
                               // BTicino proportions: 1M = 8.5x31, 2M = 17x31
-                              width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31), 
-                              height: 52 
+                              width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31),
+                              height: 52
                             })}
                           </div>
                         )}
@@ -761,7 +761,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                         <div className="text-sm text-gray-500 font-mono">{t.moduleId}: {mod.id}</div>
                       </div>
                     </div>
-                    
+
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
                       <div>
                         <label className="block text-xs text-gray-600 mb-1">🇬🇧 {t.moduleName} (EN)</label>
@@ -806,7 +806,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                         </select>
                       </div>
                     </div>
-                    
+
                     <div className="mb-4">
                       <GraphicPicker value={mod.graphic} onChange={(g) => updateModule(mod.id, { graphic: g || undefined })} size={mod.size} moduleId={mod.id} library={library} />
                     </div>
@@ -866,7 +866,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                         <span className="text-sm text-gray-700">{t.faceHasColorVariants}</span>
                       </label>
                     </div>
-                    
+
                     {/* SKU & Price Table - dynamic colors */}
                     <div className="overflow-x-auto">
                       <table className="w-full text-sm mb-4 border rounded">
@@ -927,7 +927,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                         </tbody>
                       </table>
                     </div>
-                    
+
                     <button
                       onClick={() => setEditingModule(null)}
                       className="bg-blue-600 text-white px-4 py-1.5 rounded text-sm hover:bg-blue-700"
@@ -939,7 +939,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   // View mode
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div 
+                      <div
                         className="flex items-center justify-center"
                         style={{
                           width: 56, // Fixed width for alignment
@@ -948,11 +948,11 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                       >
                         {GraphicComponent && (
                           <div className="border border-gray-300" style={{ lineHeight: 0 }}>
-                            {React.createElement(GraphicComponent, { 
-                              color: 'white', 
+                            {React.createElement(GraphicComponent, {
+                              color: 'white',
                               // BTicino proportions: 1M = 8.5x31, 2M = 17x31
-                              width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31), 
-                              height: 52 
+                              width: mod.size === 2 ? Math.round(52 * 17 / 31) : Math.round(52 * 8.5 / 31),
+                              height: 52
                             })}
                           </div>
                         )}
@@ -963,7 +963,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                           <span className="font-mono">{typeof mod.moduleSku === 'object' ? Object.values(mod.moduleSku).filter(Boolean).join(' / ') : mod.moduleSku}</span> · {mod.size}M · {mod.category === 'outlet' ? t.outlet : mod.category === 'switch' ? t.switch : t.other}
                         </div>
                         <div className="text-xs text-gray-400 mt-1">
-                          {t.priceInclVat}: {typeof mod.modulePrice === 'object' 
+                          {t.priceInclVat}: {typeof mod.modulePrice === 'object'
                             ? Object.values(mod.modulePrice).map(p => (p || 0).toFixed(2)).join(' / ')
                             : (mod.modulePrice || 0).toFixed(2)} RON
                         </div>
@@ -1201,6 +1201,46 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
             : 'Post system: the "1 post" row is the individual box; the 2-4 post rows are multi-post boxes. If a multi-post box has no code or price, individual boxes are used automatically.'}
         </div>
       )}
+      {activeTab === 'wallboxes' && isPostSystem(library) && (() => {
+        const item = library.halfPostSupport || {};
+        const purchase = item.purchasePrice || 0;
+        const markup = item.markup ?? 25;
+        const upd = (patch) => safeOnUpdate({ ...library, halfPostSupport: { ...item, ...patch } });
+        return (
+          <div className="mb-4 bg-white rounded-lg shadow p-4">
+            <h3 className="font-semibold">{lang === 'ro' ? 'Suport pentru module 1/2' : 'Half-module support'}</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              {lang === 'ro'
+                ? 'Se adaugă automat în necesar, câte unul pe fiecare post care conține module de 1M (jumătate de post).'
+                : 'Added automatically, one per post that holds 1M (half-post) modules.'}
+            </p>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm max-w-3xl">
+              <label className="block">
+                <span className="block text-xs text-gray-600 mb-1">{t.sku}</span>
+                <input type="text" value={item.sku || ''} onChange={(e) => upd({ sku: e.target.value })} placeholder={t.enterSku} className="w-full border rounded px-2 py-1 font-mono" />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-gray-600 mb-1">{t.purchasePrice}</span>
+                <input
+                  type="number"
+                  step="0.01"
+                  value={purchase}
+                  onChange={(e) => { const p = parseFloat(e.target.value) || 0; upd({ purchasePrice: p, price: calcPriceWithVat(p, markup) }); }}
+                  className="w-full border rounded px-2 py-1"
+                />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-gray-600 mb-1">{t.markup}</span>
+                <PriceInput value={markup} onChange={(m) => upd({ markup: m, price: calcPriceWithVat(purchase, m) })} step="1" decimals={0} className="w-full border rounded px-2 py-1" />
+              </label>
+              <label className="block">
+                <span className="block text-xs text-gray-600 mb-1">{t.sellingPriceVat}</span>
+                <PriceInput value={item.price || 0} onChange={(p) => upd({ price: p, markup: calcMarkupFromPriceWithVat(purchase, p) })} className="w-full border rounded px-2 py-1 font-medium" />
+              </label>
+            </div>
+          </div>
+        );
+      })()}
       {activeTab === 'wallboxes' && (
         <div className="space-y-6">
           {/* Masonry Wall Boxes */}
@@ -1228,7 +1268,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     const markup = item.markup || 0;
                     const priceWithVat = item.price || 0;
                     const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
-                    
+
                     return (
                       <tr key={size} className="border-t">
                         <td className="p-2 font-medium">{sizeLabel(size, library, lang)}</td>
@@ -1344,7 +1384,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     const markup = item.markup || 0;
                     const priceWithVat = item.price || 0;
                     const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
-                    
+
                     return (
                       <tr key={size} className="border-t">
                         <td className="p-2 font-medium">{sizeLabel(size, library, lang)}</td>
@@ -1463,7 +1503,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                   const markup = item.markup || 0;
                   const priceWithVat = item.price || 0;
                   const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
-                  
+
                   return (
                     <tr key={size} className="border-t">
                       <td className="p-2 font-medium">{sizeLabel(size, library, lang)}</td>
@@ -1584,7 +1624,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                     const markup = item.markup || 0;
                     const priceWithVat = item.price || 0;
                     const sellingWithoutVat = priceWithVat / (1 + VAT_RATE);
-                    
+
                     return (
                       <tr key={key} className={colorIdx === 0 ? 'border-t' : ''}>
                         {colorIdx === 0 && (
@@ -1592,7 +1632,7 @@ export function LibraryPage({ library, onUpdate, onBack, isAdmin = false, onSwit
                         )}
                         <td className="p-2">
                           <div className="flex items-center gap-2">
-                            <span 
+                            <span
                               className="w-4 h-4 rounded border"
                               style={{ backgroundColor: color.hex }}
                             />

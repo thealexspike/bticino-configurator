@@ -5,7 +5,7 @@ import { getModuleGraphic } from '../graphics/moduleGraphics';
 import { getSystemProportions } from '../data/libraries';
 import { getAvailableSizes, getModuleCatalog, getModuleName } from '../lib/library';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
-import { sizeLabel, capacityLabel, freeLabel } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, moduleSizeLabel, postLayout } from '../lib/mounting';
 
 const TILE_HEIGHT = 30;
 
@@ -19,6 +19,7 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
   const used = calculateModulesSize(assembly.modules || [], library);
   const free = assembly.size - used;
   const over = used > assembly.size;
+  const { straddling } = postLayout(assembly.modules || [], library);
 
   const nameOf = (moduleId) => {
     const mod = catalog.find(c => c.id === moduleId);
@@ -59,6 +60,10 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
         )}
       </div>
 
+      {straddling && (
+        <div className="text-xs text-amber-700 mb-1.5">⚠ {L('Un mecanism de un post întreg nu poate sta între două posturi. Pune modulele de 1/2 în perechi, pe același post.', 'A full-post device cannot sit across two posts. Put half modules in pairs on the same post.')}</div>
+      )}
+
       {/* Modulele puse, în ordinea din ramă */}
       {(assembly.modules || []).length > 0 ? (
         <div className="flex flex-wrap gap-1 mb-2">
@@ -90,14 +95,14 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
                 key={mod.id}
                 onClick={() => addModule(mod)}
                 disabled={!fits}
-                title={fits ? `${name} (${sizeLabel(mod.size, library, lang)})` : L(`${name}: nu mai încape (${freeLabel(free, library, lang)} liber)`, `${name}: does not fit (${freeLabel(free, library, lang)} free)`)}
+                title={fits ? `${name} (${moduleSizeLabel(mod.size)})` : L(`${name}: nu mai încape (${freeLabel(free, library, lang)} liber)`, `${name}: does not fit (${freeLabel(free, library, lang)} free)`)}
                 className="flex flex-col items-center gap-0.5 p-1 rounded border border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 disabled:opacity-35 disabled:hover:border-gray-200 disabled:hover:bg-white disabled:cursor-not-allowed"
               >
                 <div className="border border-gray-300" style={{ lineHeight: 0 }}>
                   <Graphic color="white" width={w} height={TILE_HEIGHT} />
                 </div>
                 <span className="text-[9px] leading-tight text-gray-700 text-center w-full truncate">{name}</span>
-                <span className="text-[9px] leading-none text-gray-400">{sizeLabel(mod.size, library, lang)}</span>
+                <span className="text-[9px] leading-none text-gray-400">{moduleSizeLabel(mod.size)}</span>
               </button>
             );
           })}

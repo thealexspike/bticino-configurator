@@ -34,8 +34,8 @@ export function freeLabel(free, library, lang = 'ro') {
   return `${n} ${postWord(n, lang)}`;
 }
 
-// Mărimea unui modul: „2M" sau „1 post"
-export const moduleSizeLabel = (moduleSize, library, lang = 'ro') => sizeLabel(moduleSize, library, lang);
+// Mărimea unui modul rămâne în module, ca la modulare: 1M = jumătate de post, 2M = un post
+export const moduleSizeLabel = (moduleSize) => `${moduleSize}M`;
 
 // 'single' | 'multi' — ales pe aparat, altfel implicitul sistemului pentru tipul de doză
 export function wallBoxMode(assembly, library) {
@@ -63,3 +63,25 @@ export function wallBoxLines(assembly, library, lang = 'ro') {
   }
   return [{ size: one, qty: posts, label: sizeLabel(one, library, lang), fallback: false }];
 }
+
+// Așezarea modulelor pe posturi, în ordinea din ramă:
+//   halfPosts  - câte posturi conțin module de jumătate (1M) → câte suporturi pentru module 1/2
+//   straddling - un modul de un post întreg (sau mai mare) începe la jumătatea unui post,
+//                adică ar trece peste granița dintre două posturi (fizic imposibil)
+export function postLayout(modules, library) {
+  if (!isPostSystem(library)) return { halfPosts: 0, straddling: false };
+  const step = postSizeM(library);
+  const catalog = library?.modules || [];
+  const half = new Set();
+  let pos = 0;
+  let straddling = false;
+  for (const m of modules || []) {
+    const size = catalog.find(c => c.id === m.moduleId)?.size || 1;
+    if (size < step) half.add(Math.floor(pos / step));
+    else if (pos % step !== 0) straddling = true;
+    pos += size;
+  }
+  return { halfPosts: half.size, straddling };
+}
+
+export const halfPostSupportOf = (library) => library?.halfPostSupport || null;

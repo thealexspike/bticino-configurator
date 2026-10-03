@@ -14,7 +14,7 @@ export const TRANSLATIONS = {
     done: 'Done',
     create: 'Create',
     duplicate: 'Duplicate',
-    
+
     // AI Import
     aiImport: 'AI Import',
     aiImportTitle: 'Import from Architect Document',
@@ -30,7 +30,7 @@ export const TRANSLATIONS = {
     aiImportWarnings: 'Warnings',
     yes: 'Yes',
     no: 'No',
-    
+
     // Projects
     projects: 'Projects',
     createNewProject: 'Create New Project',
@@ -38,7 +38,7 @@ export const TRANSLATIONS = {
     noClient: 'No client',
     assemblies: 'assemblies',
     backToProjects: 'Back to Projects',
-    
+
     // Assemblies
     outlets: 'Outlets',
     switches: 'Switches',
@@ -60,7 +60,7 @@ export const TRANSLATIONS = {
     editProject: 'Edit Project',
     projectName: 'Project Name',
     clientName: 'Client Name',
-    
+
     // Assembly Editor
     backToList: 'Back to List',
     room: 'Room',
@@ -81,7 +81,7 @@ export const TRANSLATIONS = {
     editHint: 'Click size/room to edit inline · Drag to reorder · Click ⚙️ to edit modules',
     editHintGrouped: 'Drag assemblies to room headers to move between rooms · Click ⚙️ to edit modules',
     groupByRoom: 'Group by room',
-    
+
     // Room suggestions
     livingRoom: 'Living Room',
     kitchen: 'Kitchen',
@@ -95,11 +95,11 @@ export const TRANSLATIONS = {
     laundry: 'Laundry',
     storage: 'Storage',
     balcony: 'Balcony',
-    
+
     // Colors
     white: 'White',
     black: 'Black',
-    
+
     // BOQ & Quote
     boq: 'BOQ (Supplier)',
     clientQuote: 'Client Quote',
@@ -140,7 +140,7 @@ export const TRANSLATIONS = {
     vatAmount: 'VAT Amount',
     unitPriceExclVat: 'Unit (excl. VAT)',
     unitPriceInclVat: 'Unit (incl. VAT)',
-    
+
     // Profit
     purchaseTotalExclVat: 'Purchase Total (excl. VAT)',
     sellingTotalExclVat: 'Selling Total (excl. VAT)',
@@ -153,7 +153,7 @@ export const TRANSLATIONS = {
     unitSelling: 'Selling',
     unitDifference: 'Unit Profit',
     unitProfit: 'Total Profit',
-    
+
     // Presets
     presets: 'Presets',
     presetsDescription: 'Pre-configured assemblies for quick creation',
@@ -166,7 +166,7 @@ export const TRANSLATIONS = {
     noPresets: 'No presets configured for this type',
     deletePresetConfirm: 'Delete this preset?',
     noModules: 'No modules',
-    
+
     // Library
     componentLibrary: 'Component Library',
     manageSKUs: 'Manage SKUs, prices, and module definitions',
@@ -216,17 +216,18 @@ export const TRANSLATIONS = {
     colorHex: 'Hex',
     manageColors: 'Manage Colors',
     confirmRemoveColor: 'Remove this color? Module fields for this color will be deleted.',
-    
+
     // Module names
     face: 'Face',
-    
+
     // Item names for BOQ/Quote
     wallBoxMasonryItem: 'Wall Box Masonry',
     wallBoxDrywallItem: 'Wall Box Drywall',
     supportItem: 'Support Frame',
     coverPlateItem: 'Cover Plate',
     coverPlateWithSupportItem: 'Cover Plate + Mounting Frame',
-    
+    halfPostSupportItem: 'Half-module Support',
+
     // Wall Box Types
     wallBoxType: 'Wall Box Type',
     masonry: 'Masonry',
@@ -253,7 +254,7 @@ export const TRANSLATIONS = {
     done: 'Gata',
     create: 'Creează',
     duplicate: 'Duplică',
-    
+
     // AI Import
     aiImport: 'Import AI',
     aiImportTitle: 'Import din Necesar Arhitect',
@@ -269,7 +270,7 @@ export const TRANSLATIONS = {
     aiImportWarnings: 'Avertismente',
     yes: 'Da',
     no: 'Nu',
-    
+
     // Projects
     projects: 'Proiecte',
     createNewProject: 'Creează Proiect Nou',
@@ -277,7 +278,7 @@ export const TRANSLATIONS = {
     noClient: 'Fără client',
     assemblies: 'ansambluri',
     backToProjects: 'Înapoi la Proiecte',
-    
+
     // Assemblies
     outlets: 'Prize',
     switches: 'Întrerupătoare',
@@ -299,7 +300,7 @@ export const TRANSLATIONS = {
     editProject: 'Editează Proiect',
     projectName: 'Nume Proiect',
     clientName: 'Nume Client',
-    
+
     // Assembly Editor
     backToList: 'Înapoi la Listă',
     room: 'Cameră',
@@ -320,7 +321,7 @@ export const TRANSLATIONS = {
     editHint: 'Click pe dimensiune/cameră pentru editare · Trage pentru reordonare · Click ⚙️ pentru editare module',
     editHintGrouped: 'Trage aparatajele pe header-ul camerei pentru a le muta · Click ⚙️ pentru editare module',
     groupByRoom: 'Grupează pe camere',
-    
+
     // Room suggestions
     livingRoom: 'Living',
     kitchen: 'Bucătărie',
@@ -334,11 +335,11 @@ export const TRANSLATIONS = {
     laundry: 'Spălătorie',
     storage: 'Depozit',
     balcony: 'Balcon',
-    
+
     // Colors
     white: 'Alb',
     black: 'Negru',
-    
+
     // BOQ & Quote
     boq: 'BOQ (Furnizor)',
     clientQuote: 'Ofertă Client',
@@ -379,7 +380,7 @@ export const TRANSLATIONS = {
     vatAmount: 'Valoare TVA',
     unitPriceExclVat: 'Unitar (fără TVA)',
     unitPriceInclVat: 'Unitar (cu TVA)',
-    
+
     // Profit
     purchaseTotalExclVat: 'Total Achiziție (fără TVA)',
     sellingTotalExclVat: 'Total Vânzare (fără TVA)',
@@ -392,7 +393,7 @@ export const TRANSLATIONS = {
     unitSelling: 'Vânzare',
     unitDifference: 'Profit Unitar',
     unitProfit: 'Profit Total',
-    
+
     // Presets
     presets: 'Preseturi',
     presetsDescription: 'Ansambluri preconfigurate pentru creare rapidă',
@@ -405,7 +406,7 @@ export const TRANSLATIONS = {
     noPresets: 'Niciun preset configurat pentru acest tip',
     deletePresetConfirm: 'Ștergi acest preset?',
     noModules: 'Fără module',
-    
+
     // Library
     componentLibrary: 'Bibliotecă Componente',
     manageSKUs: 'Gestionează coduri, prețuri și definiții module',
@@ -455,17 +456,18 @@ export const TRANSLATIONS = {
     colorHex: 'Hex',
     manageColors: 'Gestionare Culori',
     confirmRemoveColor: 'Ștergi această culoare? Câmpurile modulelor pentru această culoare vor fi șterse.',
-    
+
     // Module names
     face: 'Fata',
-    
+
     // Item names for BOQ/Quote
     wallBoxMasonryItem: 'Doza Zidarie',
     wallBoxDrywallItem: 'Doza Gips-carton',
     supportItem: 'Rama Suport',
     coverPlateItem: 'Rama Decor',
     coverPlateWithSupportItem: 'Rama Decor + Montaj',
-    
+    halfPostSupportItem: 'Suport module 1/2',
+
     // Wall Box Types
     wallBoxType: 'Tip Doză',
     masonry: 'Zidărie',

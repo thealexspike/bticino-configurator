@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { useTranslation, useLanguage } from '../i18n';
 import { isEntryExcluded } from '../lib/assemblies';
 import { getColorName, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
-import { wallBoxLines, hasSeparateSupports, sizeLabel } from '../lib/mounting';
+import { wallBoxLines, hasSeparateSupports, sizeLabel, postLayout, halfPostSupportOf } from '../lib/mounting';
 import { VAT_RATE } from '../lib/pricing';
 
 export function ProfitView({ project }) {
@@ -55,6 +55,20 @@ export function ProfitView({ project }) {
         items.installFaces[ifKey].qty++;
       }
 
+      // Suport pentru module 1/2 — câte unul pe fiecare post cu module de jumătate
+      const halfPosts = postLayout(assembly.modules, library).halfPosts;
+      const halfSupport = halfPostSupportOf(library);
+      if (halfPosts > 0 && halfSupport) {
+        items.installFaces['half-post'] = items.installFaces['half-post'] || {
+          name: t.halfPostSupportItem,
+          purchasePrice: halfSupport.purchasePrice || 0,
+          sellingPrice: (halfSupport.price || 0) / (1 + VAT_RATE),
+          color: '—',
+          qty: 0,
+        };
+        items.installFaces['half-post'].qty += halfPosts;
+      }
+
       // Ramă decor (+ montaj, la sistemele unde vin la pachet)
       const dfKey = `${assembly.size}M-${assembly.color}`;
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || {
@@ -71,23 +85,23 @@ export function ProfitView({ project }) {
         const catalogItem = MODULE_CATALOG.find(c => c.id === mod.moduleId);
         if (catalogItem) {
           const translatedName = getModuleName(catalogItem, lang);
-          
+
           // Module
           const modKey = `${mod.moduleId}-${assembly.color}`;
-          const modPurchase = typeof catalogItem.modulePurchasePrice === 'object' 
-            ? catalogItem.modulePurchasePrice?.[assembly.color] || 0 
+          const modPurchase = typeof catalogItem.modulePurchasePrice === 'object'
+            ? catalogItem.modulePurchasePrice?.[assembly.color] || 0
             : catalogItem.modulePurchasePrice || 0;
           const modPrice = typeof catalogItem.modulePrice === 'object'
             ? catalogItem.modulePrice?.[assembly.color] || 0
             : catalogItem.modulePrice || 0;
           const modSellingWithoutVat = modPrice / (1 + VAT_RATE);
-          
-          items.modules[modKey] = items.modules[modKey] || { 
+
+          items.modules[modKey] = items.modules[modKey] || {
             name: translatedName,
             color: colorName,
             purchasePrice: modPurchase,
             sellingPrice: modSellingWithoutVat,
-            qty: 0 
+            qty: 0
           };
           items.modules[modKey].qty++;
 
@@ -97,13 +111,13 @@ export function ProfitView({ project }) {
           const mfPurchase =catalogItem.facePurchasePrice?.[assembly.color] || 0;
           const mfPrice = catalogItem.facePrice?.[assembly.color] || 0;
           const mfSellingWithoutVat = mfPrice / (1 + VAT_RATE);
-          
-          items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
+
+          items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || {
             name: `${translatedName} - ${t.face}`,
             color: colorName,
             purchasePrice: mfPurchase,
             sellingPrice: mfSellingWithoutVat,
-            qty: 0 
+            qty: 0
           };
           items.moduleFaces[mfKey].qty++;
         }
@@ -148,22 +162,22 @@ export function ProfitView({ project }) {
   const grandTotals = useMemo(() => {
     let totalPurchase = 0;
     let totalSelling = 0;
-    
+
     Object.values(profitData).forEach(category => {
       Object.values(category).forEach(item => {
         totalPurchase += item.purchasePrice * item.qty;
         totalSelling += item.sellingPrice * item.qty;
       });
     });
-    
+
     const grossProfit = totalSelling - totalPurchase;
     const profitMargin = totalSelling > 0 ? (grossProfit / totalSelling) * 100 : 0;
-    
+
     // VAT calculations
     const vatCollected = totalSelling * VAT_RATE; // TVA colectat din vânzări
     const vatDeductible = totalPurchase * VAT_RATE; // TVA deductibil din achiziții
     const vatPayable = vatCollected - vatDeductible; // TVA de plată
-    
+
     return {
       totalPurchase,
       totalSelling,
@@ -202,7 +216,7 @@ export function ProfitView({ project }) {
               const items = Object.values(profitData[key]);
               if (items.length === 0) return null;
               const sectionTotals = calculateSectionTotals(profitData[key]);
-              
+
               return (
                 <div key={key} className="p-4">
                   <h3 className="font-medium text-white bg-gray-600 px-3 py-2 rounded-t">{title}</h3>

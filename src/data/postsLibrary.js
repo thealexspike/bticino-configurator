@@ -24,7 +24,7 @@ const COLORS = [
 // Rama decor (sticlă) + rama de montaj, pe număr de posturi
 const FRAME_PURCHASE = { 2: 35, 4: 55, 6: 75, 8: 95 };
 
-const mechanism = (id, standardType, nameEn, nameRo, category, purchase, graphic) => ({
+const mechanism = (id, standardType, nameEn, nameRo, category, purchase, graphic, size = 2) => ({
   id,
   standardType,
   graphic,
@@ -33,7 +33,7 @@ const mechanism = (id, standardType, nameEn, nameRo, category, purchase, graphic
   moduleSku: '',
   nameEn,
   nameRo,
-  size: 2, // ocupă un post întreg
+  size, // 2 = un post întreg, 1 = jumătate de post (necesită suport pentru module 1/2)
   category,
   faceSku: '',
   modulePurchasePrice: purchase,
@@ -67,21 +67,31 @@ export const DEFAULT_LIBRARY_GENERIC_POSTS = {
     8: item(30),
   },
   installFaces: {},
+  // Suport pentru module 1/2 (ex. TOS-SUPMOD2): unul pe fiecare post care conține module de 1M
+  halfPostSupport: item(0.66),
   decorFaces: Object.fromEntries(
     Object.entries(FRAME_PURCHASE).flatMap(([size, purchase]) =>
       COLORS.map(c => [`${size}-${c.id}`, item(purchase)]))
   ),
   modules: [
+    // Un post întreg (2M)
     mechanism('schuko', 'schuko', 'Schuko Outlet', 'Priză Schuko', 'outlet', 22, 'schuko'),
     mechanism('usb', 'usb', 'USB Outlet (A+C)', 'Priză USB (A+C)', 'outlet', 60, 'usb'),
-    mechanism('coax', 'coax', 'TV Coaxial Outlet', 'Priză TV Coaxial', 'outlet', 25, 'coax'),
-    mechanism('rj45', 'rj45', 'RJ45 Data Outlet', 'Priză Date RJ45', 'outlet', 30, 'utp'),
     mechanism('switch_simple_2m', 'switch_simple', 'Simple Switch', 'Întrerupător Simplu', 'switch', 22, 'switch'),
     mechanism('switch_double', 'switch_double', 'Double Switch', 'Întrerupător Dublu', 'switch', 26, 'switch_double'),
     mechanism('switch_stair_2m', 'switch_stair', 'Stair Switch', 'Întrerupător Cap Scară', 'switch', 25, 'switch_stair'),
     mechanism('switch_cross_2m', 'switch_cross', 'Cross Switch', 'Întrerupător Cap Cruce', 'switch', 32, 'switch_cross'),
     mechanism('dimmer', 'dimmer', 'Dimmer', 'Variator (Dimmer)', 'switch', 75, 'dimmer'),
-    mechanism('blank', 'blank', 'Blank Cover', 'Obturator', 'other', 8, 'blank'),
+    mechanism('blank_2m', 'blank', 'Blank Cover', 'Obturator', 'other', 8, 'blank'),
+    // Jumătate de post (1M) — două pe un post, cu suport pentru module 1/2.
+    // Aceleași id-uri ca modulele de 1M din sistemele modulare.
+    mechanism('italian', 'italian', 'Italian Outlet 1/2', 'Priză Italia 1/2', 'outlet', 10, 'italian', 1),
+    mechanism('coax', 'coax', 'TV Coaxial Outlet 1/2', 'Priză TV Coaxial 1/2', 'outlet', 14, 'coax', 1),
+    mechanism('rj45', 'rj45', 'RJ45 Data Outlet 1/2', 'Priză Date RJ45 1/2', 'outlet', 16, 'utp', 1),
+    mechanism('switch_simple', 'switch_simple', 'Simple Switch 1/2', 'Întrerupător Simplu 1/2', 'switch', 12, 'switch', 1),
+    mechanism('switch_stair_1m', 'switch_stair', 'Stair Switch 1/2', 'Întrerupător Cap Scară 1/2', 'switch', 14, 'switch_stair', 1),
+    mechanism('switch_cross_1m', 'switch_cross', 'Cross Switch 1/2', 'Întrerupător Cap Cruce 1/2', 'switch', 18, 'switch_cross', 1),
+    mechanism('blank', 'blank', 'Blank Cover 1/2', 'Obturator 1/2', 'other', 4, 'blank', 1),
   ],
   presets: [],
 };

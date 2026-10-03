@@ -2,7 +2,7 @@ import React, { useMemo } from 'react';
 import { FileText, Eye, EyeOff } from 'lucide-react';
 import { useTranslation, useLanguage } from '../i18n';
 import { isEntryExcluded } from '../lib/assemblies';
-import { wallBoxLines, hasSeparateSupports, sizeLabel } from '../lib/mounting';
+import { wallBoxLines, hasSeparateSupports, sizeLabel, postLayout, halfPostSupportOf } from '../lib/mounting';
 import { getColorName, LibraryContext, getWallBoxPrice, getInstallFacePrice, getDecorFacePrice, getModulePrice, getModuleFacePrice, getModuleName, getModuleCatalog } from '../lib/library';
 import { VAT_RATE } from '../lib/pricing';
 import { generateQuotePdf } from '../pdf/quotePdf';
@@ -77,6 +77,19 @@ export function QuoteView({ project, onUpdate }) {
         items.installFaces[ifKey].qty++;
       }
 
+      // Suport pentru module 1/2 — câte unul pe fiecare post cu module de jumătate
+      const halfPosts = postLayout(assembly.modules, library).halfPosts;
+      const halfSupport = halfPostSupportOf(library);
+      if (halfPosts > 0 && halfSupport) {
+        items.installFaces['half-post'] = items.installFaces['half-post'] || {
+          name: t.halfPostSupportItem,
+          unitPrice: halfSupport.price || 0,
+          color: '—',
+          qty: 0,
+        };
+        items.installFaces['half-post'].qty += halfPosts;
+      }
+
       // Ramă decor (+ montaj, la sistemele unde vin la pachet)
       const dfKey = `${assembly.size}M-${assembly.color}`;
       items.decorFaces[dfKey] = items.decorFaces[dfKey] || {
@@ -95,11 +108,11 @@ export function QuoteView({ project, onUpdate }) {
           const modKey = `${mod.moduleId}-${assembly.color}`;
           const modPrice = getModulePrice(mod.moduleId, assembly.color, library);
           const translatedName = getModuleName(catalogItem, lang);
-          items.modules[modKey] = items.modules[modKey] || { 
-            name: translatedName, 
+          items.modules[modKey] = items.modules[modKey] || {
+            name: translatedName,
             color: colorName,
             unitPrice: modPrice,
-            qty: 0 
+            qty: 0
           };
           items.modules[modKey].qty++;
 
@@ -107,11 +120,11 @@ export function QuoteView({ project, onUpdate }) {
           if (library?.hasModuleFaces === false) return;
           const mfKey = `${mod.moduleId}-${assembly.color}-face`;
           const mfPrice = getModuleFacePrice(mod.moduleId, assembly.color, library);
-          items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || { 
-            name: `${translatedName} - ${t.face}`, 
+          items.moduleFaces[mfKey] = items.moduleFaces[mfKey] || {
+            name: `${translatedName} - ${t.face}`,
             color: colorName,
             unitPrice: mfPrice,
-            qty: 0 
+            qty: 0
           };
           items.moduleFaces[mfKey].qty++;
         }
@@ -157,7 +170,7 @@ export function QuoteView({ project, onUpdate }) {
   const formatPrice = (price) => {
     return price.toLocaleString('ro-RO', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   };
-  
+
   // Calculate price without VAT from price with VAT
   const priceWithoutVat = (priceWithVat) => priceWithVat / (1 + VAT_RATE);
 

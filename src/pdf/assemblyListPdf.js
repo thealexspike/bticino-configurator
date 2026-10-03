@@ -9,21 +9,21 @@ import { removeDiacritics, svgToImage } from './common';
 export async function generateAssemblyListPdf({ type, lang, project, library, assemblies, moduleCatalog }) {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
-  
+
   // Function to generate SVG string for an assembly
   // Uses fit-to-box scaling: SVG fits within maxWidth x maxHeight (in PDF mm units)
   const generateAssemblySVG = (assembly, maxWidth = 50, maxHeight = 22) => {
     const sysProps = getSystemProportions(library);
-    
+
     // Calculate natural (unscaled) dimensions
     const naturalModuleArea = assembly.size * sysProps.moduleWidth1M;
     const naturalWidth = naturalModuleArea + (sysProps.sideMargin * 2);
-    const naturalHeight = (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin) 
+    const naturalHeight = (sysProps.topMargin + sysProps.moduleHeight + sysProps.bottomMargin)
       || (sysProps.moduleHeight + (sysProps.supportBarHeight + sysProps.supportBarOffset) * 2);
-    
+
     // Fit-to-box: scale to fit within maxWidth x maxHeight
     const s = Math.min(maxWidth / naturalWidth, maxHeight / naturalHeight);
-    
+
     const moduleWidth1M = sysProps.moduleWidth1M * s;
     const modHeight = sysProps.moduleHeight * s;
     const sideMargin = sysProps.sideMargin * s;
@@ -33,13 +33,13 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     const cr = sysProps.cornerRadius * s;
     const mcr = sysProps.moduleCornerRadius * s;
     const inset = (sysProps.slotInset || 0) * s; // ferestrele posturilor
-    
+
     const moduleAreaWidth = assembly.size * moduleWidth1M;
     const totalWidth = moduleAreaWidth + (sideMargin * 2);
-    
+
     // Vertical offset: center modules in totalHeight for systems without explicit margins
     const moduleTop = sysProps.topMargin > 0 ? topMargin : (totalHeight - modHeight) / 2;
-    
+
     const isDark = isDarkColor(assembly.color, library);
     const frameBg = isDark ? '#3a3a3a' : '#f5f5f5';
     const supportBarColor = '#4a4a4a';
@@ -47,12 +47,12 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     const moduleBg = colorHexPdf || (isDark ? '#3a3a3a' : '#ffffff');
     const moduleBorder = isDark ? adjustBrightness(colorHexPdf || '#3a3a3a', 30) : adjustBrightness(colorHexPdf || '#f5f5f5', -25);
     const frameBorderOuter = isDark ? '#555' : '#ddd';
-    
+
     let svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${totalWidth}" height="${totalHeight}" viewBox="0 0 ${totalWidth} ${totalHeight}">`;
-    
+
     // Outer frame
     svg += `<rect x="0" y="0" width="${totalWidth}" height="${totalHeight}" rx="${cr}" fill="${frameBg}" stroke="${frameBorderOuter}" stroke-width="0.5"/>`;
-    
+
     // Support bars (BTicino only)
     if (sysProps.hasSupportBars) {
       const sbh = sysProps.supportBarHeight * s;
@@ -60,9 +60,11 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       svg += `<rect x="${sideMargin}" y="${moduleTop + sbo}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
       svg += `<rect x="${sideMargin}" y="${moduleTop + modHeight - sbo - sbh}" width="${moduleAreaWidth}" height="${sbh}" fill="${supportBarColor}"/>`;
     }
-    
+
     // Modules
     let moduleX = sideMargin;
+    let posM = 0; // poziția în module, pentru ferestrele posturilor
+    const postStep = sysProps.postSize || 2;
     const centerYAbs = moduleTop + modHeight / 2;
     (assembly.modules || []).forEach((mod) => {
       const catalogItem = moduleCatalog.find(c => c.id === mod.moduleId);
@@ -70,17 +72,19 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       const modWidth = size * moduleWidth1M;
       const centerX = moduleX + modWidth / 2;
       const centerY = centerYAbs;
-      
+
       // Module background
-      svg += `<rect x="${moduleX + inset}" y="${moduleTop + inset}" width="${modWidth - 2 * inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
-      
+      const inL = inset > 0 && posM % postStep === 0 ? inset : 0;
+      const inR = inset > 0 && (posM + size) % postStep === 0 ? inset : 0;
+      svg += `<rect x="${moduleX + inL}" y="${moduleTop + inset}" width="${modWidth - inL - inR}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="${moduleBg}" stroke="${moduleBorder}" stroke-width="0.5"/>`;
+
       if (catalogItem) {
         const g = getModuleGraphicType(catalogItem);
         const symbolColor = isDark ? '#ffffff' : '#333333';
         const accentColor = isDark ? '#555555' : '#e8e8e8';
         const holeColor = isDark ? '#ffffff' : '#333333';
         const sw = 0.95;
-        
+
         if (g === 'schuko') {
           svg += `<circle cx="${centerX}" cy="${centerY}" r="${8 * s}" fill="${accentColor}"/>`;
           svg += `<circle cx="${centerX - 3.5 * s}" cy="${centerY}" r="${1.8 * s}" fill="${holeColor}"/>`;
@@ -119,65 +123,72 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
           svg += `<rect x="${centerX - 3 * s}" y="${centerY - 3 * s}" width="${6 * s}" height="${6 * s}" fill="${holeColor}"/>`;
         }
       }
-      
+
       moduleX += modWidth;
+      posM += size;
     });
-    
+
     // Empty slots
     const usedSize = (assembly.modules || []).reduce((sum, mod) => {
       const catalogItem = moduleCatalog.find(c => c.id === mod.moduleId);
       return sum + (catalogItem?.size || 1);
     }, 0);
-    
+
     if (usedSize < assembly.size && inset > 0) {
       // Sistem cu posturi: câte o fereastră goală pe fiecare post liber
       const postW = (sysProps.postSize || 2) * moduleWidth1M;
-      for (let x = moduleX; x + postW <= sideMargin + assembly.size * moduleWidth1M + 0.01; x += postW) {
+      let startX = moduleX;
+      if (usedSize % postStep !== 0) {
+        // jumătatea liberă a unui post început
+        svg += `<rect x="${moduleX}" y="${moduleTop + inset}" width="${moduleWidth1M - inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+        startX += moduleWidth1M;
+      }
+      for (let x = startX; x + postW <= sideMargin + assembly.size * moduleWidth1M + 0.01; x += postW) {
         svg += `<rect x="${x + inset}" y="${moduleTop + inset}" width="${postW - 2 * inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
       }
     } else if (usedSize < assembly.size) {
       const emptyWidth = (assembly.size - usedSize) * moduleWidth1M;
       svg += `<rect x="${moduleX}" y="${moduleTop}" width="${emptyWidth}" height="${modHeight}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
     }
-    
+
     svg += '</svg>';
     return { svg, width: totalWidth, height: totalHeight };
   };
-  
-  const typeTitle = type === 'outlet' 
+
+  const typeTitle = type === 'outlet'
     ? (lang === 'ro' ? 'Lista Prize' : 'Outlets List')
     : (lang === 'ro' ? 'Lista Intrerupatoare' : 'Switches List');
   const projectName = project?.name || (lang === 'ro' ? 'Proiect' : 'Project');
   const clientName = project?.clientName || (lang === 'ro' ? 'Client' : 'Client');
   const dateStr = new Date().toLocaleDateString('ro-RO');
-  
+
   doc.setFont('helvetica');
-  
+
   // Title
   doc.setFontSize(16);
   doc.setFont('helvetica', 'bold');
   doc.text(typeTitle, pageWidth / 2, 14, { align: 'center' });
-  
+
   // Project name
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
   doc.text(removeDiacritics(projectName), pageWidth / 2, 21, { align: 'center' });
-  
+
   // Client name
   doc.setFontSize(10);
   doc.setFont('helvetica', 'normal');
   doc.text(removeDiacritics(clientName), pageWidth / 2, 27, { align: 'center' });
-  
+
   // Line separator
   doc.setDrawColor(200, 200, 200);
   doc.line(10, 31, pageWidth - 10, 31);
-  
+
   // Date on the right
   doc.setFontSize(9);
   doc.text(dateStr, pageWidth - 10, 38, { align: 'right' });
-  
+
   let yPos = 44;
-  
+
   // Group by room for better organization
   const groupedData = {};
   assemblies.forEach(assembly => {
@@ -187,26 +198,26 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     }
     groupedData[room].push(assembly);
   });
-  
+
   const rooms = Object.keys(groupedData).sort((a, b) => {
     const noRoom = lang === 'ro' ? 'Fara camera' : 'No room';
     if (a === noRoom) return 1;
     if (b === noRoom) return -1;
     return a.localeCompare(b);
   });
-  
+
   const cardHeight = 28; // Reduced height
   const roomHeaderHeight = 7;
-  
+
   for (const room of rooms) {
     const roomAssemblies = groupedData[room];
-    
+
     // Check if room header + at least one card fits on current page
     if (yPos + roomHeaderHeight + cardHeight > 280) {
       doc.addPage();
       yPos = 20;
     }
-    
+
     // Room header
     doc.setFillColor(70, 70, 70);
     doc.rect(10, yPos, pageWidth - 20, 6, 'F');
@@ -216,30 +227,30 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     doc.text(removeDiacritics(room), 13, yPos + 4.5);
     doc.setTextColor(0, 0, 0);
     yPos += roomHeaderHeight;
-    
+
     for (const assembly of roomAssemblies) {
       if (yPos + cardHeight > 280) {
         doc.addPage();
         yPos = 20;
       }
-      
+
       const wallBoxType = assembly.wallBoxType || 'masonry';
-      const wallBoxLabel = wallBoxType === 'drywall' 
+      const wallBoxLabel = wallBoxType === 'drywall'
         ? (lang === 'ro' ? 'Gips-carton' : 'Drywall')
         : (lang === 'ro' ? 'Zidarie' : 'Masonry');
       const colorLabel = getColorName(assembly.color, library, lang);
-      
+
       // Card background
       doc.setFillColor(252, 252, 252);
       doc.setDrawColor(230, 230, 230);
       doc.rect(10, yPos, pageWidth - 20, cardHeight - 1, 'FD');
-      
+
       // Code
       doc.setFontSize(11);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(50, 50, 50);
       doc.text(assembly.code, 13, yPos + 6);
-      
+
       // Info line 1
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
@@ -248,13 +259,13 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       ? ' (' + wallBoxLines(assembly, library, lang).map(l => `${l.qty} x ${removeDiacritics(l.label)}`).join(', ') + ')'
       : '';
     doc.text(`${removeDiacritics(sizeLabel(assembly.size, library, lang))} | ${wallBoxLabel}${boxesLabel} | ${colorLabel}`, 13, yPos + 12);
-      
+
       // Info line 2: Modules
       const moduleNames = assembly.modules.map(mod => {
         const catalogItem = moduleCatalog.find(c => c.id === mod.moduleId);
         return catalogItem ? removeDiacritics(getModuleName(catalogItem, lang)) : mod.moduleId;
       }).join(', ') || (lang === 'ro' ? 'Gol' : 'Empty');
-      
+
       doc.setFontSize(8);
       doc.setFont('helvetica', 'bold');
       doc.setTextColor(120, 120, 120);
@@ -269,25 +280,25 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
         doc.setTextColor(90, 90, 90);
         doc.text(noteLines.length > 1 ? noteLines[0] + '...' : noteLines[0], 13, yPos + 24);
       }
-      
+
       // Generate and add SVG sketch — fit to card area
       const maxImgWidth = 50; // mm in PDF
       const maxImgHeight = cardHeight - 4; // mm, leave some padding
       const { svg, width, height } = generateAssemblySVG(assembly, maxImgWidth, maxImgHeight);
       const imageData = await svgToImage(svg, width, height);
-      
+
       if (imageData) {
         const imgX = pageWidth - 12 - width;
         const imgY = yPos + (cardHeight - 1 - height) / 2;
         doc.addImage(imageData, 'PNG', imgX, imgY, width, height);
       }
-      
+
       yPos += cardHeight;
     }
-    
+
     yPos += 2;
   }
-  
+
   // Footer
   const pageCount = doc.internal.getNumberOfPages();
   const pageLabel = lang === 'ro' ? 'Pagina' : 'Page';
@@ -308,7 +319,7 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
       { align: 'right' }
     );
   }
-  
+
   doc.setTextColor(0, 0, 0);
   const fileType = type === 'outlet' ? (lang === 'ro' ? 'Lista_Prize' : 'Outlets_List') : (lang === 'ro' ? 'Lista_Intrerupatoare' : 'Switches_List');
   const fileClientName = removeDiacritics(project?.clientName || 'Client').replace(/\s+/g, '_');

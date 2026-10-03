@@ -5,7 +5,7 @@ import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
 import { usePlanLink, ASSEMBLY_DRAG_TYPE } from '../planLink';
 import { calculateModulesSize } from '../lib/assemblies';
-import { sizeLabel, capacityLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines } from '../lib/mounting';
+import { sizeLabel, capacityLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, postLayout, moduleSizeLabel } from '../lib/mounting';
 import { getAvailableColors, getAvailableSizes, isDarkColor, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
 import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
 
@@ -252,6 +252,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
   // Render a single assembly item
   const renderAssemblyItem = (assembly, index, showRoom = true) => {
     const usedSize = calculateModulesSize(assembly.modules, library);
+    const layout = postLayout(assembly.modules, library);
     const availableColors = getAvailableColors(library);
     const colorInfo = availableColors.find(c => c.id === assembly.color);
     const isDragging = draggedId === assembly.id;
@@ -306,7 +307,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 />
               </div>
             ) : (
-              <span 
+              <span
                 className={`font-mono font-bold ${compact ? 'text-base' : 'text-lg'} hover:bg-blue-100 px-1 rounded cursor-text`}
                 onClick={(e) => startEditingCode(assembly, e)}
                 title="Click to change position"
@@ -352,7 +353,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               }}
               onClick={(e) => e.stopPropagation()}
               className={`${selCls} hover:opacity-80`}
-              style={{ 
+              style={{
                 backgroundColor: colorInfo?.hex,
                 color: isDarkColor(assembly.color, library) ? '#fff' : '#333'
               }}
@@ -398,6 +399,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
               usedSize > assembly.size ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
             }`}>
               {capacityLabel(usedSize, assembly.size, library, lang)}
+              {layout.straddling && <span className="text-amber-700" title={lang === 'ro' ? 'Un mecanism de un post întreg nu poate sta între două posturi. Pune modulele de 1/2 în perechi, pe același post.' : 'A full-post device cannot sit across two posts. Put half modules in pairs on the same post.'}> ⚠</span>}
             </span>
           </>
         );
@@ -493,7 +495,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                     >
                       {group.count > 1 && <span className="font-bold">{group.count}x</span>}
                       {moduleName.length > 12 ? moduleName.substring(0, 10) + '...' : moduleName}
-                      <span className="text-blue-400 text-[10px]">{sizeLabel(moduleSize, library, lang)}</span>
+                      <span className="text-blue-400 text-[10px]">{moduleSizeLabel(moduleSize)}</span>
                     </span>
                   );
                 })}
@@ -757,23 +759,23 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             const isDropTarget = dragOverRoom === room && draggedId;
             const draggedAssembly = draggedId ? assemblies.find(a => a.id === draggedId) : null;
             const draggedFromSameRoom = draggedAssembly && (draggedAssembly.room || t.noRoom) === room;
-            
+
             return (
-              <div 
+              <div
                 key={room}
                 onDragOver={(e) => handleRoomDragOver(e, room)}
                 onDragLeave={handleRoomDragLeave}
                 onDrop={(e) => handleRoomDrop(e, room)}
                 className={`transition-all ${
                   isDropTarget && !draggedFromSameRoom
-                    ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset' 
+                    ? 'bg-blue-50 ring-2 ring-blue-400 ring-inset'
                     : ''
                 }`}
               >
-                <div 
+                <div
                   className={`px-4 py-2 border-b flex items-center gap-2 transition-all ${
                     isDropTarget && !draggedFromSameRoom
-                      ? 'bg-blue-100' 
+                      ? 'bg-blue-100'
                       : 'bg-gray-100'
                   }`}
                 >
@@ -789,7 +791,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                   )}
                 </div>
                 <ul>
-                  {groupedByRoom.groups[room].map((assembly, index) => 
+                  {groupedByRoom.groups[room].map((assembly, index) =>
                     renderAssemblyItem(assembly, index, false)
                   )}
                 </ul>
@@ -804,7 +806,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
         </ul>
       )}
       </div>
-      
+
       <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t shrink-0">
         💡 {groupByRoom ? t.editHintGrouped : t.editHint}
       </div>
