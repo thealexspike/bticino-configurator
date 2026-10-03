@@ -66,14 +66,19 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     let posM = 0; // poziția în module, pentru ferestrele posturilor
     const postStep = sysProps.postSize || 2;
     const centerYAbs = moduleTop + modHeight / 2;
+    // Sistem cu posturi: ferestrele tuturor posturilor (golurile rămân vizibile sub module)
+    if (inset > 0) {
+      const postW = postStep * moduleWidth1M;
+      for (let i = 0; i < Math.ceil(assembly.size / postStep); i++) {
+        const x = sideMargin + i * postW;
+        svg += `<rect x="${x + inset}" y="${moduleTop + inset}" width="${postW - 2 * inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+      }
+    }
     // Așezarea fizică (la posturi: modulele de 1/2 completează posturile începute)
     layoutModules(assembly.modules, { ...library, modules: moduleCatalog }).forEach((slot) => {
       const { catalogItem, size } = slot;
       // Gol de aliniere: jumătate de post rămasă liberă
       if (slot.gapBefore > 0) {
-        if (inset > 0) {
-          svg += `<rect x="${moduleX}" y="${moduleTop + inset}" width="${slot.gapBefore * moduleWidth1M - inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
-        }
         moduleX += slot.gapBefore * moduleWidth1M;
         posM += slot.gapBefore;
       }
@@ -139,19 +144,7 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     // Empty slots
     const usedSize = posM; // cu tot cu golurile de aliniere
 
-    if (usedSize < assembly.size && inset > 0) {
-      // Sistem cu posturi: câte o fereastră goală pe fiecare post liber
-      const postW = (sysProps.postSize || 2) * moduleWidth1M;
-      let startX = moduleX;
-      if (usedSize % postStep !== 0) {
-        // jumătatea liberă a unui post început
-        svg += `<rect x="${moduleX}" y="${moduleTop + inset}" width="${moduleWidth1M - inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
-        startX += moduleWidth1M;
-      }
-      for (let x = startX; x + postW <= sideMargin + assembly.size * moduleWidth1M + 0.01; x += postW) {
-        svg += `<rect x="${x + inset}" y="${moduleTop + inset}" width="${postW - 2 * inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
-      }
-    } else if (usedSize < assembly.size) {
+    if (inset === 0 && usedSize < assembly.size) {
       const emptyWidth = (assembly.size - usedSize) * moduleWidth1M;
       svg += `<rect x="${moduleX}" y="${moduleTop}" width="${emptyWidth}" height="${modHeight}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
     }

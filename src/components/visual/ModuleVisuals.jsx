@@ -89,8 +89,6 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
   // Module slots
   // Pozițiile modulelor (la posturi: cu goluri de aliniere, gapBefore)
   const moduleSlots = layoutModules(assembly.modules, { ...library, modules: MODULE_CATALOG });
-  const lastSlot = moduleSlots[moduleSlots.length - 1];
-  const currentPos = lastSlot ? lastSlot.startPos + lastSlot.size : 0;
 
   return (
     <div
@@ -103,6 +101,17 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
         borderRadius: cornerRadius,
       }}
     >
+      {/* Sistem cu posturi: ferestrele tuturor posturilor, sub module (golurile rămân vizibile) */}
+      {inset > 0 && (
+        <div className="absolute flex" style={{ left: sideMargin, top: moduleTop, width: moduleAreaWidth, height: moduleHeight }}>
+          {Array.from({ length: Math.ceil(assembly.size / (props.postSize || 2)) }).map((_, i) => (
+            <div key={i} className="flex-shrink-0" style={{ width: (props.postSize || 2) * moduleWidth1M, height: '100%', padding: inset, boxSizing: 'border-box' }}>
+              <div style={{ width: '100%', height: '100%', border: `1px dashed ${moduleBorderColor}`, borderRadius: moduleCornerRadius }} />
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Module area */}
       <div
         className="absolute flex"
@@ -120,17 +129,12 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
           const insetR = inset > 0 && (slot.startPos + slot.size) % postStep === 0 ? inset : 0;
           return (
             <React.Fragment key={slot.id || idx}>
-            {/* Gol de aliniere: jumătatea liberă a unui post început */}
-            {slot.gapBefore > 0 && (
-              <div className="relative flex-shrink-0" style={{ width: slot.gapBefore * moduleWidth1M, height: '100%', paddingTop: inset, paddingBottom: inset, paddingRight: inset, boxSizing: 'border-box' }}>
-                {inset > 0 && <div style={{ width: '100%', height: '100%', border: `1px dashed ${moduleBorderColor}`, borderRadius: moduleCornerRadius }} />}
-              </div>
-            )}
             <div
               className="relative flex-shrink-0 flex items-center justify-center"
               style={inset > 0 ? {
                 width: slot.size * moduleWidth1M,
                 height: '100%',
+                marginLeft: slot.gapBefore * moduleWidth1M,
                 paddingTop: inset,
                 paddingBottom: inset,
                 paddingLeft: insetL,
@@ -157,17 +161,6 @@ export const AssemblyThumbnail = ({ assembly, library, maxWidth = 120, maxHeight
             </React.Fragment>
           );
         })}
-        {/* Sistem cu posturi: ferestre goale pe posturile libere */}
-        {inset > 0 && currentPos % (props.postSize || 2) !== 0 && currentPos < assembly.size && (
-          <div className="relative flex-shrink-0 flex items-center" style={{ width: moduleWidth1M, height: '100%', paddingRight: inset, paddingTop: inset, paddingBottom: inset, boxSizing: 'border-box' }}>
-            <div style={{ width: '100%', height: '100%', border: `1px dashed ${moduleBorderColor}`, borderRadius: moduleCornerRadius }} />
-          </div>
-        )}
-        {inset > 0 && Array.from({ length: Math.max(0, Math.floor((assembly.size - (currentPos + (currentPos % (props.postSize || 2) ? (props.postSize || 2) - (currentPos % (props.postSize || 2)) : 0))) / (props.postSize || 2))) }).map((_, i) => (
-          <div key={`empty-${i}`} className="relative flex-shrink-0 flex items-center justify-center" style={{ width: (props.postSize || 2) * moduleWidth1M, height: '100%' }}>
-            <div style={{ width: (props.postSize || 2) * moduleWidth1M - 2 * inset, height: moduleHeight - 2 * inset, border: `1px dashed ${moduleBorderColor}`, borderRadius: moduleCornerRadius }} />
-          </div>
-        ))}
       </div>
     </div>
   );

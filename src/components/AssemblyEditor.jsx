@@ -3,7 +3,7 @@ import { Plus, Trash2, ChevronLeft, Box, Layers } from 'lucide-react';
 import { RoomSelector } from './RoomSelector';
 import { ModuleImage } from './visual/ModuleVisuals';
 import { getSystemProportions } from '../data/libraries';
-import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel, layoutModules, fitsInFrame, packModules } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel, layoutModules, fitsInFrame, packModules, placeModuleAt } from '../lib/mounting';
 import { adjustBrightness } from '../graphics/colors';
 import { useTranslation, useLanguage } from '../i18n';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
@@ -13,6 +13,9 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
   const [draggedModule, setDraggedModule] = useState(null);
   const [dragOverSlot, setDragOverSlot] = useState(null);
   const [dragOverFace, setDragOverFace] = useState(false);
+  // Sisteme cu posturi: ținta de plasare (jumătatea de post, în module) și zonele de plasare active
+  const [dropHalf, setDropHalf] = useState(null);
+  const [postDropReady, setPostDropReady] = useState(false);
   const facePlateContainerRef = React.useRef(null);
   const [facePlateScale, setFacePlateScale] = useState(1);
   const [notesValue, setNotesValue] = useState(assembly.notes || '');
@@ -23,7 +26,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
   const lang = useLanguage();
   const MODULE_CATALOG = getModuleCatalog(library);
 
-  const usedSize = calculateModulesSize(assembly.modules, library);
+  const usedSize = calculateModulesSize(assembly.modules, library, assembly.size);
   const remainingSize = assembly.size - usedSize;
   const isOverCapacity = remainingSize < 0;
 
@@ -66,6 +69,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
       }
 
       setDraggedModule({ type: 'catalog', moduleId });
+      if (isPostSystem(library)) setTimeout(() => setPostDropReady(true), 0);
     }
   };
 
@@ -74,6 +78,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
     e.dataTransfer.setData('text/plain', JSON.stringify({ type: 'installed', index: slotIndex }));
     e.dataTransfer.effectAllowed = 'move';
     setDraggedModule({ type: 'installed', index: slotIndex });
+    if (isPostSystem(library)) setTimeout(() => setPostDropReady(true), 0);
   };
 
   const handleDragOver = (e) => {
@@ -154,6 +159,43 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
     resetDragState();
   };
 
+  // Sistem cu posturi: plasare pe postul / jumătatea de post aleasă (cu schimb de locuri)
+  const placementFor = (dragData, half) => {
+    if (!dragData || half === null) return null;
+    if (dragData.type === 'catalog') {
+      return placeModuleAt(assembly.modules, library, assembly.size, { newModule: createModuleInstance(dragData.moduleId), targetPos: half });
+    }
+    if (dragData.type === 'installed') {
+      return placeModuleAt(assembly.modules, library, assembly.size, { index: dragData.index, targetPos: half });
+    }
+    return null;
+  };
+
+  const handlePostDrop = (e, half) => {
+    e.preventDefault();
+    e.stopPropagation();
+    let dragData = draggedModule;
+    if (!dragData) {
+      try { dragData = JSON.parse(e.dataTransfer.getData('text/plain') || 'null'); } catch { dragData = null; }
+    }
+    const result = placementFor(dragData, half);
+    if (result) onUpdate({ ...assembly, modules: result });
+    resetDragState();
+  };
+
+  // Mărimea modulului tras (pentru evidențierea zonei țintă)
+  const draggedSize = (() => {
+    if (!draggedModule) return 0;
+    if (draggedModule.type === 'catalog') return MODULE_CATALOG.find(c => c.id === draggedModule.moduleId)?.size || 1;
+    return moduleSlots.find(s => s.index === draggedModule.index)?.size || 1;
+  })();
+  const postStepM = isPostSystem(library) ? (getSystemProportions(library).postSize || 2) : 2;
+  const dropTarget = dropHalf === null || !draggedSize ? null : {
+    pos: draggedSize >= postStepM ? Math.floor(dropHalf / postStepM) * postStepM : dropHalf,
+    size: draggedSize,
+    ok: !!placementFor(draggedModule, dropHalf),
+  };
+
   const handleRemoveModule = (index) => {
     const newModules = assembly.modules.filter((_, i) => i !== index);
     onUpdate({ ...assembly, modules: newModules });
@@ -161,6 +203,8 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
 
   const resetDragState = () => {
     setDraggedModule(null);
+    setDropHalf(null);
+    setPostDropReady(false);
     setDragOverSlot(null);
     setDragOverFace(false);
   };
@@ -441,6 +485,29 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                 ))}
               </div>
 
+              {/* Sistem cu posturi: zonele de plasare (câte una pe jumătate de post), active doar la tragere */}
+              {postDropReady && slotInset > 0 && (
+                <div className="absolute flex" style={{ left: sideMargin, top: topMargin, height: moduleHeight, width: assembly.size * moduleWidth1M, zIndex: 30 }}>
+                  {Array.from({ length: assembly.size }).map((_, half) => {
+                    const inTarget = dropTarget && half >= dropTarget.pos && half < dropTarget.pos + dropTarget.size;
+                    return (
+                      <div
+                        key={half}
+                        onDragOver={(e) => { e.preventDefault(); e.stopPropagation(); if (dropHalf !== half) setDropHalf(half); }}
+                        onDrop={(e) => handlePostDrop(e, half)}
+                        className="h-full flex-shrink-0 transition-colors"
+                        style={{
+                          width: moduleWidth1M,
+                          backgroundColor: inTarget ? (dropTarget.ok ? 'rgba(34,197,94,0.30)' : 'rgba(239,68,68,0.30)') : 'transparent',
+                          outline: inTarget ? `2px dashed ${dropTarget.ok ? '#16a34a' : '#dc2626'}` : 'none',
+                          outlineOffset: -2,
+                        }}
+                      />
+                    );
+                  })}
+                </div>
+              )}
+
               {/* Installed modules */}
               <div
                 className="absolute flex"
@@ -521,7 +588,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                 })}
 
                 {/* Empty drop zone indicator */}
-                {remainingSize > 0 && (
+                {remainingSize > 0 && slotInset === 0 && (
                   <div
                     className={`flex-shrink-0 border-2 border-dashed flex items-center justify-center transition-all ${
                       draggedModule ? 'border-blue-400 bg-blue-100/30' : 'border-gray-300'

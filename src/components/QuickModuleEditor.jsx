@@ -16,7 +16,7 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
   const L = (ro, en) => (lang === 'ro' ? ro : en);
   const catalog = getModuleCatalog(library);
   const props = getSystemProportions(library);
-  const used = calculateModulesSize(assembly.modules || [], library);
+  const used = calculateModulesSize(assembly.modules || [], library, assembly.size);
   const free = assembly.size - used;
   const over = used > assembly.size;
   const { straddling } = postLayout(assembly.modules || [], library);

@@ -251,7 +251,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
 
   // Render a single assembly item
   const renderAssemblyItem = (assembly, index, showRoom = true) => {
-    const usedSize = calculateModulesSize(assembly.modules, library);
+    const usedSize = calculateModulesSize(assembly.modules, library, assembly.size);
     const layout = postLayout(assembly.modules, library);
     const availableColors = getAvailableColors(library);
     const colorInfo = availableColors.find(c => c.id === assembly.color);

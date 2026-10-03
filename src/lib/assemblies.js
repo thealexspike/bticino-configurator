@@ -1,5 +1,5 @@
 import { getModuleCatalog } from './library';
-import { isPostSystem, usedSizeOf } from './mounting';
+import { isPostSystem, usedSizeOf, occupiedSizeOf } from './mounting';
 
 export const generateId = () => Math.random().toString(36).substr(2, 9);
 
@@ -43,9 +43,13 @@ export const reorderAssembly = (assemblies, assemblyId, newIndex, type) => {
   return renumberAssemblies(combined, type);
 };
 
-export const calculateModulesSize = (modules, library) => {
-  // La sistemele cu posturi contează și golurile de aliniere (un post întreg nu începe la jumătate)
-  if (isPostSystem(library)) return usedSizeOf(modules, library);
+export const calculateModulesSize = (modules, library, frameSize = null) => {
+  // Sisteme cu posturi: cât e ocupat efectiv; dacă așezarea iese din ramă, cât ar trebui
+  // (ca depășirea să apară ca peste capacitate)
+  if (isPostSystem(library)) {
+    const end = usedSizeOf(modules, library);
+    return frameSize !== null && end > frameSize ? end : occupiedSizeOf(modules, library);
+  }
   const catalog = getModuleCatalog(library);
   return modules.reduce((sum, m) => {
     const catalogItem = catalog.find(c => c.id === m.moduleId);

@@ -64,51 +64,103 @@ export function wallBoxLines(assembly, library, lang = 'ro') {
   return [{ size: one, qty: posts, label: sizeLabel(one, library, lang), fallback: false }];
 }
 
-// Așezarea fizică a modulelor în ramă. Ordinea din listă dă prioritatea.
-//   Sisteme modulare: unul după altul.
-//   Sisteme cu posturi (completare pe posturi):
-//     - un modul de jumătate de post (1M) ocupă primul loc liber dintr-un post, inclusiv
-//       jumătatea rămasă liberă dintr-un post început mai devreme;
-//     - un modul de un post întreg ocupă primul post complet liber.
+// Așezarea fizică a modulelor în ramă.
+//   Sisteme modulare: unul după altul, în ordinea din listă.
+//   Sisteme cu posturi:
+//     1. modulele cu poziție fixată (m.pos, în module) stau unde au fost puse, dacă locul e valid;
+//     2. restul se așază automat, în ordinea din listă:
+//        - un modul de jumătate de post (1M) în primul loc liber dintr-un post,
+//          inclusiv jumătatea rămasă liberă dintr-un post început;
+//        - un modul de un post întreg în primul post complet liber.
 // Rezultat, în ordinea fizică din ramă:
 //   [{ ...modul, index (în listă), startPos, size, gapBefore, catalogItem }], pozițiile în module.
 export function layoutModules(modules, library) {
   const catalog = library?.modules || [];
   const step = isPostSystem(library) ? postSizeM(library) : 0;
+  const list = modules || [];
+  const sizeOf = (m) => catalog.find(c => c.id === m.moduleId)?.size || 1;
   const taken = [];
   const free = (p, size) => { for (let i = p; i < p + size; i++) if (taken[i]) return false; return true; };
+  const take = (p, size) => { for (let i = p; i < p + size; i++) taken[i] = true; };
+  const fitsPost = (p, size) => (size >= step ? p % step === 0 : (p % step) + size <= step);
 
-  let seq = 0;
-  const placed = (modules || []).map((m, index) => {
-    const catalogItem = catalog.find(c => c.id === m.moduleId);
-    const size = catalogItem?.size || 1;
-    let pos;
-    if (!step) {
-      pos = seq;
-      seq += size;
-    } else if (size >= step) {
-      pos = 0;
-      while (!free(pos, size)) pos += step; // doar la început de post
-    } else {
-      pos = 0;
-      while (!(free(pos, size) && (pos % step) + size <= step)) pos += 1; // fără să treacă de granița postului
-    }
-    for (let i = pos; i < pos + size; i++) taken[i] = true;
-    return { ...m, index, startPos: pos, size, catalogItem };
-  });
+  const placed = new Array(list.length);
+  if (!step) {
+    let seq = 0;
+    list.forEach((m, index) => { const size = sizeOf(m); placed[index] = { pos: seq, size }; seq += size; });
+  } else {
+    list.forEach((m, index) => {
+      const size = sizeOf(m);
+      if (Number.isInteger(m.pos) && m.pos >= 0 && fitsPost(m.pos, size) && free(m.pos, size)) {
+        take(m.pos, size);
+        placed[index] = { pos: m.pos, size };
+      }
+    });
+    list.forEach((m, index) => {
+      if (placed[index]) return;
+      const size = sizeOf(m);
+      let pos = 0;
+      if (size >= step) { while (!free(pos, size)) pos += step; } // doar la început de post
+      else { while (!(free(pos, size) && fitsPost(pos, size))) pos += 1; }
+      take(pos, size);
+      placed[index] = { pos, size };
+    });
+  }
 
-  placed.sort((x, y) => x.startPos - y.startPos);
+  const slots = list.map((m, index) => ({
+    ...m, index, startPos: placed[index].pos, size: placed[index].size,
+    catalogItem: catalog.find(c => c.id === m.moduleId),
+  }));
+  slots.sort((x, y) => x.startPos - y.startPos);
   let end = 0;
-  return placed.map(slot => {
+  return slots.map(slot => {
     const out = { ...slot, gapBefore: Math.max(0, slot.startPos - end) };
     end = slot.startPos + slot.size;
     return out;
   });
 }
 
-// Lista de module în ordinea fizică din ramă (pentru salvare după o adăugare)
-export const packModules = (modules, library) =>
-  layoutModules(modules, library).map(({ index }) => modules[index]);
+// Lista de module în ordinea fizică. La sistemele cu posturi fiecare modul primește poziția
+// curentă (pos), ca o adăugare sau o mutare ulterioară să nu le rearanjeze pe celelalte.
+export function packModules(modules, library) {
+  const slots = layoutModules(modules, library);
+  if (!isPostSystem(library)) return slots.map(({ index }) => modules[index]);
+  return slots.map(({ index, startPos }) => ({ ...modules[index], pos: startPos }));
+}
+
+// Mută un modul existent (index) sau pune unul nou (newModule) la poziția targetPos (în module),
+// pe un sistem cu posturi. Un modul de post întreg se aliniază la începutul postului.
+// Locul liber: modulul se mută acolo. Locul ocupat de module care încap în fereastra țintă
+// (ex. alt post întreg sau două jumătăți): schimb de locuri cu poziția de unde a plecat modulul.
+// Altfel null (mutare imposibilă). Rezultat: lista în ordinea fizică, cu pozițiile fixate.
+export function placeModuleAt(modules, library, frameSize, { index = null, newModule = null, targetPos }) {
+  const step = postSizeM(library);
+  const catalog = library?.modules || [];
+  const slots = layoutModules(modules, library);
+  const moving = index !== null ? slots.find(s => s.index === index) : null;
+  const size = moving ? moving.size : (catalog.find(c => c.id === newModule?.moduleId)?.size || 1);
+  const pos = size >= step ? Math.floor(targetPos / step) * step : targetPos;
+  if (pos < 0 || pos + size > frameSize) return null;
+
+  const overlaps = (a, as, b, bs) => a < b + bs && b < a + as;
+  const hits = slots.filter(s => (!moving || s.index !== moving.index) && overlaps(s.startPos, s.size, pos, size));
+  const posByIndex = new Map(slots.map(s => [s.index, s.startPos]));
+  if (hits.length > 0) {
+    const inside = hits.every(h => h.startPos >= pos && h.startPos + h.size <= pos + size);
+    if (!moving || !inside) return null;
+    for (const h of hits) posByIndex.set(h.index, moving.startPos + (h.startPos - pos));
+  }
+
+  const result = modules.map((m, i) => ({ ...m, pos: posByIndex.get(i) }));
+  if (moving) result[moving.index] = { ...result[moving.index], pos };
+  else result.push({ ...newModule, pos });
+  return result.sort((x, y) => x.pos - y.pos);
+}
+
+// Cât ocupă efectiv modulele (fără golurile dintre ele)
+export function occupiedSizeOf(modules, library) {
+  return layoutModules(modules, library).reduce((sum, s) => sum + s.size, 0);
+}
 
 // Cât ocupă modulele în ramă, cu tot cu golurile de aliniere
 export function usedSizeOf(modules, library) {
