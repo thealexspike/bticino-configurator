@@ -5,7 +5,7 @@ import { getModuleGraphic } from '../graphics/moduleGraphics';
 import { getSystemProportions } from '../data/libraries';
 import { getAvailableSizes, getModuleCatalog, getModuleName } from '../lib/library';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
-import { sizeLabel, capacityLabel, freeLabel, moduleSizeLabel, postLayout, fitsInFrame } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, moduleSizeLabel, postLayout, fitsInFrame, packModules } from '../lib/mounting';
 
 const TILE_HEIGHT = 30;
 
@@ -28,7 +28,8 @@ export function QuickModuleEditor({ assembly, library, onChange, readOnly = fals
 
   const addModule = (mod) => {
     if (readOnly || !fitsInFrame([...(assembly.modules || []), { moduleId: mod.id }], assembly.size, library)) return;
-    onChange({ ...assembly, modules: [...(assembly.modules || []), createModuleInstance(mod.id)] });
+    // Salvat în ordinea fizică (un modul de 1/2 completează postul început)
+    onChange({ ...assembly, modules: packModules([...(assembly.modules || []), createModuleInstance(mod.id)], library) });
   };
   const removeModule = (instanceId) => {
     onChange({ ...assembly, modules: (assembly.modules || []).filter(m => m.id !== instanceId) });

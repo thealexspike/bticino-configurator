@@ -3,7 +3,7 @@ import { getSystemProportions } from '../data/libraries';
 import { adjustBrightness } from '../graphics/colors';
 import { getModuleGraphicType } from '../graphics/moduleGraphics';
 import { isDarkColor, getColorName, getModuleName } from '../lib/library';
-import { sizeLabel, isPostSystem, wallBoxLines } from '../lib/mounting';
+import { sizeLabel, isPostSystem, wallBoxLines, layoutModules } from '../lib/mounting';
 import { removeDiacritics, svgToImage } from './common';
 
 export async function generateAssemblyListPdf({ type, lang, project, library, assemblies, moduleCatalog }) {
@@ -66,15 +66,16 @@ export async function generateAssemblyListPdf({ type, lang, project, library, as
     let posM = 0; // poziția în module, pentru ferestrele posturilor
     const postStep = sysProps.postSize || 2;
     const centerYAbs = moduleTop + modHeight / 2;
-    (assembly.modules || []).forEach((mod) => {
-      const catalogItem = moduleCatalog.find(c => c.id === mod.moduleId);
-      const size = catalogItem?.size || 1;
-      // Sistem cu posturi: un post întreg sare în postul următor dacă cel curent e început
-      if (inset > 0 && size >= postStep && posM % postStep !== 0) {
-        const gap = postStep - (posM % postStep);
-        svg += `<rect x="${moduleX}" y="${moduleTop + inset}" width="${gap * moduleWidth1M - inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
-        moduleX += gap * moduleWidth1M;
-        posM += gap;
+    // Așezarea fizică (la posturi: modulele de 1/2 completează posturile începute)
+    layoutModules(assembly.modules, { ...library, modules: moduleCatalog }).forEach((slot) => {
+      const { catalogItem, size } = slot;
+      // Gol de aliniere: jumătate de post rămasă liberă
+      if (slot.gapBefore > 0) {
+        if (inset > 0) {
+          svg += `<rect x="${moduleX}" y="${moduleTop + inset}" width="${slot.gapBefore * moduleWidth1M - inset}" height="${modHeight - 2 * inset}" rx="${mcr}" fill="none" stroke="#ccc" stroke-width="1" stroke-dasharray="3,2"/>`;
+        }
+        moduleX += slot.gapBefore * moduleWidth1M;
+        posM += slot.gapBefore;
       }
       const modWidth = size * moduleWidth1M;
       const centerX = moduleX + modWidth / 2;

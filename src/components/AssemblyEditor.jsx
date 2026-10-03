@@ -3,7 +3,7 @@ import { Plus, Trash2, ChevronLeft, Box, Layers } from 'lucide-react';
 import { RoomSelector } from './RoomSelector';
 import { ModuleImage } from './visual/ModuleVisuals';
 import { getSystemProportions } from '../data/libraries';
-import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel, layoutModules, fitsInFrame } from '../lib/mounting';
+import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLines, hasSeparateSupports, postLayout, halfPostSupportOf, moduleSizeLabel, layoutModules, fitsInFrame, packModules } from '../lib/mounting';
 import { adjustBrightness } from '../graphics/colors';
 import { useTranslation, useLanguage } from '../i18n';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
@@ -44,7 +44,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
     const catalogItem = MODULE_CATALOG.find(c => c.id === moduleId);
     if (catalogItem && canAddModuleId(moduleId)) {
       const newModule = createModuleInstance(moduleId);
-      onUpdate({ ...assembly, modules: [...assembly.modules, newModule] });
+      onUpdate({ ...assembly, modules: packModules([...assembly.modules, newModule], library) });
     }
   };
 
@@ -132,7 +132,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
           newModules.push(newModule);
         }
 
-        onUpdate({ ...assembly, modules: newModules });
+        onUpdate({ ...assembly, modules: packModules(newModules, library) });
       }
     } else if (dragData.type === 'installed') {
       // Reorder existing module
@@ -446,7 +446,9 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
                 className="absolute flex"
                 style={{ left: sideMargin, right: sideMargin, top: topMargin, height: moduleHeight, zIndex: 5 }}
               >
-                {moduleSlots.map((slot, idx) => {
+                {moduleSlots.map((slot) => {
+                  // sloturile sunt în ordinea fizică din ramă; acțiunile folosesc poziția din listă
+                  const idx = slot.index;
                   const isDragging = draggedModule?.type === 'installed' && draggedModule?.index === idx;
                   // Fereastra postului: marginea ramei doar spre exteriorul postului (jumătățile se ating la mijloc)
                   const postStep = props.postSize || 2;
