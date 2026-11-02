@@ -566,56 +566,46 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 <Box className="w-4 h-4" />
               </button>
             )}
-            {onMoveToType && !readOnly && (confirmMoveId === assembly.id ? (
-              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            {onMoveToType && !readOnly && (
+              <div className="relative">
                 <button
-                  onClick={() => { setConfirmMoveId(null); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
-                  className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600"
+                  onClick={(e) => { e.stopPropagation(); setConfirmMoveId(confirmMoveId === assembly.id ? null : assembly.id); }}
+                  className={`text-purple-500 hover:text-purple-700 ${btnPad}`}
+                  title={type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}
                 >
-                  {type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}?
+                  <ArrowRightLeft className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => setConfirmMoveId(null)}
-                  className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400"
-                >
-                  ✕
-                </button>
+                {confirmMoveId === assembly.id && (
+                  <ConfirmPopover
+                    label={`${type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}?`}
+                    color="bg-purple-500 hover:bg-purple-600"
+                    onConfirm={() => { setConfirmMoveId(null); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
+                    onCancel={() => setConfirmMoveId(null)}
+                  />
+                )}
               </div>
-            ) : (
-              <button
-                onClick={(e) => { e.stopPropagation(); setConfirmMoveId(assembly.id); }}
-                className={`text-purple-500 hover:text-purple-700 ${btnPad}`}
-                title={type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}
-              >
-                <ArrowRightLeft className="w-4 h-4" />
-              </button>
-            ))}
-            {readOnly ? null : confirmDuplicateId === assembly.id ? (
-              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+            )}
+            {!readOnly && (
+              <div className="relative">
                 <button
-                  onClick={() => onConfirmDuplicate(assembly.id)}
-                  className="bg-green-500 text-white text-xs px-2 py-1 rounded hover:bg-green-600"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    if (confirmDuplicateId === assembly.id) onCancelDuplicate(); else onDuplicate(assembly.id);
+                  }}
+                  className={`text-green-500 hover:text-green-700 ${btnPad}`}
+                  title={t.duplicate}
                 >
-                  {t.duplicate}?
+                  <Copy className="w-4 h-4" />
                 </button>
-                <button
-                  onClick={() => onCancelDuplicate()}
-                  className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400"
-                >
-                  ✕
-                </button>
+                {confirmDuplicateId === assembly.id && (
+                  <ConfirmPopover
+                    label={`${t.duplicate}?`}
+                    color="bg-green-500 hover:bg-green-600"
+                    onConfirm={() => onConfirmDuplicate(assembly.id)}
+                    onCancel={() => onCancelDuplicate()}
+                  />
+                )}
               </div>
-            ) : (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDuplicate(assembly.id);
-                }}
-                className={`text-green-500 hover:text-green-700 ${btnPad}`}
-                title={t.duplicate}
-              >
-                <Copy className="w-4 h-4" />
-              </button>
             )}
             {!readOnly && (
             <button
@@ -835,6 +825,19 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
       <div className="px-4 py-2 bg-gray-50 text-xs text-gray-500 border-t shrink-0">
         💡 {groupByRoom ? t.editHintGrouped : t.editHint}
       </div>
+    </div>
+  );
+}
+
+// Confirmation floating to the left of its icon, so the row's buttons don't shift
+function ConfirmPopover({ label, color, onConfirm, onCancel }) {
+  return (
+    <div
+      className="absolute right-full top-1/2 -translate-y-1/2 mr-1 z-20 flex items-center gap-1 whitespace-nowrap bg-white border rounded shadow-lg p-1"
+      onClick={(e) => e.stopPropagation()}
+    >
+      <button onClick={onConfirm} className={`${color} text-white text-xs px-2 py-1 rounded`}>{label}</button>
+      <button onClick={onCancel} className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400">✕</button>
     </div>
   );
 }
