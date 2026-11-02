@@ -30,11 +30,12 @@ module AzimutAparataj
   def self.create_dialog
     dialog = UI::HtmlDialog.new(dialog_title: 'Aparataj Azimut', preferences_key: PREFS,
                                 width: 560, height: 820, style: UI::HtmlDialog::STYLE_DIALOG)
-    dialog.set_url(app_url)
     dialog.add_action_callback('placeAssembly') { |_ctx, json| safely { place_assembly(JSON.parse(json)) } }
     dialog.add_action_callback('deleteAssembly') { |_ctx, json| safely { delete_assembly(JSON.parse(json)) } }
     dialog.add_action_callback('requestModelAssemblies') { |_ctx, json| safely { send_model_items(JSON.parse(json)['projectId']) } }
     dialog.add_action_callback('syncDone') { |_ctx, json| safely { apply_codes(JSON.parse(json)) } }
+    # After the callbacks: SketchUp 2026 only exposes the ones registered before the first set_url
+    dialog.set_url(app_url)
     dialog
   end
 
