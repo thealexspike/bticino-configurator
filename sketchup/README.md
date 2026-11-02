@@ -32,8 +32,10 @@ apoi Extensions → Aparataj Azimut → Adresa aplicației… → `http://localh
 
 - **Cubul portocaliu** de pe un ansamblu pornește plasarea: click pe un perete, tastează înălțimea axului în mm, Esc renunță.
   Pe un ansamblu deja plasat, cubul reface geometria (module, culoare, mărime) și îl mută la înălțimea din aplicație.
-- **Sincronizează din model** trimite în aplicație camera și înălțimea fiecărui ansamblu plasat.
-  Copiile făcute în SketchUp devin ansambluri noi; ce lipsește din model îți e propus spre ștergere.
+- Cât timp proiectul e deschis în panou, fiecare schimbare din model ajunge singură în aplicație:
+  copiile făcute în SketchUp devin ansambluri noi, iar camera și înălțimea se actualizează.
+- **Sincronizează din model** face același lucru la cerere și, în plus, îți propune spre ștergere ce lipsește din model
+  (sincronizarea automată nu șterge nimic, fiindcă fișierul deschis poate fi al altui proiect).
 - Ștergerea unui ansamblu din aplicație îl șterge și din model.
 - Ansamblurile stau pe tag-urile „Aparataj - Prize” și „Aparataj - Întrerupătoare”; numele componentei e codul (P01, I03…).
 

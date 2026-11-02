@@ -303,14 +303,27 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   useEffect(() => {
     if (!inSketchUp()) return;
     window.azimutSketchup = {
-      onModelAssemblies: (items) => {
+      onModelAssemblies: (items, auto = false) => {
         const { project: merged, missing } = mergeModelAssemblies(project, items || [], { generateId, generateCode: generateAssemblyCode });
+        // Pushed after a model change: take new copies, rooms and heights; deleting stays with the button
+        // (the open SketchUp file may simply not be this project's)
+        if (auto) {
+          if (!sketchupMissing && JSON.stringify(merged.assemblies) !== JSON.stringify(project.assemblies)) finishSketchupSync(merged.assemblies);
+          return;
+        }
         if (missing.length === 0) return finishSketchupSync(merged.assemblies);
         setSketchupMissing({ assemblies: merged.assemblies, missing, missingIds: new Set(missing.map(a => a.id)) });
       },
     };
     return () => { delete window.azimutSketchup; };
   });
+
+  // Tell the extension which project is open, so it can push model changes on its own
+  useEffect(() => {
+    if (!inSketchUp()) return;
+    callSketchup('setActiveProject', { projectId: project.id });
+    return () => callSketchup('setActiveProject', { projectId: null });
+  }, [project.id]);
 
   const handleAiImport = async () => {
     if (!aiImportFile) return;

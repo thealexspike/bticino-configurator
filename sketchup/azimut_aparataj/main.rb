@@ -34,6 +34,7 @@ module AzimutAparataj
     dialog.add_action_callback('deleteAssembly') { |_ctx, json| safely { delete_assembly(JSON.parse(json)) } }
     dialog.add_action_callback('requestModelAssemblies') { |_ctx, json| safely { send_model_items(JSON.parse(json)['projectId']) } }
     dialog.add_action_callback('syncDone') { |_ctx, json| safely { apply_codes(JSON.parse(json)) } }
+    dialog.add_action_callback('setActiveProject') { |_ctx, json| safely { activate_project(JSON.parse(json)['projectId']) } }
     # After the callbacks: SketchUp 2026 only exposes the ones registered before the first set_url
     dialog.set_url(app_url)
     dialog
@@ -87,27 +88,88 @@ module AzimutAparataj
     model.commit_operation
   end
 
-  def self.send_model_items(project_id)
-    items = model_items(project_id)
-    @dialog&.execute_script("window.azimutSketchup && window.azimutSketchup.onModelAssemblies(#{JSON.generate(items)})")
+  # Manual sync (the app's button): always answers, and the app may propose deleting what is gone.
+  # Auto sync (after every model change): only when the project's instances changed; the app never deletes.
+  def self.send_model_items(project_id, auto: false)
+    json = JSON.generate(model_items(project_id))
+    return if auto && json == @last_sent
+
+    @last_sent = json
+    @dialog&.execute_script("window.azimutSketchup && window.azimutSketchup.onModelAssemblies(#{json}, #{auto})")
+  end
+
+  # The project open in the panel; nil when the app leaves it.
+  def self.activate_project(project_id)
+    @project_id = project_id
+    @last_sent = nil
+    watch(Sketchup.active_model)
+    schedule_sync
+  end
+
+  def self.watch(model)
+    @watched ||= {}
+    return if @watched[model]
+
+    @watched[model] = true
+    model.add_observer(ModelWatcher.new)
+  end
+
+  # Debounced: a copy-paste or a move fires several commits in a row.
+  # ponytail: walks the whole model on each change; watch only our instances if big models get slow.
+  def self.schedule_sync
+    return unless @project_id && @dialog&.visible? && !@sync_pending
+
+    @sync_pending = true
+    UI.start_timer(0.4, false) do
+      @sync_pending = false
+      safely { send_model_items(@project_id, auto: true) if @project_id }
+    end
+  end
+
+  class ModelWatcher < Sketchup::ModelObserver
+    def onTransactionCommit(_model)
+      AzimutAparataj.schedule_sync
+    end
+
+    def onTransactionUndo(_model)
+      AzimutAparataj.schedule_sync
+    end
+
+    def onTransactionRedo(_model)
+      AzimutAparataj.schedule_sync
+    end
+  end
+
+  class AppWatcher < Sketchup::AppObserver
+    def onNewModel(model)
+      AzimutAparataj.watch(model)
+    end
+
+    def onOpenModel(model)
+      AzimutAparataj.watch(model)
+    end
   end
 
   # Every instance of the project, as the app expects it. Copies made in SketchUp get their own id first.
   def self.model_items(project_id)
     model = Sketchup.active_model
-    model.start_operation('Sincronizează aparataj', true)
+    pairs = instances_of(project_id).sort_by { |inst, _| inst.persistent_id }
     seen = {}
-    items = instances_of(project_id).sort_by { |inst, _| inst.persistent_id }.map do |inst, world|
+    copies = pairs.select do |inst, _|
       id = inst.get_attribute(DICT, 'sketchup_id')
-      if seen[id]
-        id = SecureRandom.uuid
-        inst.set_attribute(DICT, 'sketchup_id', id)
-      end
-      seen[id] = true
+      seen[id] ? true : !(seen[id] = true)
+    end
+    unless copies.empty?
+      model.start_operation('Sincronizează aparataj', true, false, true)
+      copies.each { |inst, _| inst.set_attribute(DICT, 'sketchup_id', SecureRandom.uuid) }
+      model.commit_operation
+    end
+
+    pairs.map do |inst, world|
       defn = inst.definition
       floor_z = inst.get_attribute(DICT, 'floor_z')
       {
-        sketchupId: id,
+        sketchupId: inst.get_attribute(DICT, 'sketchup_id'),
         type: defn.get_attribute(DICT, 'type'),
         room: inst.get_attribute(DICT, 'room'),
         size: defn.get_attribute(DICT, 'size'),
@@ -117,8 +179,6 @@ module AzimutAparataj
         modules: JSON.parse(defn.get_attribute(DICT, 'modules') || '[]'),
       }
     end
-    model.commit_operation
-    items
   end
 
   def self.apply_codes(data)
@@ -165,6 +225,7 @@ module AzimutAparataj
     menu = UI.menu('Extensions').add_submenu('Aparataj Azimut')
     menu.add_item('Deschide panoul') { show_dialog }
     menu.add_item('Adresa aplicației...') { ask_app_url }
+    Sketchup.add_observer(AppWatcher.new)
     file_loaded(__FILE__)
   end
 end
