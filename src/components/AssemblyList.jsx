@@ -11,6 +11,7 @@ import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
 
 export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, onMoveToType, onPlaceInSketchup = null, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
+  const [confirmMoveId, setConfirmMoveId] = useState(null); // inline confirm, like duplicate
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [dragOverRoom, setDragOverRoom] = useState(null);
   const [editingCodeId, setEditingCodeId] = useState(null);
@@ -565,15 +566,30 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
                 <Box className="w-4 h-4" />
               </button>
             )}
-            {onMoveToType && !readOnly && (
+            {onMoveToType && !readOnly && (confirmMoveId === assembly.id ? (
+              <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                <button
+                  onClick={() => { setConfirmMoveId(null); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
+                  className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600"
+                >
+                  {type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}?
+                </button>
+                <button
+                  onClick={() => setConfirmMoveId(null)}
+                  className="bg-gray-300 text-gray-700 text-xs px-2 py-1 rounded hover:bg-gray-400"
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
               <button
-                onClick={(e) => { e.stopPropagation(); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}
+                onClick={(e) => { e.stopPropagation(); setConfirmMoveId(assembly.id); }}
                 className={`text-purple-500 hover:text-purple-700 ${btnPad}`}
                 title={type === 'outlet' ? t.moveToSwitches : t.moveToOutlets}
               >
                 <ArrowRightLeft className="w-4 h-4" />
               </button>
-            )}
+            ))}
             {readOnly ? null : confirmDuplicateId === assembly.id ? (
               <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                 <button
