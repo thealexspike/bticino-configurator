@@ -36,6 +36,12 @@ module AzimutAparataj
     dialog.add_action_callback('syncDone') { |_ctx, json| safely { apply_codes(JSON.parse(json)) } }
     dialog.add_action_callback('updateAssemblies') { |_ctx, json| safely { update_assemblies(JSON.parse(json)) } }
     dialog.add_action_callback('setActiveProject') { |_ctx, json| safely { activate_project(JSON.parse(json)['projectId']) } }
+    # Reopening a closed dialog reloads the page without the callbacks, so a closed one is dropped and
+    # the next show builds a fresh one
+    dialog.set_on_closed do
+      @dialog = nil
+      @project_id = nil
+    end
     # After the callbacks: SketchUp 2026 only exposes the ones registered before the first set_url
     dialog.set_url(app_url)
     dialog
