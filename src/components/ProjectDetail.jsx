@@ -37,6 +37,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   const [aiImportLoading, setAiImportLoading] = useState(false);
   const [aiImportResult, setAiImportResult] = useState(null);
   const [sketchupMissing, setSketchupMissing] = useState(null); // { assemblies, missing, missingIds } while asking
+  const [placeAfterAdd, setPlaceAfterAdd] = useState(null); // 'outlet' | 'switch' when the SketchUp toolbar asked for a new one
   const t = useTranslation();
   const lang = useLanguage();
   const library = React.useContext(LibraryContext);
@@ -194,12 +195,20 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         assembly.modules = preset.modules.map(moduleId => createModuleInstance(moduleId));
       }
     }
-    
+
+    // Asked from the SketchUp toolbar: linked right away and placed once the preset is picked
+    const place = placeAfterAdd === type;
+    if (place) assembly.sketchupId = newSketchupId();
+
     onUpdate({
       ...project,
       assemblies: [...project.assemblies, assembly],
     });
     setShowPresetDialog(null);
+    if (place) {
+      setPlaceAfterAdd(null);
+      callSketchup('placeAssembly', buildPlacementPayload(project, assembly, library, getSystemProportions(library)));
+    }
   };
 
   const handleAddClick = (type) => {
@@ -313,6 +322,14 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         }
         if (missing.length === 0) return finishSketchupSync(merged.assemblies);
         setSketchupMissing({ assemblies: merged.assemblies, missing, missingIds: new Set(missing.map(a => a.id)) });
+      },
+      // SketchUp toolbar "new outlet / switch": pick a preset here, then place it in the model
+      newAssembly: (type) => {
+        if (readOnly) return;
+        setEditingAssembly(null); // the preset dialog lives in the list view
+        setActiveTab(type === 'switch' ? 'switches' : 'outlets');
+        setPlaceAfterAdd(type);
+        setShowPresetDialog(type);
       },
     };
     return () => { delete window.azimutSketchup; };
@@ -798,7 +815,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         <PresetDialog
           type={showPresetDialog}
           onSelect={(presetId) => addAssembly(showPresetDialog, presetId)}
-          onClose={() => setShowPresetDialog(null)}
+          onClose={() => { setShowPresetDialog(null); setPlaceAfterAdd(null); }}
         />
       )}
 

@@ -1,17 +1,30 @@
 module AzimutAparataj
-  # Follows the cursor on a vertical face and shows the clearances.
-  # Height = plate axis above the bottom of the wall face. Near the standard height it snaps to it;
+  # Follows the cursor on a vertical face and shows the clearances, to place a new assembly (payload)
+  # or move one already in the model (instance).
+  # Height = plate axis above the bottom of the wall face. Near a snap height it sticks to it;
   # a typed value in mm fixes the height instead.
   class PlacementTool
-    SNAP_MM = 40 # how close to the standard height the cursor has to be to snap
+    SNAP_MM = 40 # how close to a snap height the cursor has to be to stick
 
-    def initialize(payload)
+    def initialize(payload, instance = nil)
       @payload = payload
-      @height_mm = (payload['snapHeightMm'] || payload['mountHeightMm'] || 300).to_f
+      @instance = instance
+      if instance
+        bb = instance.definition.bounds
+        @w = bb.width
+        @h = bb.depth
+        @label = instance.name
+        standard = DEFAULT_HEIGHTS[instance.definition.get_attribute(DICT, 'type')] || DEFAULT_HEIGHTS['outlet']
+        @snaps = [AzimutAparataj.mount_height_mm(instance), standard].compact.uniq # current height first
+      else
+        d = Geometry.dims(payload)
+        @w = d[:w].mm
+        @h = d[:h].mm
+        @label = payload['code']
+        @snaps = [(payload['snapHeightMm'] || payload['mountHeightMm'] || DEFAULT_HEIGHTS['outlet']).to_f]
+      end
+      @height_mm = @snaps.first
       @locked = false
-      d = Geometry.dims(payload)
-      @w = d[:w].mm
-      @h = d[:h].mm
       @ip = Sketchup::InputPoint.new
       @hit = nil
     end
@@ -19,8 +32,15 @@ module AzimutAparataj
     def activate
       Sketchup.vcb_label = 'Înălțime ax (mm)'
       Sketchup.vcb_value = @height_mm.round.to_s
-      Sketchup.status_text = "#{@payload['code']}: click pe perete ca să plasezi; se prinde de #{@height_mm.round} mm. " \
+      verb = @instance ? 'muți' : 'plasezi'
+      Sketchup.status_text = "#{@label}: click pe perete ca să #{verb}; se prinde de #{@snaps.map(&:round).join(' / ')} mm. " \
                              'Tastează o înălțime în mm ca s-o fixezi. Esc = renunță.'
+      return unless @instance && !@moving
+
+      # Hidden while it moves, so it doesn't cover the wall behind it; aborting the operation undoes that
+      @moving = true
+      Sketchup.active_model.start_operation('Mută aparataj', true)
+      @instance.hidden = true
     end
 
     def resume(view)
@@ -29,6 +49,8 @@ module AzimutAparataj
     end
 
     def deactivate(view)
+      Sketchup.active_model.abort_operation if @moving
+      @moving = false
       view.invalidate
     end
 
@@ -56,7 +78,14 @@ module AzimutAparataj
     def onLButtonDown(_flags, _x, _y, _view)
       return UI.beep unless @hit
 
-      AzimutAparataj.place_instance(@payload, @hit)
+      if @instance
+        @instance.hidden = false
+        AzimutAparataj.move_instance(@instance, @hit)
+        @moving = false
+        Sketchup.active_model.commit_operation
+      else
+        AzimutAparataj.place_instance(@payload, @hit)
+      end
       Sketchup.active_model.select_tool(nil)
     end
 
@@ -113,7 +142,8 @@ module AzimutAparataj
       plane = [tr * face.vertices.first.position, normal]
       pos = @ip.position.project_to_plane(plane)
       zs = face.outer_loop.vertices.map { |v| (tr * v.position).z }
-      standard_z = zs.min + @height_mm.mm
+      target = @locked ? @height_mm : @snaps.min_by { |s| (pos.z - zs.min - s.mm).abs }
+      standard_z = zs.min + target.mm
       snapped = @locked || (pos.z - standard_z).abs < SNAP_MM.mm
       center = Geom::Point3d.new(pos.x, pos.y, snapped ? standard_z : pos.z)
       xaxis = Z_AXIS * normal
@@ -146,6 +176,24 @@ module AzimutAparataj
 
     def mm(length)
       "#{length.to_mm.round} mm"
+    end
+  end
+
+  # Toolbar "move": click an assembly in the model, then it follows the placement preview.
+  class MoveTool
+    def activate
+      Sketchup.status_text = 'Click pe aparatul pe care vrei să-l muți. Esc = renunță.'
+    end
+
+    def onCancel(_reason, _view)
+      Sketchup.active_model.select_tool(nil)
+    end
+
+    def onLButtonDown(_flags, x, y, view)
+      inst = AzimutAparataj.picked_instance(view, x, y)
+      return UI.beep unless inst
+
+      Sketchup.active_model.select_tool(PlacementTool.new(nil, inst))
     end
   end
 end

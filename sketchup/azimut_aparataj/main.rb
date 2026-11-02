@@ -9,6 +9,7 @@ module AzimutAparataj
   PREFS = 'AzimutAparataj'.freeze
   DEFAULT_URL = 'https://configurator.atelierazimut.com'.freeze
   TAGS = { 'outlet' => 'Aparataj - Prize', 'switch' => 'Aparataj - Întrerupătoare' }.freeze
+  DEFAULT_HEIGHTS = { 'outlet' => 300.0, 'switch' => 1100.0 }.freeze # same as DEFAULT_MOUNT_HEIGHT_MM in the app
 
   def self.app_url
     Sketchup.read_default(PREFS, 'app_url', DEFAULT_URL)
@@ -97,6 +98,49 @@ module AzimutAparataj
     write_instance(inst, payload)
     inst.set_attribute(DICT, 'floor_z', hit[:floor_z].to_f)
     model.commit_operation
+  end
+
+  # Called inside the move tool's operation.
+  def self.move_instance(inst, hit)
+    world = Geom::Transformation.axes(hit[:center], hit[:xaxis], hit[:normal].reverse, Z_AXIS)
+    parent = world_of(inst) * inst.transformation.inverse # the groups it sits in
+    inst.transformation = parent.inverse * world
+    inst.set_attribute(DICT, 'floor_z', hit[:floor_z].to_f)
+  end
+
+  def self.world_of(inst)
+    instances_of(inst.get_attribute(DICT, 'project_id')).find { |i, _| i == inst }&.last || inst.transformation
+  end
+
+  def self.mount_height_mm(inst)
+    floor_z = inst.get_attribute(DICT, 'floor_z')
+    floor_z && (world_of(inst).origin.z - floor_z).to_mm.round.to_f
+  end
+
+  # Our assembly under the cursor, even inside groups.
+  def self.picked_instance(view, x, y)
+    ph = view.pick_helper
+    ph.do_pick(x, y)
+    (0...ph.count).each do |i|
+      found = ph.path_at(i).find { |e| e.is_a?(Sketchup::ComponentInstance) && e.definition.attribute_dictionary(DICT) }
+      return found if found
+    end
+    nil
+  end
+
+  # Toolbar move: straight into the preview when one of ours is selected, otherwise pick it first.
+  def self.start_move
+    model = Sketchup.active_model
+    sel = model.selection.grep(Sketchup::ComponentInstance).find { |e| e.definition.attribute_dictionary(DICT) }
+    model.select_tool(sel ? PlacementTool.new(nil, sel) : MoveTool.new)
+  end
+
+  # Toolbar new outlet / switch: the app adds it to the open project (preset dialog), then placement starts.
+  def self.new_assembly(type)
+    show_dialog
+    return UI.messagebox('Deschide întâi un proiect în panoul Aparataj Azimut, apoi apasă din nou.') unless @project_id
+
+    @dialog.execute_script("window.azimutSketchup && window.azimutSketchup.newAssembly('#{type}')")
   end
 
   def self.delete_assembly(data)
@@ -246,6 +290,21 @@ module AzimutAparataj
     menu = UI.menu('Extensions').add_submenu('Aparataj Azimut')
     menu.add_item('Deschide panoul') { show_dialog }
     menu.add_item('Adresa aplicației...') { ask_app_url }
+
+    toolbar = UI::Toolbar.new('Aparataj Azimut')
+    [
+      ['Deschide aplicația de aparataje', 'panel', -> { show_dialog }],
+      ['Mută un aparat', 'move', -> { start_move }],
+      ['Priză nouă', 'outlet', -> { new_assembly('outlet') }],
+      ['Întrerupător nou', 'switch', -> { new_assembly('switch') }],
+    ].each do |tip, icon, action|
+      cmd = UI::Command.new(tip) { safely { action.call } }
+      cmd.tooltip = tip
+      cmd.small_icon = cmd.large_icon = File.join(__dir__, 'icons', "#{icon}.svg")
+      toolbar.add_item(cmd)
+    end
+    toolbar.get_last_state == TB_NEVER_SHOWN ? toolbar.show : toolbar.restore
+
     Sketchup.add_observer(AppWatcher.new)
     file_loaded(__FILE__)
   end

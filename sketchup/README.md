@@ -30,6 +30,13 @@ apoi Extensions → Aparataj Azimut → Adresa aplicației… → `http://localh
 
 ## Cum se folosește
 
+Toolbar-ul „Aparataj Azimut” (View → Toolbars dacă nu apare) are patru butoane:
+
+- **Aplicația de aparataje**: deschide panoul.
+- **Mută un aparat**: click pe aparat (sau selectează-l înainte), apoi îl duci pe perete cu aceeași previzualizare ca la plasare;
+  se prinde de înălțimea lui de acum și de cea standard. Esc renunță și îl lasă unde era.
+- **Priză nouă / Întrerupător nou**: cu un proiect deschis în panou, alegi presetul acolo și apoi plasezi aparatul pe perete.
+
 - **Cubul portocaliu** de pe un ansamblu pornește plasarea: click pe un perete, tastează înălțimea axului în mm, Esc renunță.
   Pe un ansamblu deja plasat, cubul reface geometria (module, culoare, mărime) și îl mută la înălțimea din aplicație.
 - Un ansamblu deja plasat, modificat în aplicație (module, mărime, culoare, înălțime, cod), se reface singur în model.
