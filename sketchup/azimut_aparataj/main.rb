@@ -58,7 +58,7 @@ module AzimutAparataj
       inst.definition = defn
       write_instance(inst, payload)
       floor_z = inst.get_attribute(DICT, 'floor_z')
-      next unless floor_z
+      next unless floor_z && payload['mountHeightMm'] # no height set in the app: stays where it was placed
 
       dz = floor_z + payload['mountHeightMm'].to_f.mm - world.origin.z
       inst.transform!(Geom::Transformation.translation([0, 0, dz])) if dz.abs > 0.5.mm

@@ -1,10 +1,14 @@
 module AzimutAparataj
-  # Slides one assembly along a vertical face at a fixed height and shows its clearances.
-  # Height = plate axis above the bottom of the wall face; type a value in mm to change it.
+  # Follows the cursor on a vertical face and shows the clearances.
+  # Height = plate axis above the bottom of the wall face. Near the standard height it snaps to it;
+  # a typed value in mm fixes the height instead.
   class PlacementTool
+    SNAP_MM = 40 # how close to the standard height the cursor has to be to snap
+
     def initialize(payload)
       @payload = payload
-      @height_mm = payload['mountHeightMm'].to_f
+      @height_mm = (payload['snapHeightMm'] || payload['mountHeightMm'] || 300).to_f
+      @locked = false
       d = Geometry.dims(payload)
       @w = d[:w].mm
       @h = d[:h].mm
@@ -15,7 +19,8 @@ module AzimutAparataj
     def activate
       Sketchup.vcb_label = 'Înălțime ax (mm)'
       Sketchup.vcb_value = @height_mm.round.to_s
-      Sketchup.status_text = "#{@payload['code']}: click pe perete ca să plasezi. Tastează înălțimea în mm. Esc = renunță."
+      Sketchup.status_text = "#{@payload['code']}: click pe perete ca să plasezi; se prinde de #{@height_mm.round} mm. " \
+                             'Tastează o înălțime în mm ca s-o fixezi. Esc = renunță.'
     end
 
     def resume(view)
@@ -42,6 +47,7 @@ module AzimutAparataj
       return UI.beep unless value && value >= 0
 
       @height_mm = value
+      @locked = true
       Sketchup.vcb_value = value.round.to_s
       @hit = wall_hit(view) if @hit
       view.invalidate
@@ -69,7 +75,7 @@ module AzimutAparataj
       corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map { |sx, sz| along(along(c, x, sx * @w / 2), Z_AXIS, sz * @h / 2) }
       view.line_stipple = ''
       view.line_width = 2
-      view.drawing_color = 'DarkOrange'
+      view.drawing_color = @hit[:snapped] ? 'ForestGreen' : 'DarkOrange'
       view.draw(GL_LINE_LOOP, corners)
 
       view.line_width = 1
@@ -79,7 +85,7 @@ module AzimutAparataj
       bottom = along(c, Z_AXIS, -@h / 2)
       top = along(c, Z_AXIS, @h / 2)
       view.draw(GL_LINES, [bottom, floor, top, ceiling])
-      label(view, along(floor, Z_AXIS, (bottom.z - floor.z) / 2), "ax #{mm(c.z - floor.z)}")
+      label(view, along(floor, Z_AXIS, (bottom.z - floor.z) / 2), "ax #{mm(c.z - floor.z)}#{' (fixat)' if @locked}#{' (standard)' if @hit[:snapped] && !@locked}")
       label(view, along(top, Z_AXIS, (ceiling.z - top.z) / 2), "sus #{mm(ceiling.z - top.z)}")
       [[@hit[:left], -1], [@hit[:right], 1]].each do |gap, side|
         next unless gap
@@ -107,10 +113,12 @@ module AzimutAparataj
       plane = [tr * face.vertices.first.position, normal]
       pos = @ip.position.project_to_plane(plane)
       zs = face.outer_loop.vertices.map { |v| (tr * v.position).z }
-      center = Geom::Point3d.new(pos.x, pos.y, zs.min + @height_mm.mm)
+      standard_z = zs.min + @height_mm.mm
+      snapped = @locked || (pos.z - standard_z).abs < SNAP_MM.mm
+      center = Geom::Point3d.new(pos.x, pos.y, snapped ? standard_z : pos.z)
       xaxis = Z_AXIS * normal
       left, right = edge_gaps(face, tr, center, xaxis)
-      { center: center, normal: normal, xaxis: xaxis, floor_z: zs.min, ceiling_z: zs.max, left: left, right: right }
+      { center: center, normal: normal, xaxis: xaxis, floor_z: zs.min, ceiling_z: zs.max, left: left, right: right, snapped: snapped }
     end
 
     # Clear distance from the plate's sides to the face boundary, along the plate's horizontal axis.

@@ -37,7 +37,8 @@ export const buildPlacementPayload = (project, assembly, library, proportions) =
   color: assembly.color,
   colorHex: (library?.availableColors || []).find(c => c.id === assembly.color)?.hex || '#FFFFFF',
   wallBoxType: assembly.wallBoxType || 'masonry',
-  mountHeightMm: getMountHeight(assembly),
+  mountHeightMm: assembly.mountHeightMm ?? null, // set in the app: a rebuild moves the instance there
+  snapHeightMm: getMountHeight(assembly), // the placement tool snaps to it, with the type's default as fallback
   // Physical order with the start slot (in modules): post systems can leave gaps between modules
   modules: layoutModules(assembly.modules, library).map(s => ({
     moduleId: s.moduleId,

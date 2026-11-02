@@ -52,6 +52,10 @@ const payload = buildPlacementPayload(project, { ...byId.a1, color: 'black' }, l
 assert.equal(payload.system, 'gewiss');
 assert.equal(payload.colorHex, '#333333');
 assert.equal(payload.mountHeightMm, 1050);
+assert.equal(payload.snapHeightMm, 1050);
+const unset = buildPlacementPayload(project, { type: 'switch', modules: [] }, library, {});
+assert.equal(unset.mountHeightMm, null, 'no height in the app: rebuild leaves the instance where it is');
+assert.equal(unset.snapHeightMm, 1100);
 assert.deepEqual(payload.modules, [{ moduleId: 'schuko', size: 2, startPos: 0, standardType: 'schuko', name: 'Priză Schuko' }]);
 
 // Post system: a half-post module pinned on the second post keeps its slot, with a gap before it

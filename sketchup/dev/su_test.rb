@@ -66,8 +66,9 @@ module AzTest
     reload
     build_room
     look([5600.mm, 4600.mm, 1900.mm], [1500.mm, 1100.mm, 800.mm])
-    wa = ->(x, z = 1200) { Geom::Point3d.new(x.mm, 100.mm, z.mm) }
-    wb = ->(y, z = 1200) { Geom::Point3d.new(100.mm, y.mm, z.mm) }
+    # 1120: within the snap distance of 1100; outlets hovered at 600 stay free (standard 300)
+    wa = ->(x, z = 1120) { Geom::Point3d.new(x.mm, 100.mm, z.mm) }
+    wb = ->(y, z = 1120) { Geom::Point3d.new(100.mm, y.mm, z.mm) }
     w = '#FFFFFF'
     hits = {
       'BT P01' => place_with_tool(payload('demo-bt', 'bticino', 'bt-p01', 'P01', 'outlet', 'Bucătărie', 4, 'white', w, %w[schuko schuko], 1100), wa.(1500)),
@@ -82,6 +83,7 @@ module AzTest
     raise "no wall hit: #{hits.select { |_, h| h.nil? }.keys.join(', ')}" if hits.values.any?(&:nil?)
     raise 'BT P01 clearances wrong' unless hits['BT P01'] == { left: 3428, right: 1327, center_z: 1100 }
     raise 'typed height ignored' unless hits['BT P02'][:center_z] == 1050
+    raise 'far from the standard height it should follow the cursor' unless hits['GW P01'][:center_z] == 600
 
     items = AzimutAparataj.model_items('demo-bt')
     raise "expected 4 BTicino items, got #{items.size}" unless items.size == 4
