@@ -32,6 +32,7 @@ apoi Extensions → Aparataj Azimut → Adresa aplicației… → `http://localh
 
 - **Cubul portocaliu** de pe un ansamblu pornește plasarea: click pe un perete, tastează înălțimea axului în mm, Esc renunță.
   Pe un ansamblu deja plasat, cubul reface geometria (module, culoare, mărime) și îl mută la înălțimea din aplicație.
+- Un ansamblu deja plasat, modificat în aplicație (module, mărime, culoare, înălțime, cod), se reface singur în model.
 - Cât timp proiectul e deschis în panou, fiecare schimbare din model ajunge singură în aplicație:
   copiile făcute în SketchUp devin ansambluri noi, iar camera și înălțimea se actualizează.
 - **Sincronizează din model** face același lucru la cerere și, în plus, îți propune spre ștergere ce lipsește din model

@@ -318,6 +318,25 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
     return () => { delete window.azimutSketchup; };
   });
 
+  // App -> model: placed assemblies edited here (modules, size, color, height, code, room) are rebuilt
+  // in SketchUp on their own. Only links already known are compared: new placements and copies coming
+  // from the model are left alone. Debounced so typing a height doesn't rebuild on every key.
+  const sentPayloads = useRef(null);
+  useEffect(() => {
+    if (!inSketchUp()) return;
+    const timer = setTimeout(() => {
+      const proportions = getSystemProportions(library);
+      const current = new Map(project.assemblies.filter(a => a.sketchupId)
+        .map(a => [a.sketchupId, JSON.stringify(buildPlacementPayload(project, a, library, proportions))]));
+      const previous = sentPayloads.current;
+      sentPayloads.current = current;
+      if (!previous) return; // just opened: the model already shows what was placed
+      const changed = [...current].filter(([id, json]) => previous.has(id) && previous.get(id) !== json);
+      if (changed.length > 0) callSketchup('updateAssemblies', changed.map(([, json]) => JSON.parse(json)));
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [project, library]);
+
   // Tell the extension which project is open, so it can push model changes on its own
   useEffect(() => {
     if (!inSketchUp()) return;

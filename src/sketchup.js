@@ -4,6 +4,7 @@
 //
 // JS -> Ruby:
 //   placeAssembly(payload)                 place a new instance, or rebuild existing ones with payload.sketchupId
+//   updateAssemblies([payload])            rebuild the linked instances after edits in the app; never places
 //   deleteAssembly({ projectId, sketchupId })  erase the linked instance, so the next sync doesn't bring it back
 //   requestModelAssemblies({ projectId })  ask for every instance in the model
 //   syncDone({ projectId, codes })         codes = [{ sketchupId, code }], so labels follow the app's numbering

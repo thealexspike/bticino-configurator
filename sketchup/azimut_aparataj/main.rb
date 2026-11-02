@@ -34,6 +34,7 @@ module AzimutAparataj
     dialog.add_action_callback('deleteAssembly') { |_ctx, json| safely { delete_assembly(JSON.parse(json)) } }
     dialog.add_action_callback('requestModelAssemblies') { |_ctx, json| safely { send_model_items(JSON.parse(json)['projectId']) } }
     dialog.add_action_callback('syncDone') { |_ctx, json| safely { apply_codes(JSON.parse(json)) } }
+    dialog.add_action_callback('updateAssemblies') { |_ctx, json| safely { update_assemblies(JSON.parse(json)) } }
     dialog.add_action_callback('setActiveProject') { |_ctx, json| safely { activate_project(JSON.parse(json)['projectId']) } }
     # After the callbacks: SketchUp 2026 only exposes the ones registered before the first set_url
     dialog.set_url(app_url)
@@ -54,6 +55,21 @@ module AzimutAparataj
 
     model = Sketchup.active_model
     model.start_operation('Actualizează aparataj', true)
+    rebuild(model, payload, linked)
+    model.commit_operation
+  end
+
+  # Edits made in the app, pushed on their own: rebuild what is in the model, never start a placement.
+  def self.update_assemblies(payloads)
+    model = Sketchup.active_model
+    model.start_operation('Actualizează aparataj', true)
+    payloads.each { |payload| rebuild(model, payload, instances_of(payload['projectId'], payload['sketchupId'])) }
+    model.commit_operation
+  end
+
+  def self.rebuild(model, payload, linked)
+    return if linked.empty?
+
     defn = Geometry.definition_for(model, payload)
     linked.each do |inst, world|
       inst.definition = defn
@@ -64,7 +80,6 @@ module AzimutAparataj
       dz = floor_z + payload['mountHeightMm'].to_f.mm - world.origin.z
       inst.transform!(Geom::Transformation.translation([0, 0, dz])) if dz.abs > 0.5.mm
     end
-    model.commit_operation
   end
 
   def self.place_instance(payload, hit)
