@@ -4,7 +4,8 @@ module AzimutAparataj
   # Height = plate axis above the bottom of the wall face. Near a snap height it sticks to it;
   # a typed value in mm fixes the height instead.
   class PlacementTool
-    SNAP_MM = 40 # how close to a snap height the cursor has to be to stick
+    SNAP_MM = 40 # how close to a snap height (or another assembly's axis) the cursor has to be to stick
+    SNAP_COLORS = { standard: 'ForestGreen', device: 'DodgerBlue' }.freeze
 
     def initialize(payload, instance = nil)
       @payload = payload
@@ -24,6 +25,7 @@ module AzimutAparataj
         @snaps = [(payload['snapHeightMm'] || payload['mountHeightMm'] || DEFAULT_HEIGHTS['outlet']).to_f]
       end
       @height_mm = @snaps.first
+      @others = AzimutAparataj.assembly_axes(instance)
       @locked = false
       @ip = Sketchup::InputPoint.new
       @hit = nil
@@ -104,17 +106,22 @@ module AzimutAparataj
       corners = [[-1, -1], [1, -1], [1, 1], [-1, 1]].map { |sx, sz| along(along(c, x, sx * @w / 2), Z_AXIS, sz * @h / 2) }
       view.line_stipple = ''
       view.line_width = 2
-      view.drawing_color = @hit[:snapped] ? 'ForestGreen' : 'DarkOrange'
+      view.drawing_color = SNAP_COLORS[@hit[:snapped]] || 'DarkOrange'
       view.draw(GL_LINE_LOOP, corners)
 
       view.line_width = 1
       view.line_stipple = '-'
+      unless @hit[:guides].empty?
+        view.drawing_color = SNAP_COLORS[:device]
+        view.draw(GL_LINES, @hit[:guides].flat_map { |g| [g, c] })
+        view.drawing_color = 'DarkOrange'
+      end
       floor = Geom::Point3d.new(c.x, c.y, @hit[:floor_z])
       ceiling = Geom::Point3d.new(c.x, c.y, @hit[:ceiling_z])
       bottom = along(c, Z_AXIS, -@h / 2)
       top = along(c, Z_AXIS, @h / 2)
       view.draw(GL_LINES, [bottom, floor, top, ceiling])
-      label(view, along(floor, Z_AXIS, (bottom.z - floor.z) / 2), "ax #{mm(c.z - floor.z)}#{' (fixat)' if @locked}#{' (standard)' if @hit[:snapped] && !@locked}")
+      label(view, along(floor, Z_AXIS, (bottom.z - floor.z) / 2), "ax #{mm(c.z - floor.z)}#{' (fixat)' if @locked}#{' (standard)' if @hit[:snapped] == :standard && !@locked}")
       label(view, along(top, Z_AXIS, (ceiling.z - top.z) / 2), "sus #{mm(ceiling.z - top.z)}")
       [[@hit[:left], -1], [@hit[:right], 1]].each do |gap, side|
         next unless gap
@@ -142,13 +149,31 @@ module AzimutAparataj
       plane = [tr * face.vertices.first.position, normal]
       pos = @ip.position.project_to_plane(plane)
       zs = face.outer_loop.vertices.map { |v| (tr * v.position).z }
-      target = @locked ? @height_mm : @snaps.min_by { |s| (pos.z - zs.min - s.mm).abs }
-      standard_z = zs.min + target.mm
-      snapped = @locked || (pos.z - standard_z).abs < SNAP_MM.mm
-      center = Geom::Point3d.new(pos.x, pos.y, snapped ? standard_z : pos.z)
       xaxis = Z_AXIS * normal
+      # Other assemblies on the same wall: line up with their height or their vertical axis
+      neighbours = @others.select { |o| o[:normal] % normal > 0.99 && ((o[:center] - pos) % normal).abs < 5.mm }
+      guides = []
+
+      z_options = @snaps.map { |s| [zs.min + s.mm, :standard, nil] } + neighbours.map { |o| [o[:center].z, :device, o] }
+      z, z_kind, z_from = @locked ? [zs.min + @height_mm.mm, :standard, nil] : z_options.min_by { |cz, _, _| (pos.z - cz).abs }
+      unless @locked || (z && (pos.z - z).abs < SNAP_MM.mm)
+        z = pos.z
+        z_kind = nil
+      end
+      guides << z_from[:center] if z_kind == :device
+
+      x_from = neighbours.min_by { |o| ((o[:center] - pos) % xaxis).abs }
+      shift = x_from && (x_from[:center] - pos) % xaxis
+      if shift && shift.abs < SNAP_MM.mm
+        pos = along(pos, xaxis, shift)
+        guides << x_from[:center]
+      end
+
+      center = Geom::Point3d.new(pos.x, pos.y, z)
+      snapped = guides.empty? ? z_kind : :device # another assembly wins the color
       left, right = edge_gaps(face, tr, center, xaxis)
-      { center: center, normal: normal, xaxis: xaxis, floor_z: zs.min, ceiling_z: zs.max, left: left, right: right, snapped: snapped }
+      { center: center, normal: normal, xaxis: xaxis, floor_z: zs.min, ceiling_z: zs.max, left: left, right: right,
+        snapped: snapped, guides: guides.uniq }
     end
 
     # Clear distance from the plate's sides to the face boundary, along the plate's horizontal axis.

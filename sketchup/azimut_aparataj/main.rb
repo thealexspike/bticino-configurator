@@ -112,6 +112,15 @@ module AzimutAparataj
     instances_of(inst.get_attribute(DICT, 'project_id')).find { |i, _| i == inst }&.last || inst.transformation
   end
 
+  # Plate axis and room-facing normal of every placed assembly (any project), to snap to them.
+  def self.assembly_axes(except = nil)
+    instances_of(nil).filter_map do |inst, world|
+      next if inst == except
+
+      { center: world.origin, normal: world.yaxis.reverse.normalize }
+    end
+  end
+
   def self.mount_height_mm(inst)
     floor_z = inst.get_attribute(DICT, 'floor_z')
     floor_z && (world_of(inst).origin.z - floor_z).to_mm.round.to_f
@@ -267,7 +276,7 @@ module AzimutAparataj
     inst.layer = inst.model.layers.add(TAGS[payload['type']] || TAGS['outlet'])
   end
 
-  # [instance, world transformation] pairs for the project; instances may sit inside groups.
+  # [instance, world transformation] pairs for the project (nil: every project); instances may sit inside groups.
   def self.instances_of(project_id, sketchup_id = nil)
     found = []
     walk = lambda do |entities, tr|
@@ -276,7 +285,7 @@ module AzimutAparataj
 
         world = tr * e.transformation
         if e.is_a?(Sketchup::ComponentInstance) && e.definition.attribute_dictionary(DICT)
-          found << [e, world] if e.get_attribute(DICT, 'project_id') == project_id && found.none? { |i, _| i == e }
+          found << [e, world] if (project_id.nil? || e.get_attribute(DICT, 'project_id') == project_id) && found.none? { |i, _| i == e }
         else
           walk.(e.definition.entities, world)
         end
