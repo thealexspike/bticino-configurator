@@ -43,6 +43,8 @@ const projectFromApi = (project) => ({
     planId: a.plan_id || null,
     planX: a.plan_x ?? null,
     planY: a.plan_y ?? null,
+    mountHeightMm: a.mount_height_mm ?? null,
+    sketchupId: a.sketchup_id || null,
   })),
 });
 
@@ -245,6 +247,8 @@ export default function App() {
       plan_id: a.planId || null,
       plan_x: a.planX ?? null,
       plan_y: a.planY ?? null,
+      mount_height_mm: a.mountHeightMm ?? null,
+      sketchup_id: a.sketchupId || null,
     })));
 
     // Actualizează id-urile locale cu cele din server

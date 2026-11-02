@@ -111,4 +111,5 @@ export const POSTS_PROPORTIONS = {
   supportBarOffset: 0,
   moduleCornerRadius: 3,
   slotInset: 8,
+  pitchMm: 35.5, // unitățile de mai sus sunt deja mm (extensia SketchUp)
 };

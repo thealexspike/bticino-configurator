@@ -58,6 +58,9 @@ async function apply(db) {
     ['plan_x', 'REAL'],
     ['plan_y', 'REAL'],
     ['wall_box_mode', 'TEXT'],
+    // Legătura cu SketchUp: înălțimea axului ramei și instanța din model
+    ['mount_height_mm', 'INTEGER'],
+    ['sketchup_id', 'TEXT'],
   ]);
 }
 

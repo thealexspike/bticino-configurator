@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft , MapPin, Camera } from 'lucide-react';
+import { Plus, Trash2, Settings, FileText, Home, Copy, MessageSquare, ArrowRightLeft , MapPin, Camera, Box } from 'lucide-react';
 import { AssemblyThumbnail } from './visual/ModuleVisuals';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
@@ -9,7 +9,7 @@ import { sizeLabel, capacityLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLi
 import { getAvailableColors, getAvailableSizes, isDarkColor, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
 import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
 
-export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, onMoveToType, existingRooms = [] }) {
+export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, onMoveToType, onPlaceInSketchup = null, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
   const [dragOverIndex, setDragOverIndex] = useState(null);
   const [dragOverRoom, setDragOverRoom] = useState(null);
@@ -556,6 +556,15 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
             >
               <Settings className="w-4 h-4" />
             </button>
+            {onPlaceInSketchup && !readOnly && (
+              <button
+                onClick={(e) => { e.stopPropagation(); onPlaceInSketchup(assembly); }}
+                className={`${btnPad} ${assembly.sketchupId ? 'text-orange-600 hover:text-orange-800' : 'text-gray-400 hover:text-orange-600'}`}
+                title={t.placeInSketchup}
+              >
+                <Box className="w-4 h-4" />
+              </button>
+            )}
             {onMoveToType && !readOnly && (
               <button
                 onClick={(e) => { e.stopPropagation(); onMoveToType(assembly.id, type === 'outlet' ? 'switch' : 'outlet'); }}

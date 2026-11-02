@@ -7,6 +7,7 @@ import { sizeLabel, capacityLabel, freeLabel, isPostSystem, postsOf, wallBoxMode
 import { adjustBrightness } from '../graphics/colors';
 import { useTranslation, useLanguage } from '../i18n';
 import { calculateModulesSize, createModuleInstance } from '../lib/assemblies';
+import { DEFAULT_MOUNT_HEIGHT_MM } from '../sketchup';
 import { getAvailableColors, getAvailableSizes, isDarkColor, getColorName, LibraryContext, getWallBoxSku, getInstallFaceSku, getDecorFaceSku, getModuleSku, getModuleFaceSku, getModuleName, getModuleCatalog } from '../lib/library';
 
 export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] }) {
@@ -285,7 +286,7 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
         </div>
 
         {/* Basic Settings */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">{t.room}</label>
             <RoomSelector
@@ -328,6 +329,20 @@ export function AssemblyEditor({ assembly, onBack, onUpdate, existingRooms = [] 
               <option value="masonry">{t.masonry}</option>
               <option value="drywall">{t.drywall}</option>
             </select>
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">{t.mountHeight}</label>
+            <input
+              type="text"
+              inputMode="numeric"
+              value={assembly.mountHeightMm ?? ''}
+              placeholder={String(DEFAULT_MOUNT_HEIGHT_MM[assembly.type] ?? '')}
+              onChange={(e) => {
+                const digits = e.target.value.replace(/\D/g, '');
+                updateField('mountHeightMm', digits === '' ? null : parseInt(digits));
+              }}
+              className="w-full border rounded px-3 py-2"
+            />
           </div>
           {isPostSystem(library) && postsOf(assembly.size, library) > 1 && (
             <div>

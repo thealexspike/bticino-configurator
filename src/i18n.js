@@ -240,6 +240,14 @@ export const TRANSLATIONS = {
     systemBticino: 'BTicino Living Now',
     systemGewiss: 'Gewiss Chorus',
     systemSchneider: 'Schneider Noua Unica',
+
+    // SketchUp
+    mountHeight: 'Mounting height (mm)',
+    placeInSketchup: 'Place / update in SketchUp',
+    syncFromSketchup: 'Sync from model',
+    sketchupMissing: 'No longer in the SketchUp model',
+    sketchupMissingDelete: 'Delete from project',
+    sketchupMissingKeep: 'Keep as not placed',
   },
   ro: {
     // General
@@ -480,6 +488,14 @@ export const TRANSLATIONS = {
     systemBticino: 'BTicino Living Now',
     systemGewiss: 'Gewiss Chorus',
     systemSchneider: 'Schneider Noua Unica',
+
+    // SketchUp
+    mountHeight: 'Înălțime montaj (mm)',
+    placeInSketchup: 'Plasează / actualizează în SketchUp',
+    syncFromSketchup: 'Sincronizează din model',
+    sketchupMissing: 'Nu mai există în modelul SketchUp',
+    sketchupMissingDelete: 'Șterge din proiect',
+    sketchupMissingKeep: 'Păstrează ca neplasate',
   },
 };
 

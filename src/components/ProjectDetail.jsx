@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { ChevronLeft, Package, Zap, Settings, FileText, Upload, Map as MapIcon } from 'lucide-react';
+import { ChevronLeft, Package, Zap, Settings, FileText, Upload, Map as MapIcon, RefreshCw } from 'lucide-react';
 import { api } from '../api';
 import { AssemblyEditor } from './AssemblyEditor';
 import { AssemblyList } from './AssemblyList';
@@ -11,12 +11,13 @@ import { PlanLinkContext } from '../planLink';
 import { filesToPlans, PLAN_FILE_ACCEPT } from '../lib/planImport';
 import { preparePhoto } from '../lib/photoImport';
 import { AssemblyPhotos } from './AssemblyPhotos';
-import { SYSTEMS } from '../data/libraries';
+import { SYSTEMS, getSystemProportions } from '../data/libraries';
 import { useTranslation, useLanguage } from '../i18n';
 import { useReadOnly } from '../readOnly';
 import { generateId, generateAssemblyCode, reorderAssembly, createAssembly, createModuleInstance } from '../lib/assemblies';
 import { getAvailableColors, getAvailableSizes, getSystemName, getColorName, LibraryContext } from '../lib/library';
 import { sizeLabel } from '../lib/mounting';
+import { inSketchUp, callSketchup, newSketchupId, buildPlacementPayload, mergeModelAssemblies } from '../sketchup';
 
 export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }) {
   const [activeTab, setActiveTab] = useState('outlets');
@@ -35,6 +36,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   const [aiImportWallBox, setAiImportWallBox] = useState('masonry');
   const [aiImportLoading, setAiImportLoading] = useState(false);
   const [aiImportResult, setAiImportResult] = useState(null);
+  const [sketchupMissing, setSketchupMissing] = useState(null); // { assemblies, missing, missingIds } while asking
   const t = useTranslation();
   const lang = useLanguage();
   const library = React.useContext(LibraryContext);
@@ -212,6 +214,8 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   };
 
   const deleteAssembly = (id) => {
+    const sketchupId = project.assemblies.find(a => a.id === id)?.sketchupId;
+    if (sketchupId) callSketchup('deleteAssembly', { projectId: project.id, sketchupId });
     onUpdate({
       ...project,
       assemblies: project.assemblies.filter(a => a.id !== id),
@@ -248,6 +252,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
       planId: null,
       planX: null,
       planY: null,
+      sketchupId: null, // the copy isn't placed in the model yet
       modules: source.modules.map(m => ({
         ...m,
         id: generateId(),
@@ -270,6 +275,42 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   const cancelDuplicate = () => {
     setConfirmDuplicateId(null);
   };
+
+  // SketchUp: the extension places or rebuilds the instance linked by sketchupId
+  const placeInSketchup = (assembly) => {
+    const linked = assembly.sketchupId ? assembly : { ...assembly, sketchupId: newSketchupId() };
+    if (linked !== assembly) updateAssembly(linked);
+    callSketchup('placeAssembly', buildPlacementPayload(project, linked, library, getSystemProportions(library)));
+  };
+
+  const finishSketchupSync = (assemblies) => {
+    onUpdate({ ...project, assemblies });
+    setSketchupMissing(null);
+    callSketchup('syncDone', {
+      projectId: project.id,
+      codes: assemblies.filter(a => a.sketchupId).map(a => ({ sketchupId: a.sketchupId, code: a.code })),
+    });
+  };
+
+  const resolveSketchupMissing = (remove) => {
+    const { assemblies, missingIds } = sketchupMissing;
+    finishSketchupSync(remove
+      ? assemblies.filter(a => !missingIds.has(a.id))
+      : assemblies.map(a => missingIds.has(a.id) ? { ...a, sketchupId: null } : a));
+  };
+
+  // Re-registered every render so the callback always sees the current project
+  useEffect(() => {
+    if (!inSketchUp()) return;
+    window.azimutSketchup = {
+      onModelAssemblies: (items) => {
+        const { project: merged, missing } = mergeModelAssemblies(project, items || [], { generateId, generateCode: generateAssemblyCode });
+        if (missing.length === 0) return finishSketchupSync(merged.assemblies);
+        setSketchupMissing({ assemblies: merged.assemblies, missing, missingIds: new Set(missing.map(a => a.id)) });
+      },
+    };
+    return () => { delete window.azimutSketchup; };
+  });
 
   const handleAiImport = async () => {
     if (!aiImportFile) return;
@@ -591,6 +632,14 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           <Upload className="w-4 h-4" /> {t.aiImport}
         </button>
         )}
+        {inSketchUp() && !readOnly && (
+          <button
+            onClick={() => callSketchup('requestModelAssemblies', { projectId: project.id })}
+            className="flex items-center gap-1 px-3 py-2 rounded text-sm bg-orange-600 text-white hover:bg-orange-700"
+          >
+            <RefreshCw className="w-4 h-4" /> {t.syncFromSketchup}
+          </button>
+        )}
         {plans.length === 0 && !readOnly && (
           <>
             <button
@@ -683,6 +732,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           onReorder={handleReorder}
           onUpdate={updateAssembly}
           onMoveToType={moveAssemblyToType}
+          onPlaceInSketchup={inSketchUp() ? placeInSketchup : null}
           existingRooms={existingRooms}
         />
       )}
@@ -702,6 +752,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           onReorder={handleReorder}
           onUpdate={updateAssembly}
           onMoveToType={moveAssemblyToType}
+          onPlaceInSketchup={inSketchUp() ? placeInSketchup : null}
           existingRooms={existingRooms}
         />
       )}
@@ -717,6 +768,30 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           onSelect={(presetId) => addAssembly(showPresetDialog, presetId)}
           onClose={() => setShowPresetDialog(null)}
         />
+      )}
+
+      {/* SketchUp sync: assemblies linked to instances that are gone from the model */}
+      {sketchupMissing && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h2 className="text-lg font-bold mb-2">{t.sketchupMissing}</h2>
+            <p className="text-sm text-gray-700 mb-4">{sketchupMissing.missing.map(a => a.code).join(', ')}</p>
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={() => resolveSketchupMissing(false)}
+                className="px-3 py-2 rounded text-sm bg-gray-200 hover:bg-gray-300"
+              >
+                {t.sketchupMissingKeep}
+              </button>
+              <button
+                onClick={() => resolveSketchupMissing(true)}
+                className="px-3 py-2 rounded text-sm bg-red-600 text-white hover:bg-red-700"
+              >
+                {t.sketchupMissingDelete}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* AI Import Dialog */}

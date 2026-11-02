@@ -41,6 +41,8 @@ CREATE TABLE IF NOT EXISTS assemblies (
   plan_x REAL,
   plan_y REAL,
   wall_box_mode TEXT,
+  mount_height_mm INTEGER,
+  sketchup_id TEXT,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 
