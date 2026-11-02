@@ -186,6 +186,27 @@ module AzimutAparataj
 
     @watched[model] = true
     model.add_observer(ModelWatcher.new)
+    model.selection.add_observer(SelectionWatcher.new)
+  end
+
+  # The project's assemblies selected in the model, so the app highlights them in its list.
+  def self.send_selection(selection)
+    return unless @project_id && @dialog&.visible?
+
+    ids = selection.grep(Sketchup::ComponentInstance)
+                   .select { |e| e.definition.attribute_dictionary(DICT) && e.get_attribute(DICT, 'project_id') == @project_id }
+                   .map { |e| e.get_attribute(DICT, 'sketchup_id') }
+    @dialog.execute_script("window.azimutSketchup && window.azimutSketchup.onSelection && window.azimutSketchup.onSelection(#{JSON.generate(ids)})")
+  end
+
+  class SelectionWatcher < Sketchup::SelectionObserver
+    def onSelectionBulkChange(selection)
+      AzimutAparataj.safely { AzimutAparataj.send_selection(selection) }
+    end
+
+    def onSelectionCleared(selection)
+      AzimutAparataj.safely { AzimutAparataj.send_selection(selection) }
+    end
   end
 
   # Debounced: a copy-paste or a move fires several commits in a row.

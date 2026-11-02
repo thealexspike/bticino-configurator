@@ -12,6 +12,7 @@
 //                                          pushes the model's instances after every change
 // Ruby -> JS: onModelAssemblies(items, auto); auto = pushed after a model change, not asked by the button.
 //             newAssembly('outlet' | 'switch'); toolbar button: preset dialog, then placeAssembly.
+//             onSelection([sketchupId]); the project's assemblies selected in the model, highlighted in the list.
 // One item per instance:
 //   { sketchupId, type, room, size, color, wallBoxType, mountHeightMm, modules: [{ moduleId, pos }] }
 //   (instances placed by v0.1.0 send modules as plain moduleId strings)

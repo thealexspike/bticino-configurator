@@ -38,6 +38,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
   const [aiImportResult, setAiImportResult] = useState(null);
   const [sketchupMissing, setSketchupMissing] = useState(null); // { assemblies, missing, missingIds } while asking
   const [placeAfterAdd, setPlaceAfterAdd] = useState(null); // 'outlet' | 'switch' when the SketchUp toolbar asked for a new one
+  const [selectedSketchupIds, setSelectedSketchupIds] = useState(() => new Set()); // selected in the SketchUp model
   const t = useTranslation();
   const lang = useLanguage();
   const library = React.useContext(LibraryContext);
@@ -331,9 +332,21 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
         setPlaceAfterAdd(type);
         setShowPresetDialog(type);
       },
+      // Selection in the model: highlight those rows, on the tab of the first one
+      onSelection: (ids) => {
+        const selected = new Set(ids || []);
+        setSelectedSketchupIds(selected);
+        const first = project.assemblies.find(a => a.sketchupId && selected.has(a.sketchupId));
+        if (first && (activeTab === 'outlets' || activeTab === 'switches')) setActiveTab(first.type === 'switch' ? 'switches' : 'outlets');
+      },
     };
     return () => { delete window.azimutSketchup; };
   });
+
+  useEffect(() => {
+    const [first] = selectedSketchupIds;
+    if (first) document.querySelector(`[data-sketchup-id="${first}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+  }, [selectedSketchupIds, activeTab]);
 
   // App -> model: placed assemblies edited here (modules, size, color, height, code, room) are rebuilt
   // in SketchUp on their own. Only links already known are compared: new placements and copies coming
@@ -782,6 +795,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           onUpdate={updateAssembly}
           onMoveToType={moveAssemblyToType}
           onPlaceInSketchup={inSketchUp() ? placeInSketchup : null}
+          selectedSketchupIds={selectedSketchupIds}
           existingRooms={existingRooms}
         />
       )}
@@ -802,6 +816,7 @@ export function ProjectDetail({ project, onBack, onUpdate, getLibraryForSystem }
           onUpdate={updateAssembly}
           onMoveToType={moveAssemblyToType}
           onPlaceInSketchup={inSketchUp() ? placeInSketchup : null}
+          selectedSketchupIds={selectedSketchupIds}
           existingRooms={existingRooms}
         />
       )}

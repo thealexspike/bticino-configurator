@@ -9,7 +9,9 @@ import { sizeLabel, capacityLabel, isPostSystem, postsOf, wallBoxMode, wallBoxLi
 import { getAvailableColors, getAvailableSizes, isDarkColor, LibraryContext, getModuleName, getModuleCatalog } from '../lib/library';
 import { generateAssemblyListPdf } from '../pdf/assemblyListPdf';
 
-export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, onMoveToType, onPlaceInSketchup = null, existingRooms = [] }) {
+const NO_SELECTION = new Set();
+
+export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onEdit, onDelete, onDuplicate, onConfirmDuplicate, onCancelDuplicate, confirmDuplicateId, onReorder, onUpdate, onMoveToType, onPlaceInSketchup = null, selectedSketchupIds = NO_SELECTION, existingRooms = [] }) {
   const [draggedId, setDraggedId] = useState(null);
   const [confirmMoveId, setConfirmMoveId] = useState(null); // inline confirm, like duplicate
   const [dragOverIndex, setDragOverIndex] = useState(null);
@@ -624,6 +626,7 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
     return (
       <li
         key={assembly.id}
+        data-sketchup-id={assembly.sketchupId || undefined}
         draggable={!readOnly}
         onDragStart={(e) => handleDragStart(e, assembly)}
         onDragOver={(e) => !groupByRoom && handleDragOver(e, index)}
@@ -632,7 +635,9 @@ export function AssemblyList({ assemblies, type, project, onAdd, onAddEmpty, onE
         onDragEnd={handleDragEnd}
         className={`flex ${compact ? 'items-start px-2 py-2' : 'items-center justify-between p-4'} border-b last:border-b-0 hover:bg-gray-50 ${readOnly ? '' : 'cursor-grab active:cursor-grabbing'} transition-all ${
           isDragging ? 'opacity-50 bg-blue-50' : ''
-        } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''}`}
+        } ${isDragOver ? 'border-t-2 border-t-blue-500' : ''} ${
+          assembly.sketchupId && selectedSketchupIds.has(assembly.sketchupId) ? 'bg-orange-50 ring-2 ring-orange-400 ring-inset' : ''
+        }`}
       >
         {compact ? (
           <>

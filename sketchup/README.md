@@ -37,6 +37,7 @@ Toolbar-ul „Aparataj Azimut” (View → Toolbars dacă nu apare) are patru bu
   se prinde de înălțimea lui de acum și de cea standard. Esc renunță și îl lasă unde era.
 - La plasare și la mutare conturul se prinde de cota standard (verde) sau se aliniază cu aparatele de pe același perete,
   pe înălțime ori pe axul vertical (albastru, cu linie de ghidaj).
+- Un aparat selectat în model e evidențiat în lista din panou (pe tabul lui, derulat până la el).
 - **Priză nouă / Întrerupător nou**: cu un proiect deschis în panou, alegi presetul acolo și apoi plasezi aparatul pe perete.
 
 - **Cubul portocaliu** de pe un ansamblu pornește plasarea: click pe un perete, tastează înălțimea axului în mm, Esc renunță.
